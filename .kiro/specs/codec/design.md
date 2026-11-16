@@ -12,8 +12,8 @@ Requirement ids are written R2.7 and so on. Success is stated as three measured 
 
 | File | Responsibility | Depends on |
 |---|---|---|
-| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024), `SOLITON_C`, `SOLITON_DELTA` | none |
-| `errors.ts` | `ERROR_CODES` const tuple, `ErrorCode` union, `IgnoreReason` (`DUPLICATE_PACKET | SESSION_MISMATCH | ALREADY_COMPLETE`), `CodecError extends Error` with `readonly code` | none |
+| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024), `SOLITON_C`, `SOLITON_DELTA`, `DENSE_PERIOD` (D; provisional initial 4, 0 means none, frozen at the sweep checkpoint from {3, 4, 8, none}). `maxDenseRows = maxGaussianBlocks + 64` is derived, not a constant | none |
+| `errors.ts` | `ERROR_CODES` const tuple, `ErrorCode` union, `IgnoreReason` (`DUPLICATE_PACKET | SESSION_MISMATCH | ALREADY_COMPLETE | DENSE_STORE_FULL`), `CodecError extends Error` with `readonly code` | none |
 | `validate.ts` | Hand-written validators; plain functions that throw `CodecError` (`INVALID_INPUT`) | errors, constants |
 | `crc32.ts` | Table-driven CRC-32 | none |
 | `prng.ts` | SplitMix32 seeding, xoshiro128**, `bounded(n)` | none |
@@ -22,7 +22,7 @@ Requirement ids are written R2.7 and so on. Success is stated as three measured 
 | `metadata.ts` | `serializeMetadata`, `parseMetadata`, `readRecordLength`, hand-written UTF-8 codec | errors, validate |
 | `hash.ts` | `HashFn` type, `sha256WebCrypto` using `globalThis.crypto.subtle` | errors |
 | `soliton.ts` | Integer-only robust soliton threshold table, cached by K | constants |
-| `neighbors.ts` | (sessionId, seq, K) to neighbor set; shared by Encoder and Decoder | prng, soliton |
+| `neighbors.ts` | (sessionId, seq, K) to neighbor set, and `isDense(seq, K, D)`; shared by Encoder and Decoder | prng, soliton, constants |
 | `xor.ts` | `xorInto` with `Uint32Array` views plus byte tail | none |
 | `overhead.ts` | Reads `overhead-table.json` (at `src/overhead-table.json`, imported with `resolveJsonModule`); `fLatePermille`, `fColdPermille`, `lateCount`, `coldLimit`, `R`. Internal, not in the barrel | none |
 | `encoder.ts` | `encode()`, `Encoder` | everything above except gauss, decoder |
@@ -187,6 +187,37 @@ restore touched perm entries from the undo log
 The scratch permutation is reusable and each call costs O(d). The neighbor SET defines the packet, since XOR commutes and order does not affect bytes. A repair payload is the XOR of the stride-aligned Blocks at the neighbor indices, truncated to `blockSize` wire bytes.
 A golden neighbor-set vector will be committed during implementation and cross-checked by an independent script. No numbers are invented here.
 
+### Dense repair rule (R2.2, R2.10 to R2.13)
+
+Precedence: `seq < K` is systematic, else dense iff `isDense`, else sparse.
+
+```
+isDense(seq, K, D) = D > 0 && seq >= K && ((seq - K) % D) == D - 1
+```
+
+It uses plain integer arithmetic on the u32 `seq` and needs no random draw and no session data. After the sequence wrap (2^32-1 to K) the rule still holds because it only uses `seq - K`.
+
+Dense Block set (no degree draw):
+
+```
+init PRNG(sessionId, seq) exactly as for sparse
+nw = ceil(K / 32)
+word[w] = (w+1)-th next() output, w = 0..nw-1
+Block b is included iff ((word[b >>> 5] >>> (b & 31)) & 1) == 1     // high bits of the last word ignored
+if no Block is included: set = { seq mod K }
+```
+
+Encoder: a Dense_Packet payload is the XOR of about K/2 stride-aligned Blocks via the same `xorInto`, about (K/2) x blockSize/4 word operations per Packet.
+
+Reference vector (design-time, to be re-derived by the independent Python generator in Group 5). Cross-checked between a C implementation and a JS implementation, which agree. These rows test the dense algorithm itself, so they are treated as dense regardless of D. Seq 53 with K = 50 is j = 3, dense at D = 4.
+
+| sessionId | seq | K | words (w0..) | Block set |
+|---|---|---|---|---|
+| 0x12345678 | 53 | 50 | b955b964 80f65a30 | 2 5 6 8 11 12 13 15 16 18 20 22 24 27 28 29 31 36 37 41 43 44 46 49 (24 Blocks) |
+| 0x12345678 | 103 | 100 | 9ad034a6 7b210bdb c61b69ef 37855ee7 | 1 2 5 7 10 12 13 20 22 23 25 27 28 31 32 33 35 36 38 39 40 41 43 48 53 56 57 59 60 61 62 64 65 66 67 69 70 71 72 75 77 78 80 81 83 84 89 90 94 95 96 97 98 (53 Blocks) |
+| 0xDEADBEEF | 7 | 1 | 2e0cc0c3 | 0 (1 Block) |
+| 0xDEADBEEF | 7 | 5 | 2e0cc0c3 | 0 1 |
+
 ## Encoder
 
 `encode(payload, options)`:
@@ -213,12 +244,12 @@ A golden neighbor-set vector will be committed during implementation and cross-c
 **Table.** `packages/codec/src/overhead-table.json` holds integers only, so no floating point is involved:
 
 ```json
-{ "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "samples": {"K<=500": 2000, "K>=1000": 500},
+{ "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "D": 4, "samples": {"K<=500": 2000, "K>=1000": 500},
   "quantile": "0.995",
   "rows": [ { "K": 10, "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
 ```
 
-Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. `samples` records N_cal per K range. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`.
+Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. `samples` records N_cal per K range. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`. `D` is an integer (0 = none) and records the dense period under which the table was calibrated. `calibrate.ts` takes `--D`; M1, M2, M3 and calibration run with the frozen D. The sweep covers (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}.
 
 **`overhead.ts` API.** `fLatePermille(K)`, `fColdPermille(K)`, `lateCount(K) = ceilDiv(fLatePermille(K) * K, 1000)`, `coldLimit(K)` likewise with `fColdPermille`, and `R(K)`.
 For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K - K_lo), K_hi - K_lo)`. K <= 10 or K >= 2000 clamps to the end row. Interpolated permille values are ceil'd again by the consumer. `R(K)` is always an integer >= 0 and is the default `page()` repairCount.
@@ -252,33 +283,41 @@ M1, M2 and M3 use fresh seeds different from the calibration seed.
 | adjacency | Per-block linked lists: `head[b]`, `nextEdge[e]`, `edgeEq[e]`, grown by amortized doubling |
 | ripple | Queue of equation ids whose degree is 1 |
 | `seen` | `Set<number>` of accepted seq numbers |
+| dense store | Up to `maxDenseRows` slots with a free list. Per slot: `denseBits` (K-bit row, `Uint32Array`, `ceil(K/32)` words), `densePayload` (stride bytes), `denseFolded` (K-bit row of solved columns already XORed into the payload). Dense rows are never added to adjacency or the ripple. |
 
 ### push flow
 
 1. `decodePacket` with the decoder limits. Failures give `rejected` with the code.
 2. The first valid Packet fixes session and params. A different sessionId gives `ignored` with `SESSION_MISMATCH`. Same session with inconsistent params gives `rejected` with `BAD_HEADER`. A seq in `seen` gives `ignored` with `DUPLICATE_PACKET`.
+2a. If `seq >= K` and `isDense(seq, K, D)`: build the K-bit row directly from the PRNG words (no neighbor array). If stored dense rows == `maxDenseRows`, return `ignored` with `DENSE_STORE_FULL`, with state unchanged, not counted in `distinctPackets` and `seq` not added to `seen` (a retransmission can be accepted after a row is freed). Otherwise store the row and payload, count it as distinct, record `seq` in `seen`, and return `accepted`. Steps 3 to 6 do not apply to dense Packets.
 3. Compute the neighbors.
 4. XOR already-solved Blocks into the equation and decrement its degree.
 5. Degree 0: discard (still counted as distinct). Degree 1: solve the Block and propagate. Otherwise store it and add adjacency edges.
 6. Peeling: when Block b is solved, for each equation e in `adj[b]`, do `eqVal[e] ^= block; degree--` and enqueue if the degree becomes 1. The one unsolved neighbor of a degree-1 equation is found by scanning its neighbor list.
 
-Memory bound: at most `maxStored = 2K + 64` stored (unreduced) equations. Packets beyond that count toward `distinctPackets` and are reported `accepted`, but their values are dropped. This is a deliberate trade-off.
-At K = 11,479 with stride 2924, `blocks` is about 33.6 MB and stored equations add up to about 2K x 2.9 KB, about 67 MB. The Gaussian bit matrix adds at most 128 KiB at the default cap (1024 x 32 words). The 32 MiB case is therefore measured and reported (R8.5), not budgeted.
+Sparse and systematic Packets keep peeling while the dense store is full (R5.21).
+
+Memory bound: at most `maxStored = 2K + 64` stored (unreduced) sparse equations. Packets beyond that count toward `distinctPackets` and are reported `accepted`, but their values are dropped. This is a deliberate trade-off.
+At K = 11,479 with stride 2924, `blocks` is about 33.6 MB and stored equations add up to about 2K x 2.9 KB, about 67 MB. The Gaussian bit matrix adds at most 128 KiB at the default cap (1024 x 32 words). At K = 16384 the dense store is at most 1088 rows x (2 KiB `denseBits` + 2 KiB `denseFolded` + about 2.9 KiB payload), about 7.6 MB. The 32 MiB case is therefore measured and reported (R8.5), not budgeted.
 
 ### Gaussian fallback (`gauss.ts`)
 
-`maxGaussianBlocks` defaults to 1024 and is configurable. Trigger, evaluated after a push: ripple empty, unsolved U > 0, U <= maxGaussianBlocks, stored equations >= U, and the retry backoff below is satisfied.
+`maxGaussianBlocks` defaults to 1024 and is configurable. Trigger, evaluated after a push: ripple empty, unsolved U > 0, U <= maxGaussianBlocks, (stored sparse equations + stored dense rows) >= U, and the retry backoff below is satisfied.
+
+Lazy dense folding runs at the start of each attempt. For each stored dense row and each newly solved column c with its bit set in `denseBits` and not set in `denseFolded`, XOR Block c into the row payload and set the folded bit, so no Block is XORed twice. A row whose columns are all solved is discarded and its slot freed (R5.22); such a row carries no information because every Block is already known. The count of unsolved columns per row is computed lazily here, so peeling pays no per-Block cost for dense rows.
 
 If the residual after peeling exceeds the cap, the decoder does not error, does not change the status kind for that reason, and keeps collecting Packets. Each push still costs O(d * stride/4) of peeling work. Once peeling reduces the residual to <= cap, Gaussian elimination becomes eligible. If peeling alone solves every Block, completion happens without Gaussian elimination (R5.15, R5.16).
 
 | Phase | Work |
 |---|---|
-| A (rank) | Build U-column bitset rows (`Uint32Array`, `ceil(U/32)` words) from stored equations restricted to unsolved columns. Eliminate on a copy to find rank and pivot rows. If rank r < U, abort and wait for more Packets. |
+| A (rank) | Build U-column bitset rows (`Uint32Array`, `ceil(U/32)` words) from stored sparse equations (degree >= 2) and from the folded dense rows, restricted to unsolved columns. Eliminate on a copy to find rank and pivot rows. If rank r < U, abort and wait for more Packets. |
 | B (solve) | Only at full rank: choose U pivot rows, run Gauss-Jordan with row value XORs (stride/4 words per row op), then mark all Blocks solved. |
 
 Retry backoff: after a failed Phase A with rank r, Gaussian elimination is retried only after at least `max(1, U - r)` further equations have been stored, so repeated attempts do not dominate.
 
 Cost at U = 1024: the Phase A bit matrix is 1024 rows x 32 words = 128 KiB. Phase A work is about U^3/32 word operations (about 34 million). Phase B value work is up to about U^2/2 row XORs of stride/4 words each: at default stride 2924, about 5.2e5 x 731 = 3.8e8 word XORs worst case, roughly 0.3 to 1 s in JS. This is an estimate to be measured, not a measurement.
+
+Lazy folding cost at K = 11,500 and U <= 1024, estimate only: about (K - U)/2, roughly 5.2k, Block XORs of 731 words per dense row, about 3.8e6 word operations per row and about 4e9 for 1088 rows. To be MEASURED and reported, with no budget.
 
 ### Completion
 
@@ -289,12 +328,14 @@ All K Blocks solved: assemble the Coded_Stream (strip stride padding, truncate t
 | Match | `complete = true`; `result()` returns `{ payload, metadata }` |
 | Mismatch | Terminal failed state. `push` returns `rejected` with `HASH_MISMATCH`. Bytes are never exposed. `result()` throws `INCOMPLETE_DECODE`. |
 
+Bytes are exposed only after the SHA-256 match, whichever Packet kinds (dense, sparse, systematic) contributed (R5.23).
+
 `push()` is async only because of the hash. Overlapping calls are serialized with an internal promise chain, so state transitions never interleave. After completion, same-session Packets return `ignored` with reason `ALREADY_COMPLETE` and no state change.
 
 ```ts
 type PushStatus = {
   kind: 'accepted' | 'ignored' | 'rejected'
-  reason?: IgnoreReason   // 'DUPLICATE_PACKET' | 'SESSION_MISMATCH' | 'ALREADY_COMPLETE'
+  reason?: IgnoreReason   // 'DUPLICATE_PACKET' | 'SESSION_MISMATCH' | 'ALREADY_COMPLETE' | 'DENSE_STORE_FULL'
   code?: ErrorCode
   progress: { solvedBlocks: number; totalBlocks: number; distinctPackets: number; complete: boolean }
 }
@@ -363,6 +404,9 @@ All use fast-check. Measured properties use fixed seeds.
 | P11 | For any arbitrary or mutated bytes, `push` never throws, a `rejected` status carries a valid ErrorCode, and the progress snapshot is unchanged. | Random bytes; mutated valid Packets | 500 | R7.7, R9.2 |
 | P12 | For any K in 1..5000, the overhead module returns integers with R >= 0, values equal to the table at table K, linear in between within ceil rounding, and clamped outside [10, 2000]. | `fc.integer(1, 5000)` | 300 | R10.3 |
 | P13 | For any invalid option or payload shape, the public function throws `CodecError` (`INVALID_INPUT` or a more specific code) with no partial effect on existing Encoder or Decoder state. | Invalid options and shapes | 300 | R9.2, R9.3 |
+| P14 | Dense-or-sparse rule. For any K in 1..20000, any seq (including seq >= 2^32 - 50 and the wrap) and every D in {0, 3, 4, 8}, kind(seq) equals the index rule: systematic if seq < K, dense iff D > 0 and (seq-K) mod D == D-1, else sparse. | K, seq and D arbitraries with wrap-biased seq | 1000 | R2.2, R2.10 |
+| P15 | Hash-gated dense safety. For any decoder fed only dense and systematic Packets (random subsets, some dense payloads corrupted with a recomputed valid CRC), the Decoder either never completes or completes with bytes equal to the original, and never exposes bytes when the hash fails. | Subset and corruption arbitraries; blockSize 32 | 200 | R5.18 to R5.23, R5.10, R5.11 |
+| P16 | Dense determinism. For any payload and options, two independent encodes give byte-identical dense Packets, and the dense Block set equals a reference algorithm re-implemented inside the test from the word/bit rule. | As P1 | 200 | R6.7, R2.11, R2.12, R2.13 |
 | M1 | Late join. Pool is repair seq K..5K-1; subset of size `ceil(f_late x K)`; asserts observed success >= 0.99. Reports the observed rate and Wilson lower bound. | Fixed fast-check seed (not the calibration seed); payload varies per trial; blockSize 32; K in {50, 100, 500} | N = 1000 per K | R2.7, R2.9, R10.6 |
 | M2 | Cold start with loss 0.30. Stream from seq 0; asserts received count <= `ceil(f_cold x K)` in >= 0.99 of trials. Reports rate and Wilson lower bound. | As M1 | N = 1000 per K | R2.8, R2.9, R10.6 |
 | M3 | Page mode. Default `page()` of T = K + R(K) Packets, loss 0.05; asserts completion >= 0.99. Reports rate and Wilson lower bound, plus informational success at loss 0.02 and 0.10 (no assertion). | As M1 | N = 1000 per K | R4.7, R2.9, R10.6 |
@@ -390,18 +434,21 @@ PBT fits the pure logic (codec, packet and metadata formats, decoder). It does n
 | Static | Compile with `lib: ["ES2023"]`, no DOM, no `@types/node` (R9.4). A test asserts `packages/codec/package.json` has no `dependencies` key (R9.6, R9.7). A purity scan over `src` finds zero occurrences of `Math.random`, `Date.now`, `performance.now`, `Math.log`, `Math.sqrt`, `Math.exp` and `Math.pow` (R6.2, R6.5). The ESLint ban list is unchanged. The hook script `.kiro/hooks/scripts/purity.mjs` must be extended to the same list (a task, not done here). The ESLint rule test in `tools/lint-rules.test.ts` covers R6.6. |
 
 Tests sit outside `src`, so the ESLint bans do not apply to them, but they still use only seeded fast-check and fixed seeds. Perf timing uses `process.hrtime.bigint` only in `perf/`.
-Unit tests cover specific examples (R3 check ordering, R4.2 wrap, R7.3 and R7.4 limit boundaries, R1.7), edge cases (empty payload, K = 1) and error codes.
+Unit tests cover specific examples (R3 check ordering, R4.2 wrap, R7.3 and R7.4 limit boundaries, R1.7, the four dense reference-vector rows, and `DENSE_STORE_FULL` behaviour with acceptance of a retransmission after a row is freed, R5.20 and R5.22), edge cases (empty payload, K = 1) and error codes.
 
 ## Performance notes
 
 Hot loops allocate nothing. The perm, undo log and neighbor scratch are reused. XOR runs through `Uint32Array` views, equations live in a chunked slab, and CRC uses a byte table. The only per-packet allocation is the returned Packet.
+A dense Packet costs about K/2 Block XORs. The only budget is at K = 359 (1 MiB): the median of 20 timed runs after 3 warm-ups for a dense `next()` must be under 20 ms. If it misses, the author stops and reports (R8.7). At K = 11,500 (32 MiB) the per-dense-Packet cost is measured and reported with no budget, and so is the lazy folding cost.
 The soliton table costs O(K) BigInt operations once per K and is cached by K. Expected complexities are as in the Decoder section.
 For 1 MiB at the default size, K = 359. Encode is 359 copies of 2923 bytes plus SHA-256 and CRC. Decode is dominated by CRC and SHA-256 when fed Systematic_Packets.
 R8.2 fixtures: (a) the K Systematic_Packets of the 1 MiB input, and (b) `ceil(f_late(K) x K)` seeded random repair Packets of the same input. Both are asserted at the 500 ms median budget, and output bytes are compared with the input in every timed run.
 
 ## Risks and open decisions
 
-### Risk 1: attainability cost of M2 and M3 with plain LT, systematic-first
+### Risk 1: attainability cost of M2 and M3, and dense rows
+
+The user approved dense repair rows. The (c, delta) x D sweep decides D, and D = none remains a candidate. Gaussian elimination now also depends on dense rows, so it is limited by `maxGaussianBlocks` = 1024. The figures below are the pre-implementation estimate and are kept for reference.
 
 A throwaway estimate (scratch script, `Math.random`, float soliton, unlimited Gaussian elimination, which equals the decoder for K <= 1024; N = 1000 trials for K = 50 and 100, N = 300 for K = 500) gave the observed 0.99 quantile of each claim:
 
@@ -421,7 +468,7 @@ R at loss 0.02 / 0.10 for (0.1, 0.5): K = 50: 43 / 62, K = 100: 84 / 112, K = 50
 
 Cause: with systematic-first emission, one lost systematic Block can only be recovered by a repair Packet that contains it. A sparse repair Packet contains a given Block with probability about (mean degree)/K, so about K/(mean degree) x ln(100) repair Packets are needed for 0.99 even when one Block is missing. The claims are always satisfiable with large f and R, since they are measurements, but plain LT costs near 2x on the page at K = 50..500.
 
-Remedy candidate, which deviates from R2.2 and needs the user's decision, so it is not designed here: mix a fraction q of dense repair rows (each Block included with probability 1/2, decoded by Gaussian elimination). Estimate at (0.1, 0.5):
+Remedy, now adopted (see Dense repair rule): mix a fraction q of dense repair rows (each Block included with probability 1/2, decoded by Gaussian elimination). Estimate at (0.1, 0.5):
 
 | q | K | f_late | f_cold | R |
 |---|---|---|---|---|
@@ -432,11 +479,11 @@ Remedy candidate, which deviates from R2.2 and needs the user's decision, so it 
 | 0.25 | 100 | 1.08 | 1.27 | 37 |
 | 0.25 | 500 | 1.02 | 1.17 | 101 |
 
-Dense rows rely on Gaussian elimination, so they are limited by `maxGaussianBlocks` = 1024 and the cost in the Decoder section. Recommended default: calibrate plain LT first, report the table at the c/delta sweep checkpoint, and let the user decide whether to keep it.
+Dense rows rely on Gaussian elimination, so they are limited by `maxGaussianBlocks` = 1024 and the cost in the Decoder section. Report the sweep table at the checkpoint and freeze D there.
 
 ### Risk 2: Gaussian elimination cost at the 1024 cap and the R8.2 fixture (b) budget
 
-Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default stride. At the 1 MiB fixture, K = 359, so the residual is at most 359 and the cost is about (359/1024)^2 of that. Fixture (b) must be measured. If it exceeds 500 ms the author stops and reports (R8.6). A mitigation that needs no format change: apply value XORs only for the pivot rows chosen in Phase A.
+Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default stride. At the 1 MiB fixture, K = 359, so the residual is at most 359 and the cost is about (359/1024)^2 of that. Lazy dense folding adds to this cost (estimate in the Decoder section) and is measured with fixture (b) and at K = 11,500. Fixture (b) must be measured. If it exceeds 500 ms the author stops and reports (R8.6). A mitigation that needs no format change: apply value XORs only for the pivot rows chosen in Phase A.
 
 ### Risk 3: calibration stability and runtime
 
