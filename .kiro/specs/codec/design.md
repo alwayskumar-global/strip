@@ -6,14 +6,14 @@
 The Encoder turns a Payload into a Coded_Stream (Metadata_Record followed by the file bytes). It splits the stream into K strided Blocks and emits Packets from an LT fountain code (robust soliton degrees).
 The Decoder peels, falls back to Gaussian elimination over GF(2) when few Blocks remain, then verifies SHA-256 before it exposes any bytes.
 All format-affecting arithmetic is integer-only: xoshiro128** for randomness and a BigInt fixed-point soliton table. No `Math.random`, `Date.now`, `performance.now`, `Math.log` or `Math.sqrt` appears in `src`.
-Requirement ids are written R2.7 and so on. Section 11 holds one blocking decision (Risk 1): the R2.7 bound is not reachable at 1.1 x K with the current distribution.
+Requirement ids are written R2.7 and so on. Success is stated as three measured claims (M1 late join, M2 cold start with loss, M3 page mode) calibrated into a committed table.
 
 ## Module layout (packages/codec/src)
 
 | File | Responsibility | Depends on |
 |---|---|---|
-| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 256), `SOLITON_C`, `SOLITON_DELTA` | none |
-| `errors.ts` | `ERROR_CODES` const tuple, `ErrorCode` union, `IgnoreReason`, `CodecError extends Error` with `readonly code` | none |
+| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024), `SOLITON_C`, `SOLITON_DELTA` | none |
+| `errors.ts` | `ERROR_CODES` const tuple, `ErrorCode` union, `IgnoreReason` (`DUPLICATE_PACKET | SESSION_MISMATCH | ALREADY_COMPLETE`), `CodecError extends Error` with `readonly code` | none |
 | `validate.ts` | Hand-written validators; plain functions that throw `CodecError` (`INVALID_INPUT`) | errors, constants |
 | `crc32.ts` | Table-driven CRC-32 | none |
 | `prng.ts` | SplitMix32 seeding, xoshiro128**, `bounded(n)` | none |
@@ -24,7 +24,7 @@ Requirement ids are written R2.7 and so on. Section 11 holds one blocking decisi
 | `soliton.ts` | Integer-only robust soliton threshold table, cached by K | constants |
 | `neighbors.ts` | (sessionId, seq, K) to neighbor set; shared by Encoder and Decoder | prng, soliton |
 | `xor.ts` | `xorInto` with `Uint32Array` views plus byte tail | none |
-| `overhead.ts` | `overhead(K)` and the default repairCount function (provisional, Risk 1) | none |
+| `overhead.ts` | Reads `overhead-table.json` (at `src/overhead-table.json`, imported with `resolveJsonModule`); `fLatePermille`, `fColdPermille`, `lateCount`, `coldLimit`, `R`. Internal, not in the barrel | none |
 | `encoder.ts` | `encode()`, `Encoder` | everything above except gauss, decoder |
 | `gauss.ts` | GF(2) elimination on bitset rows | xor |
 | `decoder.ts` | `createDecoder()`, `Decoder` | packet, metadata, neighbors, gauss, xor, hash |
@@ -41,7 +41,8 @@ graph TD
   validate & header & hash --> errors
 ```
 
-The graph is acyclic and leaf modules import nothing. Tests live in `packages/codec/test` and perf scripts in `packages/codec/perf`, both outside `src`.
+The graph is acyclic and leaf modules import nothing. Tests live in `packages/codec/test` and perf scripts in `packages/codec/perf`, both outside `src`. `packages/codec/perf/calibrate.ts` (outside `src`) generates `overhead-table.json`.
+The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, `CodecError`, `ERROR_CODES`, `sha256WebCrypto`. Its type-only exports are exactly: `PayloadInput`, `Metadata`, `EncodeOptions`, `DecoderOptions`, `Encoder`, `Decoder`, `PushStatus`, `PacketFields`, `Limits`, `HashFn`, `ErrorCode`, `IgnoreReason`, `Progress`.
 
 ## Wire formats
 
@@ -143,7 +144,7 @@ Rejection sampling is unbiased and takes fewer than 2 draws on average.
 
 ### Robust soliton table (`soliton.ts`)
 
-Parameters are c = 1/10 and delta = 1/2. They are provisional (Risk 1). Changing them changes sampled degrees, so golden vectors must be regenerated before release and a format version bump is needed after release.
+Parameters are c = 1/10 and delta = 1/2, recorded in the overhead table. They are provisional until the c/delta sweep checkpoint (Risk 1). Changing them changes sampled degrees, so golden vectors and the overhead table must be regenerated before release and a format version bump is needed after release.
 The table is a pure function of K, built once per K and cached. It uses BigInt fixed point with F = 2^48. BigInt arithmetic is exact, and it runs only at table build, never per packet.
 
 ```
@@ -203,9 +204,40 @@ A golden neighbor-set vector will be committed during implementation and cross-c
 | Method | Behavior |
 |---|---|
 | `next()` | Returns a fresh `Uint8Array` per Packet. Scratch (perm, undo log, neighbor list) is reused. The u32 `seq` counter goes 0..K-1, K, K+1, ..., and wraps from 2^32-1 to K (R4.2). |
-| `page()` | Allocates one `ArrayBuffer` for the whole page and returns `subarray` views (aliasing is documented). repairCount defaults to the function in `overhead.ts`; the current default is `ceil(1.375 K) - K` (R4.4). |
+| `page()` | Allocates one `ArrayBuffer` for the whole page and returns `subarray` views (aliasing is documented). repairCount defaults to `R(K)` from `overhead.ts` (R4.4). |
 
 `xorInto(dst, src, words)` XORs `floor(blockSize / 4)` words through `Uint32Array` views, then a byte tail of `blockSize % 4` bytes through `Uint8Array`. XOR is bytewise, so the result does not depend on platform endianness. Systematic Packets copy the Block with no XOR. Cost per Packet is O(d * blockSize / 4).
+
+### Overhead calibration
+
+**Table.** `packages/codec/src/overhead-table.json` holds integers only, so no floating point is involved:
+
+```json
+{ "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "samples": {"K<=500": 2000, "K>=1000": 500},
+  "quantile": "0.995",
+  "rows": [ { "K": 10, "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
+```
+
+Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. `samples` records N_cal per K range. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`.
+
+**`overhead.ts` API.** `fLatePermille(K)`, `fColdPermille(K)`, `lateCount(K) = ceilDiv(fLatePermille(K) * K, 1000)`, `coldLimit(K)` likewise with `fColdPermille`, and `R(K)`.
+For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K - K_lo), K_hi - K_lo)`. K <= 10 or K >= 2000 clamps to the end row. Interpolated permille values are ceil'd again by the consumer. `R(K)` is always an integer >= 0 and is the default `page()` repairCount.
+
+**`perf/calibrate.ts`** is seeded and deterministic. It sits outside `src`, so it may import `src` modules by relative path. It uses the real encoder and decoder with `sha256WebCrypto`, and the codec's own xoshiro128** (`prng.ts`) seeded with a fixed constant mixed with K for all shuffles and loss draws (no `Math.random`). Payload bytes come from the same PRNG and vary per trial so session ids vary. `packetSize` 62 gives blockSize 32 for speed. For each K it runs N_cal trials (2000 for K <= 500, 500 for K = 1000 and 2000):
+
+| Claim | Simulation | Recorded value |
+|---|---|---|
+| M1 | Seeded shuffle of repair seq K..5K-1, push in that order until complete. n_needed is Infinity if not complete within 4K pushes. | fLate = 0.995 quantile of n_needed / K, rounded up to permille |
+| M2 | Stream from seq 0. Each Packet is lost if `next() < 1288490189` (0.30 x 2^32). Stop at completion or after 20K sequence numbers. | fCold = 0.995 quantile of received count / K, rounded up to permille |
+| M3 | Same stream with loss `next() < 214748365` (0.05 x 2^32). Record the 1-based stream position at completion. | R = 0.995 quantile of (position - K), floored at 0 |
+
+Calibration targets the 0.995 quantile while the properties assert 0.99. The margin absorbs sampling noise between the calibration sample and the fresh-seed assertion sample.
+If any quantile is Infinity, calibrate exits non-zero, prints the failing K and writes nothing. It prints the table and a Wilson lower bound for each cell, and writes the JSON only with an explicit `--write` flag.
+The suite test re-runs calibrate for K in {10, 25, 50} with the table's N_cal and fails on any difference from the committed rows (R10.5). Rows for K >= 100 are verified by running calibrate manually or in perf, not in the default suite (runtime).
+
+M1, M2 and M3 use fresh seeds different from the calibration seed.
+
+**Why there is no fixed overhead claim.** No code, including an ideal dense random linear code, reaches 0.99 success below roughly K + 7 received Packets (failure probability about 2^-(m-K)). That is 1.14 x K at K = 50. A fixed 1.1 x K claim is unreachable at small K and MUST NOT be re-added. Overhead is stated per K from the calibrated table.
 
 ## Decoder
 
@@ -231,16 +263,22 @@ A golden neighbor-set vector will be committed during implementation and cross-c
 6. Peeling: when Block b is solved, for each equation e in `adj[b]`, do `eqVal[e] ^= block; degree--` and enqueue if the degree becomes 1. The one unsolved neighbor of a degree-1 equation is found by scanning its neighbor list.
 
 Memory bound: at most `maxStored = 2K + 64` stored (unreduced) equations. Packets beyond that count toward `distinctPackets` and are reported `accepted`, but their values are dropped. This is a deliberate trade-off.
-At K = 11,479 with stride 2924, `blocks` is about 33.6 MB and stored equations add up to about 2K x 2.9 KB, about 67 MB. The 32 MiB case is therefore measured and reported (R8.5), not budgeted.
+At K = 11,479 with stride 2924, `blocks` is about 33.6 MB and stored equations add up to about 2K x 2.9 KB, about 67 MB. The Gaussian bit matrix adds at most 128 KiB at the default cap (1024 x 32 words). The 32 MiB case is therefore measured and reported (R8.5), not budgeted.
 
 ### Gaussian fallback (`gauss.ts`)
 
-Trigger, evaluated after a push: ripple empty, unsolved U > 0, U <= maxGaussianBlocks, stored equations >= U, and at least one equation stored since the last attempt (so duplicates never re-run it).
+`maxGaussianBlocks` defaults to 1024 and is configurable. Trigger, evaluated after a push: ripple empty, unsolved U > 0, U <= maxGaussianBlocks, stored equations >= U, and the retry backoff below is satisfied.
+
+If the residual after peeling exceeds the cap, the decoder does not error, does not change the status kind for that reason, and keeps collecting Packets. Each push still costs O(d * stride/4) of peeling work. Once peeling reduces the residual to <= cap, Gaussian elimination becomes eligible. If peeling alone solves every Block, completion happens without Gaussian elimination (R5.15, R5.16).
 
 | Phase | Work |
 |---|---|
-| A (rank) | Build U-column bitset rows (`Uint32Array`, `ceil(U/32)` words) from stored equations restricted to unsolved columns. Eliminate on a copy to find rank and pivot rows. Cost O(R * U * ceil(U/32)). If rank < U, abort and wait for more Packets. |
-| B (solve) | Only at full rank: choose U pivot rows, run Gauss-Jordan with row value XORs (stride/4 words per row op), O(U^2 * stride/4) worst case, then mark all Blocks solved. |
+| A (rank) | Build U-column bitset rows (`Uint32Array`, `ceil(U/32)` words) from stored equations restricted to unsolved columns. Eliminate on a copy to find rank and pivot rows. If rank r < U, abort and wait for more Packets. |
+| B (solve) | Only at full rank: choose U pivot rows, run Gauss-Jordan with row value XORs (stride/4 words per row op), then mark all Blocks solved. |
+
+Retry backoff: after a failed Phase A with rank r, Gaussian elimination is retried only after at least `max(1, U - r)` further equations have been stored, so repeated attempts do not dominate.
+
+Cost at U = 1024: the Phase A bit matrix is 1024 rows x 32 words = 128 KiB. Phase A work is about U^3/32 word operations (about 34 million). Phase B value work is up to about U^2/2 row XORs of stride/4 words each: at default stride 2924, about 5.2e5 x 731 = 3.8e8 word XORs worst case, roughly 0.3 to 1 s in JS. This is an estimate to be measured, not a measurement.
 
 ### Completion
 
@@ -251,12 +289,12 @@ All K Blocks solved: assemble the Coded_Stream (strip stride padding, truncate t
 | Match | `complete = true`; `result()` returns `{ payload, metadata }` |
 | Mismatch | Terminal failed state. `push` returns `rejected` with `HASH_MISMATCH`. Bytes are never exposed. `result()` throws `INCOMPLETE_DECODE`. |
 
-`push()` is async only because of the hash. Overlapping calls are serialized with an internal promise chain, so state transitions never interleave. After completion, same-session Packets return `accepted` with no state change (gap noted in Risk 2).
+`push()` is async only because of the hash. Overlapping calls are serialized with an internal promise chain, so state transitions never interleave. After completion, same-session Packets return `ignored` with reason `ALREADY_COMPLETE` and no state change.
 
 ```ts
 type PushStatus = {
   kind: 'accepted' | 'ignored' | 'rejected'
-  reason?: IgnoreReason
+  reason?: IgnoreReason   // 'DUPLICATE_PACKET' | 'SESSION_MISMATCH' | 'ALREADY_COMPLETE'
   code?: ErrorCode
   progress: { solvedBlocks: number; totalBlocks: number; distinctPackets: number; complete: boolean }
 }
@@ -300,7 +338,7 @@ export { CodecError, type ErrorCode }
 export const sha256WebCrypto: HashFn        // Default_Hash
 ```
 
-Type-only exports (`PayloadInput`, `Metadata`, option types, `PushStatus`, `PacketFields`, `HashFn`) are required to use the API; see Risk 2.
+Type-only exports are exactly those listed in Module layout; the runtime exports are exactly the nine listed there.
 
 ## Correctness properties
 
@@ -311,7 +349,7 @@ All use fast-check. Measured properties use fixed seeds.
 | Id | Statement (for all ...) | Generator | Runs | Validates |
 |---|---|---|---|---|
 | P1 | For any payload, name and mime, pushing all systematic Packets in shuffled order recovers identical bytes and Metadata. | Length 0..70000 mixing `uint8Array` and lengths around multiples of blockSize; name and mime arbitraries; packetSize in 46..400 or default | 200 | R1.2, R1.8, R2.5, R5.12 |
-| P2 | For any payload with K in {50, 100, 500}, a random subset of `ceil(overhead(K) x K)` distinct Packets from pool [0, 3K) decodes to identical bytes with observed rate >= 0.99. Prints the observed rate and Wilson lower bound; also prints the repair-only pool (seq >= K) rate, informational. | Fixed seed; payload varies per trial so session ids vary; blockSize 32; length chosen so K is exact | N = 1000 per K | R2.7, R2.8, R2.9 |
+| P2 | For any `maxGaussianBlocks` in 0..10, K in 20..60 and any sufficient shuffled loss-free Packet set (all systematic plus repair), the Decoder completes with identical bytes, no Packet is rejected for exceeding the cap, and a Packet pushed after completion returns `ignored` with `ALREADY_COMPLETE` and a deep-equal state. | Cap, K and shuffle arbitraries; blockSize 32 | 200 | R5.8, R5.9, R5.15, R5.16, R5.17 |
 | P3 | For any sufficient Packet set and any two permutations of it, the recovered bytes are equal. | Permutations of a set from P1 | 200 | R5.14 |
 | P4 | For any push sequence containing duplicates and foreign-session Packets, duplicates leave a state snapshot deep-equal, foreign Packets are ignored with `SESSION_MISMATCH`, and the final result equals the original. | Interleave duplicates and foreign Packets | 200 | R5.3, R5.4, R2.6 |
 | P5 | For any valid Packet and any bit index, flipping that bit makes `decodePacket` fail and `push` return `rejected`. Plus one exhaustive unit over every bit of a small Packet. | `fc.nat` over bit index | 1000 | R3.9 |
@@ -323,8 +361,11 @@ All use fast-check. Measured properties use fixed seeds.
 | P9 | For any push sequence, `solvedBlocks` and `distinctPackets` never decrease, `solvedBlocks <= totalBlocks`, and `complete` holds iff all Blocks are solved and the hash matched. With an injected wrong-digest HashFn the result is `HASH_MISMATCH` and `complete` stays false. | Random sequences with duplicates and foreign Packets; call-recording HashFn | 200 | R5.6, R5.10, R5.11 |
 | P10 | For any (sessionId, seq, K), `neighbors` is pure, returns d distinct values in [0, K) with d in [1, K], and a systematic seq i gives {i}. | Random triples | 500 | R2.3, R2.4, R6.2 |
 | P11 | For any arbitrary or mutated bytes, `push` never throws, a `rejected` status carries a valid ErrorCode, and the progress snapshot is unchanged. | Random bytes; mutated valid Packets | 500 | R7.7, R9.2 |
-| P12 | For any payload with K in {50, 100, 500}, a default `page()` with a random 20% of Packets lost (`round(0.2 x total)`, uniform positions) decodes with observed rate >= 0.99. Reports rate and Wilson lower bound. | Fixed seed | N = 1000 per K | R4.7 |
+| P12 | For any K in 1..5000, the overhead module returns integers with R >= 0, values equal to the table at table K, linear in between within ceil rounding, and clamped outside [10, 2000]. | `fc.integer(1, 5000)` | 300 | R10.3 |
 | P13 | For any invalid option or payload shape, the public function throws `CodecError` (`INVALID_INPUT` or a more specific code) with no partial effect on existing Encoder or Decoder state. | Invalid options and shapes | 300 | R9.2, R9.3 |
+| M1 | Late join. Pool is repair seq K..5K-1; subset of size `ceil(f_late x K)`; asserts observed success >= 0.99. Reports the observed rate and Wilson lower bound. | Fixed fast-check seed (not the calibration seed); payload varies per trial; blockSize 32; K in {50, 100, 500} | N = 1000 per K | R2.7, R2.9, R10.6 |
+| M2 | Cold start with loss 0.30. Stream from seq 0; asserts received count <= `ceil(f_cold x K)` in >= 0.99 of trials. Reports rate and Wilson lower bound. | As M1 | N = 1000 per K | R2.8, R2.9, R10.6 |
+| M3 | Page mode. Default `page()` of T = K + R(K) Packets, loss 0.05; asserts completion >= 0.99. Reports rate and Wilson lower bound, plus informational success at loss 0.02 and 0.10 (no assertion). | As M1 | N = 1000 per K | R4.7, R2.9, R10.6 |
 
 Wilson 95% lower bound, with p the observed rate, n trials and z = 1.96:
 
@@ -341,11 +382,12 @@ PBT fits the pure logic (codec, packet and metadata formats, decoder). It does n
 | Area | Location and approach |
 |---|---|
 | Unit and property | `packages/codec/test/*.test.ts`, fast-check with a minimum of 100 runs per property. Each property test carries a tag comment `Feature: codec, Property N: <text>`. Each property is one test. |
-| Measured | `test/measured/*.test.ts` (P2, P12). Own vitest project with script `test:measured`. Included in `pnpm test` unless runtime exceeds 60 s, in which case the exception is documented. |
+| Measured | `test/measured/*.test.ts` (M1, M2, M3). Own vitest project with script `test:measured`. Included in `pnpm test` unless runtime exceeds 60 s, in which case the exception is documented. |
 | Golden | `test/golden/vectors.json` is committed and generated once by an independent script, never silently regenerated. It holds a fixed payload, name, mime and options, the hex of the first Packets, sessionId, K, neighbor sets for several seq, PRNG vectors and CRC vectors. A test fails on any count or byte difference (R6.4). |
 | Perf | `perf/*.perf.ts` with `vitest.perf.config.ts` and a perf script. 3 warm-ups and 20 timed runs, `process.hrtime.bigint`, median asserted against budget. Output records the Node version, CPU model (`os.cpus()[0].model`) and p95. The 32 MiB run is informational (R8.5). |
 | Playwright | A tiny Vite-served page in `apps/strip/e2e-harness` imports the built codec through the barrel. It checks Default_Hash parity (including empty input) and that golden-vector Packets equal the JSON byte for byte (R1.11, R9.5). |
-| Static | Compile with `lib: ["ES2023"]`, no DOM, no `@types/node` (R9.4). A test asserts `packages/codec/package.json` has no `dependencies` key (R9.6, R9.7). A purity scan over `src` finds zero banned symbols (R6.5). The ESLint rule test in `tools/lint-rules.test.ts` covers R6.6. |
+| Calibration | A unit test re-runs `perf/calibrate.ts` for K in {10, 25, 50} and fails on any difference from the committed table rows (R10.5). `calibrate.ts --write` is the only way the table changes. |
+| Static | Compile with `lib: ["ES2023"]`, no DOM, no `@types/node` (R9.4). A test asserts `packages/codec/package.json` has no `dependencies` key (R9.6, R9.7). A purity scan over `src` finds zero occurrences of `Math.random`, `Date.now`, `performance.now`, `Math.log`, `Math.sqrt`, `Math.exp` and `Math.pow` (R6.2, R6.5). The ESLint ban list is unchanged. The hook script `.kiro/hooks/scripts/purity.mjs` must be extended to the same list (a task, not done here). The ESLint rule test in `tools/lint-rules.test.ts` covers R6.6. |
 
 Tests sit outside `src`, so the ESLint bans do not apply to them, but they still use only seeded fast-check and fixed seeds. Perf timing uses `process.hrtime.bigint` only in `perf/`.
 Unit tests cover specific examples (R3 check ordering, R4.2 wrap, R7.3 and R7.4 limit boundaries, R1.7), edge cases (empty payload, K = 1) and error codes.
@@ -354,59 +396,51 @@ Unit tests cover specific examples (R3 check ordering, R4.2 wrap, R7.3 and R7.4 
 
 Hot loops allocate nothing. The perm, undo log and neighbor scratch are reused. XOR runs through `Uint32Array` views, equations live in a chunked slab, and CRC uses a byte table. The only per-packet allocation is the returned Packet.
 The soliton table costs O(K) BigInt operations once per K and is cached by K. Expected complexities are as in the Decoder section.
-For 1 MiB at the default size, K = 359. Encode is 359 copies of 2923 bytes plus SHA-256 and CRC. Decode fed the first ceil(1.1 K) stream Packets is dominated by CRC and SHA-256.
-R8.2 does not define which Packets form the 1.1 K set. This design measures two fixtures and reports both: (a) the first ceil(1.1 K) stream Packets, and (b) a seeded random mixed subset. Only (a) is asserted against the 500 ms budget unless the user decides otherwise. Fixture (b) may not decode at 1.1 K (Risk 1), so its time is reported with the decode outcome.
+For 1 MiB at the default size, K = 359. Encode is 359 copies of 2923 bytes plus SHA-256 and CRC. Decode is dominated by CRC and SHA-256 when fed Systematic_Packets.
+R8.2 fixtures: (a) the K Systematic_Packets of the 1 MiB input, and (b) `ceil(f_late(K) x K)` seeded random repair Packets of the same input. Both are asserted at the 500 ms median budget, and output bytes are compared with the input in every timed run.
 
 ## Risks and open decisions
 
-### Risk 1 (blocking): R2.7 is not reachable at 1.1 x K with the current distribution
+### Risk 1: attainability cost of M2 and M3 with plain LT, systematic-first
 
-A throwaway simulation (scratch script, not committed, plain `Math.random`, c = 0.1, delta = 0.5, robust soliton, N = 300 trials per cell) estimated an upper bound on decode success. It used full GF(2) rank, which is unlimited Gaussian elimination and is at least what the capped decoder achieves. Subsets of m = ceil(r x K) Packets came from the stated pool. Cells show full-rank / peeling-only.
+A throwaway estimate (scratch script, `Math.random`, float soliton, unlimited Gaussian elimination, which equals the decoder for K <= 1024; N = 1000 trials for K = 50 and 100, N = 300 for K = 500) gave the observed 0.99 quantile of each claim:
 
-Mixed pool [0, 3K):
-
-| K | 1.1 | 1.2 | 1.3 | 1.5 | 1.75 | 2.0 |
-|---|---|---|---|---|---|---|
-| 50 | 0.18/0.02 | 0.43/0.18 | 0.67/0.46 | 0.89/0.86 | 0.98/0.97 | 0.99/0.99 |
-| 100 | 0.18/0.01 | 0.50/0.14 | 0.72/0.49 | 0.93/0.92 | 0.98/0.98 | 1.00/1.00 |
-| 500 | 0.06/0.00 | 0.77/0.11 | 0.90/0.80 | 0.98/0.98 | 0.99/0.99 | 1.00/1.00 |
-
-Repair-only pool (seq >= K):
-
-| K | 1.1 | 1.2 | 1.3 | 1.5 |
+| (c, delta) | K | f_late | f_cold | R (loss 0.05) |
 |---|---|---|---|---|
-| 50 | 0.81/0.03 | 0.93/0.13 | 0.94/0.37 | 1.00/0.80 |
-| 100 | 0.91/0.01 | 0.96/0.16 | 0.98/0.57 | 0.99/0.89 |
-| 500 | 0.97/0.00 | 1.00/0.48 | 0.99/0.94 | 1.00/1.00 |
+| (0.1, 0.5) | 50 | 1.54 | 2.00 | 50 |
+| (0.1, 0.5) | 100 | 1.53 | 1.91 | 100 |
+| (0.1, 0.5) | 500 | 1.12 | 1.72 | 452 |
+| (0.2, 0.01) | 50 | 2.10 | 2.52 | 69 |
+| (0.2, 0.01) | 100 | 1.88 | 2.37 | 133 |
+| (0.2, 0.01) | 500 | 1.39 | 2.18 | 502 |
+| (0.03, 0.5) | 50 | 1.56 | 1.98 | 49 |
+| (0.03, 0.5) | 100 | 1.41 | 1.91 | 95 |
+| (0.03, 0.5) | 500 | 1.12 | 1.72 | 425 |
 
-Peeling leftover (unsolved Blocks) at 1.1 K, median: mixed pool about 28% of K (K = 100: 28, K = 500: 141, K = 2000: 519). Repair-only pool about 70 to 79% of K (K = 500: 396).
+R at loss 0.02 / 0.10 for (0.1, 0.5): K = 50: 43 / 62, K = 100: 84 / 112, K = 500: 358 / 549.
 
-Interpretation:
-- At 1.1 K the R2.7 bound (0.99 on the mixed pool) is not reachable with plain LT and robust soliton at c = 0.1, delta = 0.5, even with unlimited Gaussian elimination.
-- A random subset of the mixed pool holds only about 1/3 systematic Packets, and the repair Packets are thinned by the already-known Blocks.
-- Even an ideal dense random linear code needs about K + 7 Packets for 0.99 (failure probability about 2^-(m-K)). That is 1.14 K at K = 50, so a pure 1.1 K at K = 50 is unreachable by any code.
+Cause: with systematic-first emission, one lost systematic Block can only be recovered by a repair Packet that contains it. A sparse repair Packet contains a given Block with probability about (mean degree)/K, so about K/(mean degree) x ln(100) repair Packets are needed for 0.99 even when one Block is missing. The claims are always satisfiable with large f and R, since they are measurements, but plain LT costs near 2x on the page at K = 50..500.
 
-| Option | Description |
-|---|---|
-| A (recommended default) | A per-K `overhead(K)` in `overhead.ts`, used by both P2 and the `page()` default repairCount. The simulation says the mixed pool needs about 1.75 to 2.0 x K for 0.98 to 0.99 with the current distribution, far above "about 1.1". Measure on the real implementation first. |
-| B | Redefine the measured pool (for example repair-only, or a contiguous window of the stream) and keep overhead near 1.2 to 1.3. Needs the user's decision. |
-| C | Change the code (denser repair rows or a precode). This deviates from R2.2. Needs the user's decision. |
+Remedy candidate, which deviates from R2.2 and needs the user's decision, so it is not designed here: mix a fraction q of dense repair rows (each Block included with probability 1/2, decoded by Gaussian elimination). Estimate at (0.1, 0.5):
 
-Tuning c and delta is a separate lever. The Gaussian cap also matters: `maxGaussianBlocks = 256` is below the repair-only leftover for K >= about 350, so a decoder fed mostly repair Packets at 1.1 K can stall for large K. Raising the cap costs O(U^3 / 32) bit operations plus value XORs.
-Per the working rules, if the measured result misses 0.99 the implementation stops and reports (R2.9).
+| q | K | f_late | f_cold | R |
+|---|---|---|---|---|
+| 0.05 | 50 | 1.38 | 1.90 | 46 |
+| 0.05 | 100 | 1.12 | 1.58 | 72 |
+| 0.05 | 500 | 1.02 | 1.29 | 208 |
+| 0.25 | 50 | 1.16 | 1.44 | 30 |
+| 0.25 | 100 | 1.08 | 1.27 | 37 |
+| 0.25 | 500 | 1.02 | 1.17 | 101 |
 
-### Risk 2: requirement wording gaps (requirements unchanged)
+Dense rows rely on Gaussian elimination, so they are limited by `maxGaussianBlocks` = 1024 and the cost in the Decoder section. Recommended default: calibrate plain LT first, report the table at the c/delta sweep checkpoint, and let the user decide whether to keep it.
 
-| Gap | Note |
-|---|---|
-| No Ignore_Reason for Packets after completion | The design returns `accepted` with no state change. |
-| R9.1 says "no other public symbol" | Type-only exports are needed to use the API (section 7). |
-| R8.2 does not define the 1.1 K Packet set | Two fixtures are used (Performance notes). |
-| R6.2 and floating point | Honored: the BigInt fixed-point table is used, and no `Number` float arithmetic, `Math.log` or `Math.sqrt` appears in format-affecting code. |
+### Risk 2: Gaussian elimination cost at the 1024 cap and the R8.2 fixture (b) budget
 
-### Risk 3: decoder memory and Gaussian cost at the 32 MiB cap
+Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default stride. At the 1 MiB fixture, K = 359, so the residual is at most 359 and the cost is about (359/1024)^2 of that. Fixture (b) must be measured. If it exceeds 500 ms the author stops and reports (R8.6). A mitigation that needs no format change: apply value XORs only for the pivot rows chosen in Phase A.
 
-Peak memory is about 100 MB, and Gaussian cost grows with the cap. After `HASH_MISMATCH` the decoder is in a terminal failed state. Recommended default: report-only at 32 MiB, terminal failed state, and the caller creates a new decoder.
+### Risk 3: calibration stability and runtime
+
+The 0.995 calibration quantile against the 0.99 assertion leaves a margin, but a rare false stop is still possible. Calibration at K = 1000 and 2000 is slow (minutes), and at K = 2000 the 1024 cap may delay completion. The table records N_cal. Recommended default: keep the margin, run K >= 1000 calibration offline with `--write`, and verify only K in {10, 25, 50} in the default suite.
 
 ## Architecture
 
