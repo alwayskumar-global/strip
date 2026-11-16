@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Strip is a client-side PWA that turns any file into a printable strip or an animated on-screen code sequence that a phone camera reads back. This spec covers only `packages/codec` (`@strip/codec`). The Codec is pure TypeScript that runs in Node and in browsers, uses no DOM and no network, and uses no `Math.random`, `Date.now` or `performance.now` anywhere in `src` (ESLint-enforced).
+Strip is a client-side PWA that turns any file into a printable strip or an animated on-screen code sequence that a phone camera reads back. This spec covers only `packages/codec` (`@strip/codec`). The Codec is pure TypeScript that runs in Node and in browsers, uses no DOM and no network, and uses no `Math.random`, `Date.now` or `performance.now` anywhere in `src` (ESLint-enforced). The Codec has no runtime dependencies.
 
 The Codec turns a Payload (bytes plus metadata) into a stream of fixed-size Packets using an LT fountain code, and rebuilds the Payload from any sufficient set of distinct Packets received in any order. Each acceptance criterion ends with a verification tag in square brackets: `[unit]`, `[property]`, `[Playwright]` or `[manual]`.
 
@@ -77,7 +77,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 6. WHEN Packets are dropped or duplicated, THE Decoder SHALL complete once enough distinct Packets have arrived, ignoring a duplicate Packet without changing decoder state, and SHALL recover the Coded_Stream with every byte identical to the original, excluding the zero-padding of the last Block. [property]
 7. WHEN a random set of about 1.1 x K distinct Packets is pushed, THE Decoder SHALL complete with an observed success rate of at least 0.99 for K >= 50. The set size is ceil(1.1 x K) distinct Packets. The measurement uses N = 1000 trials for each K in {50, 100, 500}. Each trial is seeded deterministically through fast-check seeds. The pool is sequence numbers drawn uniformly without replacement from [0, 3K), mixing Systematic_Packets and Repair_Packets. A trial succeeds if and only if the Decoder completes and recovers the Coded_Stream with every byte identical to the original, excluding the zero-padding of the last Block. The observed success rate is the number of successful trials divided by N. The test output reports the observed rate and the Wilson_Lower_Bound. [property]
 8. THE test suite SHALL report the observed success rate for a repair-only pool (sequence numbers >= K) as informational output with no assertion, using the same K values, N and seeding as criterion 7. [property]
-9. IF the observed success rate in criterion 7 is below 0.99 for any K, THEN THE test suite SHALL fail and the author SHALL stop and report to the user (see Open question 4) without loosening the bound. [manual]
+9. IF the observed success rate in criterion 7 is below 0.99 for any K, THEN THE test suite SHALL fail and the author SHALL stop and report to the user (see Resolved question 4) without loosening the bound. [manual]
 
 ### Requirement 3: Packet format
 
@@ -184,11 +184,12 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 #### Acceptance Criteria
 
 1. THE Codec SHALL export through the Barrel only: `encode(payload, options)` returning a Promise of an Encoder, `createDecoder(options)`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, the ErrorCode union, CodecError and Default_Hash, and SHALL export no other public symbol. [unit]
-2. IF any public function receives an input that fails its Zod schema, THEN THE Codec SHALL reject with a CodecError whose code is INVALID_INPUT or a more specific member of the ErrorCode union, SHALL perform no partial processing of that input, and SHALL leave all existing Encoder and Decoder state unchanged. [property]
-3. WHEN a public function is called, THE Codec SHALL validate every argument with its Zod schema before performing any other processing of that argument. [property]
+2. IF any public function receives an input that fails its validation, THEN THE Codec SHALL reject with a CodecError whose code is INVALID_INPUT or a more specific member of the ErrorCode union, SHALL perform no partial processing of that input, and SHALL leave all existing Encoder and Decoder state unchanged. [property]
+3. WHEN a public function is called, THE Codec SHALL validate every argument with its hand-written validator before performing any other processing of that argument. [property]
 4. THE Codec SHALL compile with zero TypeScript errors under a `lib` setting that excludes DOM. [unit]
 5. WHEN a localhost harness page loads the built Codec in bundled Chromium, round-trips a Payload, and encodes the golden-vector Payload, THE Codec SHALL produce Packet bytes that are byte-for-byte identical (same length and same value at every index) to the Node output for the same Payload and options. [Playwright]
-6. THE Codec SHALL have the dependency question in Open question 1 resolved and the resolution recorded in the requirements document before `packages/codec/package.json` is edited. [manual]
+6. THE Codec SHALL declare no runtime dependencies, so that `packages/codec/package.json` has no `dependencies` key. [unit]
+7. WHEN the test suite runs, THE test suite SHALL read `packages/codec/package.json` and fail if it contains a `dependencies` key. [unit]
 
 ## Correctness properties to be numbered in design
 
@@ -214,10 +215,10 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - The symbols package.
 - App code.
 
-## Open questions
+## Resolved questions
 
-1. **Zod versus zero runtime dependencies.** `tech.md` and `structure.md` say the Codec has zero runtime dependencies, but the scope names Zod for Codec input validation. Recommended default: follow the explicit scope. Zod is the single permitted runtime dependency of `@strip/codec`. After approval, amend the `tech.md` and `structure.md` wording to "zero runtime dependencies except Zod", add the exact pin 4.6.7 to `packages/codec/package.json`, and enforce with a test that `dependencies` equals exactly `{zod}`. Alternative: hand-written validation and zero dependencies.
-2. **Async hashing API.** Web Crypto digest is async. Recommended default: Hash_Function returns `Uint8Array | Promise<Uint8Array>`, `encode()` returns a Promise, `createDecoder` is sync, `push()` returns a Promise of status, and `encoder.next()` and `page()` stay sync.
-3. **Session id derivation and width.** Recommended default: 4 bytes, the first 4 bytes of SHA-256 over the Metadata_Record, so the same bytes with a different name or MIME type form a different session. The foreign-session collision probability is about 2^-32 per Packet. This is accepted because the CRC and the final SHA-256 still gate completion.
-4. **Success-bound attainability and pool.** Plain LT at small K (50) may not reach 0.99 from 1.1 x K Packets. Recommended default: assert the bound on the mixed pool [0, 3K) as specified and report the repair-only pool informationally. If the measured rate is below 0.99 at any K, stop and report the overhead needed for 0.99, and let the user choose between raising the overhead factor, tuning c and delta, or widening the Gaussian fallback. The bound is not loosened silently.
-5. **Large-payload scaling.** At the 32 MiB cap with the default packetSize, K is about 11,479, and Gaussian elimination is bounded by maxGaussianBlocks. Recommended default: no performance budget at 32 MiB, but measure and report it, with maxGaussianBlocks default 256 and maxBlockCount default 16384.
+1. **Validation.** The Codec uses hand-written validation and has zero runtime dependencies. The input surface is small (options object, byte arrays, packet bytes), and Zod carries an eval feature probe that trips a strict Content Security Policy in the app. Zod stays approved for `apps/strip` only. The steering files stay as written.
+2. **Async hashing.** Hash_Function returns `Uint8Array | Promise<Uint8Array>`. `encode()` and `push()` are async. `createDecoder`, `next()` and `page()` are sync.
+3. **Session id.** The Session_Id is the first 4 bytes of the SHA-256 over the Metadata_Record.
+4. **Success-bound attainability.** Assert the 0.99 bound on the mixed pool [0, 3K) and report the repair-only pool informationally. If the mixed pool misses 0.99 at K=50, report the measured numbers first and stop. The preferred remedy is a per-K overhead function (an overhead function of K used by both the `page()` default repairCount and the measured property), never loosening the bound. Other remedies (tuning c and delta, widening the Gaussian fallback) require the user's decision.
+5. **Scaling at 32 MiB.** Measure and report with no budget. maxGaussianBlocks defaults to 256 and maxBlockCount defaults to 16384.

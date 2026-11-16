@@ -6,7 +6,7 @@ This table lists direct dependencies (runtime and dev) declared in any `package.
 
 | name | exact version | license | reason |
 | ---- | ------------- | ------- | ------ |
-| zod | 4.6.7 | MIT | Runtime input validation at public API boundaries (`apps/strip`; codec use pending approval of the codec spec). |
+| zod | 4.6.7 | MIT | Runtime input validation at public API boundaries. Approved for `apps/strip` only; `packages/codec` has no runtime dependencies. |
 | @eslint/js | 10.0.1 | MIT | ESLint recommended rule set (dev). |
 | @playwright/test | 1.65.1 | Apache-2.0 | Browser end-to-end tests in bundled Chromium against a localhost harness (dev). |
 | eslint | 10.15.0 | MIT | Linting, purity bans and package-boundary rules (dev). |
