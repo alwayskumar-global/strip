@@ -37,7 +37,12 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - **maxBlockCount**: Maximum K parameter. Default 16384.
 - **maxGaussianBlocks**: Maximum number of unsolved Blocks for which the Decoder runs Gaussian elimination. Default 1024.
 - **ErrorCode**: The closed union INVALID_INPUT, PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS, BAD_METADATA, BAD_HEADER, UNSUPPORTED_VERSION, BAD_CRC, SESSION_MISMATCH, INCOMPLETE_DECODE, HASH_MISMATCH.
-- **Ignore_Reason**: The closed union DUPLICATE_PACKET, SESSION_MISMATCH, ALREADY_COMPLETE, reported when the Decoder ignores a Packet without error.
+- **Ignore_Reason**: The closed union DUPLICATE_PACKET, SESSION_MISMATCH, ALREADY_COMPLETE, DENSE_STORE_FULL, reported when the Decoder ignores a Packet without error.
+- **Dense_Packet**: A Repair_Packet whose sequence number satisfies D > 0 and (sequence number - K) mod D == D - 1, and whose Block set is a random subset of all K Blocks, each included with probability 1/2.
+- **Sparse_Packet**: A Repair_Packet that is not a Dense_Packet, whose Block set follows the robust soliton distribution.
+- **D**: The dense period, a format constant for header version 1. The initial value is 4, meaning 25% of Repair_Packets are Dense_Packets. D = 0 denotes no Dense_Packets. The final value is chosen from the candidates 3, 4, 8 or none (0) and frozen only at the c/delta/D sweep checkpoint.
+- **Dense_Row**: A stored Dense_Packet in the Decoder, held as a K-bit row plus its payload.
+- **maxDenseRows**: Maximum number of Dense_Rows the Decoder stores, equal to maxGaussianBlocks + 64.
 - **CodecError**: The error type carrying `{ code, message }`.
 - **Barrel**: `packages/codec/src/index.ts`, the only public entry point.
 - **Wilson_Lower_Bound**: The lower end of the Wilson 95% confidence interval for an observed success proportion.
@@ -77,7 +82,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 #### Acceptance Criteria
 
 1. THE Codec SHALL split the Coded_Stream into K = ceil(L / blockSize) Blocks, where L is the Coded_Stream length in bytes and blockSize is the positive integer block size carried in every Packet header, zero-padding the last Block to blockSize bytes, and SHALL carry L in every Packet header. [unit]
-2. THE Codec SHALL use an LT code whose degree distribution is the robust soliton distribution with constants (c, delta) fixed per format version and absent from the header. [unit]
+2. THE Codec SHALL use an LT code whose degree distribution for sparse repair Packets is the robust soliton distribution with constants (c, delta) fixed per format version and absent from the header, and repair Packets SHALL be of two kinds decided purely by Packet index: with j = sequence number - K, a repair Packet is a Dense_Packet if and only if D > 0 and j mod D == D - 1, and otherwise a Sparse_Packet whose Block set follows the robust soliton rule, while Systematic_Packets are unaffected. [unit]
 3. THE Encoder SHALL emit the Block with index i unchanged as the XOR payload of the Systematic_Packet with sequence number i, for every integer i in 0..K-1. [property]
 4. THE Encoder SHALL derive the Block set of a Repair_Packet solely from its Session_Id and sequence number through the PRNG, so that two Encoders given the same Session_Id and sequence number produce an identical Block set. [property]
 5. WHEN all K Systematic_Packets are pushed in any order, THE Decoder SHALL recover the Coded_Stream with every byte identical to the original, excluding the zero-padding of the last Block. [property]
@@ -85,6 +90,10 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 7. WHEN the Decoder receives a uniformly random subset of the repair Packets only (sequence numbers >= K, drawn from the first 4K repair Packets, that is sequence numbers K..5K-1), of size ceil(f_late(K) x K), THE Decoder SHALL complete with an observed success rate of at least 0.99 (M1, late join). The measurement uses N = 1000 seeded trials (deterministic fast-check seeds) for each K in {50, 100, 500}, with the payload varied per trial so that Session_Ids vary. A trial succeeds if and only if the Decoder completes and recovers the Coded_Stream byte for byte. The test output reports f_late(K), the observed rate and the Wilson_Lower_Bound for each K. [property]
 8. WHEN the Decoder receives the stream from sequence number 0 with each Packet independently lost with probability 0.30 and the receiver stops at completion, THE Decoder SHALL complete after receiving at most ceil(f_cold(K) x K) Packets in at least 0.99 of trials (M2, cold start with loss). The measurement uses the same N, K values and seeding as criterion 7, and the test output reports f_cold(K), the observed rate and the Wilson_Lower_Bound for each K. [property]
 9. IF the observed rate for M1, M2 or M3 at the committed Overhead_Table values is below 0.99 for any K, THEN THE test suite SHALL fail and the author SHALL stop and report to the user without loosening the bound, without changing the table by hand, and without recalibrating silently. [manual]
+10. THE Codec SHALL decide dense versus sparse from the sequence number and D alone (no random draw, no session dependence), for every sequence number >= K including after the sequence wrap. [property]
+11. WHEN a Packet is dense, THE Codec SHALL derive its Block set from the Packet's PRNG stream (seeded from Session_Id and sequence number as for sparse Packets) without any degree draw: for w = 0 .. ceil(K/32) - 1, the (w+1)-th PRNG output is word w, and Block b (0 <= b < K) is included iff bit (b mod 32) of word floor(b / 32) is 1, bit 0 being the least significant bit; bits of the last word above K - 1 are ignored; so each Block is included independently with probability 1/2. [unit]
+12. IF a Dense_Packet's Block set is empty, THEN THE Codec SHALL use the Block set {sequence number mod K}. [unit]
+13. THE Encoder SHALL produce a Dense_Packet's XOR payload as the XOR of the Blocks of its Block set (about K/2 Blocks). [unit]
 
 ### Requirement 3: Packet format
 
@@ -147,6 +156,12 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 15. IF peeling stalls and the number of unsolved Blocks exceeds maxGaussianBlocks, THEN THE Decoder SHALL keep collecting Packets, SHALL NOT report an error and SHALL NOT change its status kind to rejected for that reason. [unit]
 16. WHEN peeling alone solves all Blocks, THE Decoder SHALL complete without running Gaussian elimination. [unit]
 17. WHEN a Packet is pushed after the Decoder is complete, THE Decoder SHALL report it as ignored with reason ALREADY_COMPLETE and SHALL leave its state unchanged. [unit]
+18. THE Decoder SHALL NOT insert Dense_Packets into the peeling adjacency lists; it SHALL store each accepted Dense_Packet as a K-bit row plus its payload, reduce it lazily against known Blocks, and use it only in Gaussian elimination. [unit]
+19. THE Decoder SHALL store at most maxDenseRows = maxGaussianBlocks + 64 Dense_Rows. [unit]
+20. IF a Dense_Packet arrives while maxDenseRows Dense_Rows are stored, THEN THE Decoder SHALL report it as ignored with reason DENSE_STORE_FULL, SHALL leave its state unchanged, SHALL NOT count it in distinctPackets and SHALL NOT record its sequence number as seen, so that a retransmission can be accepted after stored Dense_Rows reduce to zero and are discarded. [unit]
+21. WHILE the dense store is full, THE Decoder SHALL continue to accept and peel Sparse_Packets and Systematic_Packets. [unit]
+22. WHEN a stored Dense_Row has every column solved, THE Decoder SHALL discard it and free its slot. [unit]
+23. THE Decoder SHALL never expose bytes that fail the SHA-256 check regardless of which Packet kinds were received (dense, sparse, systematic). [property]
 
 ### Requirement 6: Determinism
 
@@ -160,6 +175,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 4. THE Codec SHALL match a golden-vector file checked into the repository in which a fixed Payload produces fixed Packet bytes, and a test SHALL fail if any Packet differs from the golden vector in count or in any byte. [unit]
 5. THE Codec SHALL contain no `Math.random`, `Date.now`, `performance.now`, `Math.log`, `Math.sqrt`, `Math.exp` or `Math.pow` in `packages/codec/src`, enforced by the purity grep script, and a test that scans every source file under `src` SHALL report zero occurrences. [unit]
 6. WHEN ESLint runs over `packages/codec/src` with the purity rules, THE ESLint configuration SHALL report an error for each use of `Math.random`, `Date.now` or `performance.now` (the symbols in criterion 5), and ESLint SHALL exit with a non-zero exit code. [unit]
+7. WHEN the same Payload and parameters are encoded twice, THE Encoder SHALL produce byte-identical Dense_Packets as well as Sparse_Packets. [property]
 
 ### Requirement 7: Limits and typed errors
 
@@ -187,6 +203,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 4. THE performance tests SHALL live outside `packages/codec/src`, under `packages/codec/perf/`. [manual]
 5. THE performance suite SHALL measure and report encode and decode times for a 32 MiB (33,554,432 bytes) payload without asserting a budget, so that the suite passes regardless of the measured times. [manual]
 6. IF fixture (b) of criterion 2 exceeds the budget, THEN the author SHALL stop and report to the user without changing the budget. [manual]
+7. WHEN a Dense_Packet is produced by `next()` for the 1 MiB input at the default packetSize (K = 359), THE Encoder SHALL take a median of less than 20 ms over 20 timed runs after 3 warm-ups; IF it does not, THEN the author SHALL stop and report to the user. The suite SHALL also measure and report the per-Dense_Packet cost at K = 11,500 (32 MiB payload) without asserting a budget. [unit]
 
 ### Requirement 9: Public API and validation
 
@@ -214,6 +231,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 4. THE table SHALL be generated by `packages/codec/perf/calibrate.ts`, which is seeded and deterministic, so that two runs with the same seeds give an identical file. [unit]
 5. WHEN the test suite runs, THE test suite SHALL run a fresh calibration for K in {10, 25, 50} and fail if the committed table values for those K differ from the fresh values. [unit]
 6. THE measured properties M1, M2 and M3 SHALL assert at the table values (f_late, f_cold, R) for each K in {50, 100, 500}. [property]
+7. THE overhead-table.json SHALL record the D value (0 meaning none) under which it was calibrated, alongside c and delta, and calibration, M1, M2 and M3 SHALL run with the frozen D. [unit]
 
 ## Correctness properties to be numbered in design
 
@@ -227,6 +245,9 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - Header and Metadata_Record serialize/parse round trips.
 - Determinism: the same inputs yield identical bytes.
 - Progress monotonicity: solvedBlocks and distinctPackets never decrease, solvedBlocks <= totalBlocks, and complete holds if and only if all Blocks are solved and the hash is verified.
+- Dense-or-sparse rule: the kind of every repair Packet matches the index rule (dense iff D > 0 and (sequence number - K) mod D == D - 1).
+- A Decoder fed dense and systematic Packets never outputs wrong bytes.
+- Dense Packet determinism: the same inputs yield identical Dense_Packet bytes.
 
 ## Out of scope
 
@@ -248,3 +269,4 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 3. **Session id.** The Session_Id is the first 4 bytes of the SHA-256 over the Metadata_Record.
 4. **Success-bound attainability: superseded.** The fixed bound at 1.1 x K was withdrawn; success is stated as measured claims M1 to M3 (R2, R4) with values from the calibrated Overhead_Table. The stop rule is unchanged: if an observed rate is below 0.99, report the numbers and stop.
 5. **Scaling at 32 MiB.** Measure and report with no budget. maxGaussianBlocks defaults to 1024 and maxBlockCount defaults to 16384.
+6. **Dense repair rows.** Dense repair rows: approved. Repair Packets are dense iff j mod D == D - 1 (initial D = 4); D is frozen at the sweep checkpoint from {3, 4, 8, none}; the 0.995 calibration quantile and the floating-point ban stay.
