@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Dependency Log Reminder",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)package\\.json$",
+      "action": {
+        "type": "agent",
+        "prompt": "A package.json changed. Check whether any dependency was added, removed, or re-versioned. Every dependency must be exact-pinned and have a row in docs/dependencies.md (name, exact version, license, reason), and adding one needs the user's approval. If a dependency lacks approval or a row, stop and report to the user. Do not add rows or dependencies on your own."
+      }
+    }
+  ]
+}

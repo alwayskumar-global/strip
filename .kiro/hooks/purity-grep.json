@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Purity Grep (Math.random, Date.now, performance.now)",
+      "trigger": "PostFileSave",
+      "matcher": "packages/[^/]+/src/",
+      "action": { "type": "command", "command": "node .kiro/hooks/scripts/purity.mjs" }
+    }
+  ]
+}
