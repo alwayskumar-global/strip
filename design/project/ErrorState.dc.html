@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error component</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<section class="strip err" role="alert">
+  <div class="err__head">
+    <span class="err__icon" aria-hidden="true">
+      <sc-if value="{{isSize}}" hint-placeholder-val="{{true}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5M10 13l4 4M14 13l-4 4"/></svg></sc-if>
+      <sc-if value="{{isCamera}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
+      <sc-if value="{{isStall}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></sc-if>
+    </span>
+    <span class="tag tag--signal">{{tag}}</span>
+  </div>
+
+  <h2 class="t-h2">{{title}}</h2>
+  <p>{{msg}}</p>
+
+  <sc-if value="{{isSize}}" hint-placeholder-val="{{true}}">
+    <div class="meter">
+      <progress class="progress progress--signal" value="100" max="100" aria-label="File size is over the limit"></progress>
+      <div class="meter__ends t-label"><span>256 KB limit</span><span>1.4 MB file</span></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{isStall}}" hint-placeholder-val="{{false}}">
+    <div class="row">
+      <div class="ring ring--sm ring--dim" role="img" aria-label="74 percent solved"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{ringD}}"/></svg><div class="ring__label"><span>74</span><span class="ring__unit">%</span></div></div>
+      <p class="t-label t-muted">Frozen at 71 / 96</p>
+    </div>
+  </sc-if>
+
+  <dl class="kv">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+      <div class="kv__row"><dt class="t-label">{{r.k}}</dt><dd class="t-mono">{{r.v}}</dd></div>
+    </sc-for>
+  </dl>
+
+  <sc-if value="{{isStall}}" hint-placeholder-val="{{false}}">
+    <ul class="err__tips">
+      <sc-for list="{{tips}}" as="t" hint-placeholder-count="3"><li>{{t.t}}</li></sc-for>
+    </ul>
+  </sc-if>
+
+  <div class="err__actions">
+    <a class="btn btn--primary btn--lg btn--block" href="{{primaryHref}}">{{primary}}</a>
+    <a class="btn btn--block" href="{{secondaryHref}}">{{secondary}}</a>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["size","camera","stall"],"default":"size"},"$preview":{"width":420,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var k = this.props.kind || 'size';
+    var t = 74 / 100 * 2 * Math.PI;
+    var ringD = 'M50 6A44 44 0 1 1 ' + (50 + 44 * Math.sin(t)).toFixed(2) + ' ' + (50 - 44 * Math.cos(t)).toFixed(2);
+    var M = {
+      size: { tag: 'File too large', title: 'This file is too big for Strip', msg: 'big-report.pdf is 1.4 MB. Strip carries files up to 256 KB. Compress it, or split it into smaller files.',
+        rows: [{ k: 'File', v: 'big-report.pdf' }, { k: 'Size', v: '1.4 MB' }, { k: 'Limit', v: '256 KB' }],
+        primary: 'Choose another file', ph: 'Send.dc.html', secondary: 'About limits', sh: 'About.dc.html' },
+      camera: { tag: 'Camera unavailable', title: 'This browser can’t use the camera', msg: 'Receive needs the camera API, which is missing here. Open Strip in a current browser over HTTPS, ideally on a phone. Sending still works from this device.',
+        rows: [{ k: 'Camera API', v: 'Missing' }, { k: 'Secure context', v: 'Yes (HTTPS)' }, { k: 'Send', v: 'Available' }],
+        primary: 'Open Send', ph: 'Send.dc.html', secondary: 'Copy page link', sh: '#' },
+      stall: { tag: 'Decode stalled', title: 'No progress for 20 seconds', msg: '71 of 96 blocks are solved. The remaining blocks need packets the camera has not read cleanly yet.',
+        rows: [{ k: 'Blocks solved', v: '71 / 96' }, { k: 'Packets seen', v: '143' }, { k: 'Last new block', v: '21 s ago' }],
+        tips: [{ t: 'Move to 30–50 cm from the screen.' }, { t: 'Raise the sender’s brightness.' }, { t: 'Ask the sender to drop to 4–6 fps.' }],
+        primary: 'Keep scanning', ph: 'Receive.dc.html', secondary: 'Start over', sh: 'Receive.dc.html' }
+    };
+    var m = M[k] || M.size;
+    return {
+      isSize: k === 'size', isCamera: k === 'camera', isStall: k === 'stall',
+      tag: m.tag, title: m.title, msg: m.msg, rows: m.rows, tips: m.tips || [], ringD: ringD,
+      primary: m.primary, primaryHref: m.ph, secondary: m.secondary, secondaryHref: m.sh
+    };
+  }
+}
+</script>
+</body>
+</html>

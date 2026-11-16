@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send step 1</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip page {{rootCls}}">
+
+  <header class="nav">
+    <a class="brand" href="Home.dc.html" aria-label="Strip home"><svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="2" width="22" height="24"/><path d="M8 8h12M8 12h7M8 16h12M8 20h5"/></svg><span>Strip</span></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a class="nav__link" href="Send.dc.html" aria-current="page">Send</a>
+      <a class="nav__link" href="Receive.dc.html">Receive</a>
+      <a class="nav__link" href="About.dc.html">About</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="pagehead">
+      <ol class="crumbs t-label" aria-label="Progress">
+        <li aria-current="step">1 File &amp; output</li><li>2 Show or print</li>
+      </ol>
+      <h1 class="t-h1">Send a file</h1>
+      <p class="t-lead">Pick a file, then choose how to show it. The file never leaves this device.</p>
+    </div>
+
+    <div class="two">
+      <section class="drop" aria-labelledby="drop-h">
+        <svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V6M6 12l6-6 6 6M4 3h16"/></svg>
+        <h2 id="drop-h" class="t-h3">Drop a file here</h2>
+        <p class="t-small t-muted">or pick one from this device</p>
+        <input class="picker__in sr-only" id="file" type="file">
+        <label class="btn btn--primary" for="file">Choose file</label>
+        <p class="t-label t-muted">Max 256 KB · one file</p>
+      </section>
+
+      <section class="filecard" aria-labelledby="fc-h">
+        <div class="filecard__head">
+          <span class="filecard__icon" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/></svg></span>
+          <div class="filecard__title"><h2 id="fc-h" class="filecard__name">field-notes-2026.pdf</h2><p class="t-small t-muted">application/pdf</p></div>
+          <button class="btn btn--ghost btn--icon" type="button" aria-label="Remove file"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        </div>
+        <dl class="kv">
+          <div class="kv__row"><dt class="t-label">Size</dt><dd class="t-mono">184 KB <span class="t-muted">188,416 bytes</span></dd></div>
+          <div class="kv__row"><dt class="t-label">SHA-256</dt><dd><span class="hash"><span>9f2c</span><span>41ab</span><span>e07d</span><span>…</span></span></dd></div>
+          <div class="kv__row"><dt class="t-label">Within limit</dt><dd class="t-mono">184 of 256 KB</dd></div>
+        </dl>
+        <progress class="progress" value="184" max="256" aria-label="Share of the 256 KB limit used"></progress>
+      </section>
+    </div>
+
+    <fieldset class="choices" aria-describedby="out-help">
+      <legend class="t-label">Choose output</legend>
+      <p id="out-help" class="sr-only">Screen plays an animated code. Paper prints a strip.</p>
+      <div class="choices__row">
+        <label class="choice">
+          <input class="choice__in" type="radio" name="output" value="screen" checked>
+          <span class="choice__box">
+            <span class="choice__head"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg><span class="t-h3">Screen</span><span class="choice__tick"><svg class="ico ico--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span></span>
+            <span class="t-small">Play an animated code on this display. Fastest way to hand over a file in the same room.</span>
+            <span class="t-label t-muted">96 packets + repair · ≈ 15 s loop at 8 fps</span>
+          </span>
+        </label>
+        <label class="choice">
+          <input class="choice__in" type="radio" name="output" value="paper">
+          <span class="choice__box">
+            <span class="choice__head"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span class="t-h3">Paper</span><span class="choice__tick"><svg class="ico ico--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span></span>
+            <span class="t-small">Print a strip of codes on A4 or Letter. Scan it now or years from now.</span>
+            <span class="t-label t-muted">27 codes · 3 pages · black on white</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="actionbar">
+      <a class="btn btn--ghost" href="Home.dc.html">Cancel</a>
+      <a class="btn btn--primary btn--lg" href="SendScreen.dc.html">Continue to Screen<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return { rootCls: this.props.mobile ? 'page--m' : '' }; }
+}
+</script>
+</body>
+</html>

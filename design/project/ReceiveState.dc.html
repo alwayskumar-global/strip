@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receive component</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<section class="strip rx" aria-label="Receive">
+
+  <header class="rx__top">
+    <a class="btn btn--ghost btn--icon" href="Home.dc.html" aria-label="Back to home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></a>
+    <h1 class="t-h3 rx__title">Receive</h1>
+    <span class="{{tagCls}}">{{tag}}</span>
+  </header>
+
+  <div class="rx__body">
+    <div class="rx__view">
+      <div class="vf on-dark {{vfCls}}">
+        <sc-if value="{{showCode}}" hint-placeholder-val="{{true}}">
+          <div class="vf__code tilt"><svg class="code" viewBox="0 0 39 39" shape-rendering="crispEdges" role="img" aria-label="Code seen by the camera"><rect class="code__bg" width="39" height="39"/><path class="code__ink" d="{{codeD}}"/></svg></div>
+          <div class="vf__scan" aria-hidden="true"></div>
+        </sc-if>
+        <sc-if value="{{showMsg}}" hint-placeholder-val="{{false}}">
+          <div class="vf__msg">
+            <sc-if value="{{isAsk}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></sc-if>
+            <sc-if value="{{isDenied}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
+            <p class="t-label">{{vfNote}}</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{showDone}}" hint-placeholder-val="{{false}}">
+          <div class="vf__done">
+            <span class="vf__check"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span>
+            <h2 class="t-h3 filecard__name">field-notes-2026.pdf</h2>
+            <p class="t-mono">184 KB</p>
+            <span class="tag tag--cobalt">SHA-256 match · 9f2c 41ab e07d…</span>
+          </div>
+        </sc-if>
+        <span class="br br--tl" aria-hidden="true"></span><span class="br br--tr" aria-hidden="true"></span><span class="br br--bl" aria-hidden="true"></span><span class="br br--brr" aria-hidden="true"></span>
+        <sc-if value="{{showHud}}" hint-placeholder-val="{{true}}">
+          <div class="vf__hud"><span class="tag">{{hud}}</span></div>
+        </sc-if>
+      </div>
+    </div>
+
+    <div class="rx__side">
+      <div class="rx__status" role="status">
+        <h2 class="t-h3">{{head}}</h2>
+        <p class="t-small t-muted">{{msg}}</p>
+        <sc-if value="{{isDenied}}" hint-placeholder-val="{{false}}">
+          <ol class="rx__steps">
+            <sc-for list="{{howto}}" as="h" hint-placeholder-count="3"><li>{{h.t}}</li></sc-for>
+          </ol>
+        </sc-if>
+        <sc-if value="{{hasBanner}}" hint-placeholder-val="{{false}}">
+          <div class="callout {{bannerCls}}">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg>
+            <div class="callout__body"><p class="callout__title">{{bannerTitle}}</p><p class="t-small">{{bannerMsg}}</p></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{isVerify}}" hint-placeholder-val="{{false}}">
+          <progress class="progress progress--indet" aria-label="Verifying hash"></progress>
+        </sc-if>
+      </div>
+
+      <!-- Dock sits in the thumb zone: counters, then the primary action at the very bottom. -->
+      <div class="dock">
+        <div class="dock__stats">
+          <div class="ring {{ringCls}}" role="img" aria-label="Progress {{pct}} percent"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{ringD}}"/></svg><div class="ring__label"><span>{{pct}}</span><span class="ring__unit">%</span></div></div>
+          <div class="stats" aria-live="polite">
+            <div class="stat"><span class="t-label t-muted">Packets seen</span><span class="stat__v">{{seen}}</span></div>
+            <div class="stat"><span class="t-label t-muted">Blocks solved</span><span class="stat__v">{{solved}}<span class="stat__of"> / 96</span></span></div>
+          </div>
+        </div>
+        <div class="dock__actions">
+          <button class="{{primaryCls}}" type="button" disabled="{{primaryOff}}"><sc-if value="{{isDone}}" hint-placeholder-val="{{false}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg></sc-if>{{primary}}</button>
+          <div class="dock__row">
+            <button class="btn" type="button">{{secondary}}</button>
+            <sc-if value="{{showTorch}}" hint-placeholder-val="{{false}}"><button class="btn btn--icon" type="button" aria-label="Torch"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L5 14h6l-1 8 8-12h-6z"/></svg></button></sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phase":{"editor":"enum","options":["ask","denied","scan","dup","verify","done","failed"],"default":"scan"},"$preview":{"width":390,"height":860}}'>
+class Component extends DCLogic {
+  arc(p) {
+    if (p <= 0) return '';
+    if (p >= 100) return 'M50 6A44 44 0 1 1 49.99 6';
+    var t = p / 100 * 2 * Math.PI;
+    return 'M50 6A44 44 0 ' + (p > 50 ? 1 : 0) + ' 1 ' + (50 + 44 * Math.sin(t)).toFixed(2) + ' ' + (50 - 44 * Math.cos(t)).toFixed(2);
+  }
+  renderVals() {
+    var k = this.props.phase || 'scan';
+    var P = 'btn btn--primary btn--lg btn--block';
+    var S = {
+      ask: { tag: 'Waiting for permission', tagCls: 'tag', head: 'Allow camera access', msg: 'Strip reads codes with your camera. Video is processed on this device and never recorded or sent.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Allow camera', pcls: P, sec: 'Not now', vf: 'vf--idle', note: 'Camera permission needed' },
+      denied: { tag: 'Camera blocked', tagCls: 'tag tag--signal', head: 'Camera access denied', msg: 'Your browser blocked the camera for this site. Allow it, then try again.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Try again', pcls: P, sec: 'Back', vf: 'vf--idle vf--warn', note: 'Camera blocked' },
+      scan: { tag: 'Scanning', tagCls: 'tag tag--cobalt', head: 'Keep the code in frame', msg: 'Hold steady. Blocks solve as packets arrive; order does not matter.', pct: 37, ring: '', seen: '52', solved: '36', primary: 'Stop scanning', pcls: 'btn btn--lg btn--block', sec: 'Start over', vf: '', hud: 'Looking for packets' },
+      dup: { tag: 'Other session', tagCls: 'tag tag--signal', head: 'A different transfer is in view', msg: 'Still solving the first file. 14 packets from another session were skipped.', pct: 37, ring: '', seen: '66', solved: '36', primary: 'Keep current file', pcls: P, sec: 'Switch to new', vf: 'vf--warn', hud: 'Session 7F3A ≠ 4C21', banner: 'callout--warn', bt: 'Wrong or repeated code', bm: 'Packets from session 7F3A do not belong to this file. Point the camera back at the original code, or switch.' },
+      verify: { tag: 'Verifying', tagCls: 'tag tag--cobalt', head: 'Checking SHA-256', msg: 'All 96 blocks solved. Comparing the file hash with the sender’s.', pct: 100, ring: '', seen: '118', solved: '96', primary: 'Verifying…', pcls: P, off: true, sec: 'Cancel', vf: 'vf--idle', hud: 'Camera paused' },
+      done: { tag: 'Complete', tagCls: 'tag tag--solid', head: 'File received', msg: 'Hash verified. The file is ready to save to this device.', pct: 100, ring: '', seen: '118', solved: '96', primary: 'Save file', pcls: 'btn btn--cobalt btn--lg btn--block', sec: 'Receive another', vf: 'vf--done' },
+      failed: { tag: 'Verification failed', tagCls: 'tag tag--signal', head: 'File does not match', msg: 'The file may be incomplete or a block was misread. Nothing was saved. Scan again from the start.', pct: 100, ring: 'ring--bad', seen: '131', solved: '96', primary: 'Scan again', pcls: 'btn btn--signal btn--lg btn--block', sec: 'Discard', vf: 'vf--idle', hud: 'Camera paused', banner: 'callout--error', bt: 'Hash mismatch', bm: 'Expected 9f2c 41ab e07d…, got 31d8 aa02 5c19…' }
+    };
+    var s = S[k] || S.scan;
+    var G = window.StripCode ? window.StripCode.make(33, 52, 3) : { d: '' };
+    return {
+      tag: s.tag, tagCls: s.tagCls, head: s.head, msg: s.msg, pct: s.pct, ringCls: s.ring, ringD: this.arc(s.pct),
+      seen: s.seen, solved: s.solved, primary: s.primary, primaryCls: s.pcls, primaryOff: !!s.off, secondary: s.sec,
+      vfCls: s.vf, vfNote: s.note || '', hud: s.hud || '', codeD: G.d,
+      isAsk: k === 'ask', isDenied: k === 'denied', isVerify: k === 'verify', isDone: k === 'done',
+      showCode: k === 'scan' || k === 'dup' || k === 'verify' || k === 'failed',
+      showMsg: k === 'ask' || k === 'denied', showDone: k === 'done',
+      showHud: !!s.hud, showTorch: k === 'scan' || k === 'dup',
+      hasBanner: !!s.banner, bannerCls: s.banner || '', bannerTitle: s.bt || '', bannerMsg: s.bm || '',
+      howto: [{ t: 'Open the site settings from the address bar.' }, { t: 'Set Camera to Allow.' }, { t: 'Return here and tap Try again.' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-16T09:00:00Z" },
+  "title": "Strip Design System",
+  "launch": { "view": "canvas" },
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 4300, "title": "Design system: tokens + components" },
+    "Home.dc.html": { "x": 0, "y": 4420, "w": 1280, "h": 1500, "title": "1 Home (desktop)", "expand": "fill", "is_interactive": true },
+    "HomeMobile.dc.html": { "x": 1360, "y": 4420, "w": 390, "h": 2000, "title": "1 Home (mobile)", "is_interactive": true },
+    "Send.dc.html": { "x": 0, "y": 6540, "w": 1280, "h": 1250, "title": "2 Send, step 1 (desktop)", "expand": "fill", "is_interactive": true },
+    "SendMobile.dc.html": { "x": 1360, "y": 6540, "w": 390, "h": 1800, "title": "2 Send, step 1 (mobile)", "is_interactive": true },
+    "SendScreen.dc.html": { "x": 0, "y": 8460, "w": 1280, "h": 1350, "title": "3 Send, Screen (desktop)", "expand": "fill", "is_interactive": true },
+    "SendScreenMobile.dc.html": { "x": 1360, "y": 8460, "w": 390, "h": 1450, "title": "3 Send, Screen (mobile)", "is_interactive": true },
+    "SendPaper.dc.html": { "x": 0, "y": 10030, "w": 1280, "h": 1400, "title": "4 Send, Paper (desktop)", "expand": "fill", "is_interactive": true },
+    "SendPaperMobile.dc.html": { "x": 1360, "y": 10030, "w": 390, "h": 1700, "title": "4 Send, Paper (mobile)", "is_interactive": true },
+    "Receive.dc.html": { "x": 0, "y": 11850, "w": 1280, "h": 900, "title": "5 Receive (desktop, scanning)", "expand": "fill", "is_interactive": true },
+    "ReceiveState.dc.html": { "x": 1360, "y": 11850, "w": 390, "h": 860, "title": "5 Receive component (prop: phase)" },
+    "ReceiveStates.dc.html": { "x": 0, "y": 12870, "w": 1800, "h": 2000, "title": "5 Receive (mobile, all 7 states)" },
+    "About.dc.html": { "x": 0, "y": 14990, "w": 1280, "h": 1500, "title": "6 About / Privacy (desktop)", "expand": "fill", "is_interactive": true },
+    "AboutMobile.dc.html": { "x": 1360, "y": 14990, "w": 390, "h": 2500, "title": "6 About / Privacy (mobile)", "is_interactive": true },
+    "Errors.dc.html": { "x": 0, "y": 17610, "w": 1280, "h": 1000, "title": "7 Error states (desktop)", "expand": "fill", "is_interactive": true },
+    "ErrorsMobile.dc.html": { "x": 1360, "y": 17610, "w": 390, "h": 2300, "title": "7 Error states (mobile)", "is_interactive": true },
+    "ErrorState.dc.html": { "x": 1830, "y": 17610, "w": 420, "h": 620, "title": "7 Error component (prop: kind)" }
+  },
+  "order": [
+    "Main.dc.html", "Home.dc.html", "HomeMobile.dc.html", "Send.dc.html", "SendMobile.dc.html",
+    "SendScreen.dc.html", "SendScreenMobile.dc.html", "SendPaper.dc.html", "SendPaperMobile.dc.html",
+    "Receive.dc.html", "ReceiveState.dc.html", "ReceiveStates.dc.html", "About.dc.html", "AboutMobile.dc.html",
+    "Errors.dc.html", "ErrorsMobile.dc.html", "ErrorState.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

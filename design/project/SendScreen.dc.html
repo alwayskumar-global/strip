@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send on screen</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip page {{rootCls}}">
+
+  <header class="nav">
+    <a class="brand" href="Home.dc.html" aria-label="Strip home"><svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="2" width="22" height="24"/><path d="M8 8h12M8 12h7M8 16h12M8 20h5"/></svg><span>Strip</span></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a class="nav__link" href="Send.dc.html" aria-current="page">Send</a>
+      <a class="nav__link" href="Receive.dc.html">Receive</a>
+      <a class="nav__link" href="About.dc.html">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap pagehead pagehead--row">
+      <a class="btn btn--icon btn--ghost" href="Send.dc.html" aria-label="Back to file and output"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></a>
+      <h1 class="t-h2">Show on screen</h1>
+      <span class="tag">field-notes-2026.pdf · 184 KB</span>
+    </div>
+
+    <!-- Stage: pure #FFF, pure #000 modules, nothing overlaps the code. -->
+    <section class="stage" aria-label="Animated code, frame 38">
+      <div class="stage__code">
+        <svg class="code" viewBox="0 0 53 53" shape-rendering="crispEdges" role="img" aria-label="Animated data code, packet 38 of 96"><rect class="code__bg" width="53" height="53"/><path class="code__ink" d="{{codeD}}"/></svg>
+      </div>
+    </section>
+
+    <section class="wrap controls" aria-label="Playback controls">
+      <div class="panel transport">
+        <div class="counter" aria-live="off">
+          <span class="t-label t-muted">Packet</span>
+          <span class="counter__n">38</span>
+          <span class="t-mono">of 96 + repair</span>
+        </div>
+        <progress class="progress" value="38" max="96" aria-label="Packet progress"></progress>
+        <button class="btn btn--primary btn--lg btn--block" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>Pause <span class="kbd">Space</span></button>
+        <p class="t-small t-muted">After packet 96 the code keeps looping repair packets until you stop. A scanner can start at any point.</p>
+      </div>
+
+      <div class="panel">
+        <div class="field">
+          <div class="field__top"><label class="t-label" for="fps">Speed</label><span class="field__val">8 fps</span></div>
+          <input id="fps" class="range" type="range" min="2" max="15" value="8">
+          <p class="t-small t-muted">Drop to 4–6 fps if the receiver skips frames.</p>
+        </div>
+        <fieldset class="seg">
+          <legend class="t-label">Code size</legend>
+          <div class="seg__row">
+            <label class="seg__opt"><input class="seg__in" type="radio" name="size" value="s"><span class="seg__box">Small</span></label>
+            <label class="seg__opt"><input class="seg__in" type="radio" name="size" value="m" checked><span class="seg__box">Medium</span></label>
+            <label class="seg__opt"><input class="seg__in" type="radio" name="size" value="l"><span class="seg__box">Large</span></label>
+          </div>
+        </fieldset>
+        <div class="callout callout--tip">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
+          <div class="callout__body"><p class="callout__title">Hold the phone steady</p><p class="t-small">30–50 cm from the screen, code filling the frame. Set brightness to maximum and turn off auto-dim.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1350}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rootCls: this.props.mobile ? 'page--m' : '',
+      codeD: window.StripCode ? window.StripCode.make(45, 38, 4).d : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

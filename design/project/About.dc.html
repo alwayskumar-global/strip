@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About and privacy</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip page {{rootCls}}">
+
+  <header class="nav">
+    <a class="brand" href="Home.dc.html" aria-label="Strip home"><svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="2" width="22" height="24"/><path d="M8 8h12M8 12h7M8 16h12M8 20h5"/></svg><span>Strip</span></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a class="nav__link" href="Send.dc.html">Send</a>
+      <a class="nav__link" href="Receive.dc.html">Receive</a>
+      <a class="nav__link" href="About.dc.html" aria-current="page">About</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="pagehead">
+      <p class="t-label t-muted">About · Privacy</p>
+      <h1 class="t-h1">Nothing leaves this device.</h1>
+      <p class="t-lead">Strip runs in your browser. Files are read, split and encoded here, and decoded by the camera on the other device.</p>
+    </div>
+
+    <div class="doc">
+      <nav class="toc" aria-label="On this page">
+        <a href="#privacy">Privacy</a>
+        <a href="#account">No account</a>
+        <a href="#caveat">What it does not do</a>
+        <a href="#limits">Limits</a>
+        <a href="#credits">Credits</a>
+      </nav>
+
+      <div class="doc__body">
+        <section id="privacy" class="doc__sec">
+          <h2 class="t-h2">Privacy</h2>
+          <p>No upload, no server copy, no share link. Your file is processed by the page you have open. The receiving phone reads light with its camera and rebuilds the file locally. Video from the camera is analysed on the device and is not recorded or sent anywhere.</p>
+          <p>Once the page has loaded, Strip does not need a connection to send or receive.</p>
+        </section>
+
+        <section id="account" class="doc__sec">
+          <h2 class="t-h2">No account</h2>
+          <p>No sign-up, no login, no profile. Close the tab and the session is gone.</p>
+        </section>
+
+        <section id="caveat" class="doc__sec">
+          <h2 class="t-h2">What it does not do</h2>
+          <div class="callout callout--warn">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg>
+            <div class="callout__body"><p class="callout__title">Strip does not encrypt</p><p class="t-small">Anyone who can see or photograph a strip, or the screen while a code plays, can rebuild the file. Treat a printed strip like the file itself.</p></div>
+          </div>
+        </section>
+
+        <section id="limits" class="doc__sec">
+          <h2 class="t-h2">Limits</h2>
+          <table class="limits">
+            <tr><th scope="row">Max file size</th><td class="t-mono">256 KB</td></tr>
+            <tr><th scope="row">Files per transfer</th><td>One. Zip several files first.</td></tr>
+            <tr><th scope="row">Receiving needs</th><td>A camera, and a browser that exposes the camera API on HTTPS.</td></tr>
+            <tr><th scope="row">Integrity</th><td>SHA-256 is checked before you can save. A mismatch saves nothing.</td></tr>
+            <tr><th scope="row">Screen</th><td>Hold the phone steady, 30–50 cm away. Maximum brightness.</td></tr>
+            <tr><th scope="row">Paper</th><td>A4 or Letter, printed black on white at 100% scale.</td></tr>
+          </table>
+        </section>
+
+        <section id="credits" class="doc__sec">
+          <h2 class="t-h2">Credits</h2>
+          <p>Built with Kiro. Source on GitHub.</p>
+          <div class="row">
+            <a class="btn" href="https://github.com/" rel="noopener">GitHub<svg class="ico ico--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg></a>
+            <a class="btn btn--primary" href="Send.dc.html">Send a file</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>Built with Kiro</span>
+    <div class="footer__right">
+      <a class="footer__link" href="Home.dc.html">Home</a>
+      <a class="footer__link" href="https://github.com/" rel="noopener">GitHub</a>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return { rootCls: this.props.mobile ? 'page--m' : '' }; }
+}
+</script>
+</body>
+</html>

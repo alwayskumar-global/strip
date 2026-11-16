@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receive states mobile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip gallery">
+  <header>
+    <p class="t-label t-muted">Screen 5 · mobile first</p>
+    <h1 class="t-h1">Receive: seven states</h1>
+    <p class="t-lead">One-handed by design. The viewfinder sits on top; counters and the primary action sit in the bottom dock, inside thumb reach, 56 px tall, full width.</p>
+  </header>
+  <div class="gallery__grid">
+    <sc-for list="{{cells}}" as="c" hint-placeholder-count="7">
+      <div class="gallery__cell">
+        <p class="t-label">{{c.n}} · {{c.name}}</p>
+        <div class="phone">
+          <dc-import name="ReceiveState" phase="{{c.phase}}" hint-size="390px,860px"></dc-import>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      cells: [
+        { n: '01', name: 'Waiting for permission', phase: 'ask' },
+        { n: '02', name: 'Permission denied', phase: 'denied' },
+        { n: '03', name: 'Scanning', phase: 'scan' },
+        { n: '04', name: 'Duplicate / other session', phase: 'dup' },
+        { n: '05', name: 'Verifying hash', phase: 'verify' },
+        { n: '06', name: 'Complete', phase: 'done' },
+        { n: '07', name: 'Verification failed', phase: 'failed' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

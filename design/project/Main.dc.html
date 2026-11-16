@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Strip design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip ds">
+
+  <header class="ds__head">
+    <p class="t-label t-muted">Strip · Design system v1 · tokens + components</p>
+    <h1 class="t-display">Utilitarian, precise, a little retro-technical.</h1>
+    <p class="t-lead">Warm paper ground, near-black ink, two accents. Hairline rules, registration marks, monospaced numerals. Every style is a class or a custom property: no inline styles, no per-element tweaks, CSP-safe. One stylesheet, <span class="t-mono">strip.css</span>.</p>
+  </header>
+
+  <section class="ds__sec" aria-labelledby="c-h">
+    <div class="ds__h"><span class="t-label t-muted">01</span><h2 id="c-h" class="t-h2">Colour</h2></div>
+    <p class="t-small t-muted">Two accents only. Signal = send, attention, error. Cobalt = receive, progress, verified. Code and print colours are fixed and never themed.</p>
+    <sc-for list="{{colorGroups}}" as="g" hint-placeholder-count="4">
+      <div class="ds__grid">
+        <h3 class="t-label">{{g.name}}</h3>
+        <div class="ds__grid ds__grid--6">
+          <sc-for list="{{g.items}}" as="c" hint-placeholder-count="6">
+            <div class="swatch">
+              <div class="sw {{c.cls}}"></div>
+              <p class="t-mono t-small">{{c.name}}</p>
+              <p class="t-mono t-small t-muted">{{c.hex}}</p>
+              <p class="t-small t-muted">{{c.use}}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div class="panel">
+      <h3 class="t-label">Contrast (measured on the pairs that ship)</h3>
+      <sc-for list="{{contrast}}" as="r" hint-placeholder-count="6">
+        <p class="t-small"><span class="t-mono">{{r.pair}}</span> · <strong class="t-mono">{{r.ratio}}</strong> · {{r.use}}</p>
+      </sc-for>
+    </div>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="t-h">
+    <div class="ds__h"><span class="t-label t-muted">02</span><h2 id="t-h" class="t-h2">Type</h2></div>
+    <p class="t-small t-muted">IBM Plex Sans for words, IBM Plex Mono for numerals, hashes, labels. Mono uses tabular, slashed-zero figures so counters never jitter. Self-host both under the CSP; the Google Fonts link is for this sheet only.</p>
+    <table class="specs">
+      <tr><th>Role</th><th>Spec</th><th>Specimen</th></tr>
+      <tr><td class="t-mono t-small">.t-display</td><td class="t-mono t-small">Sans 600 · 56/58 · -0.025em</td><td><p class="t-display">Move a file.</p></td></tr>
+      <tr><td class="t-mono t-small">.t-h1</td><td class="t-mono t-small">Sans 600 · 40/44</td><td><p class="t-h1">Send a file</p></td></tr>
+      <tr><td class="t-mono t-small">.t-h2</td><td class="t-mono t-small">Sans 600 · 28/34</td><td><p class="t-h2">Choose output</p></td></tr>
+      <tr><td class="t-mono t-small">.t-h3</td><td class="t-mono t-small">Sans 600 · 20/26</td><td><p class="t-h3">Hold the phone steady</p></td></tr>
+      <tr><td class="t-mono t-small">.t-lead</td><td class="t-mono t-small">Sans 400 · 20/29</td><td><p class="t-lead">Nothing leaves this device.</p></td></tr>
+      <tr><td class="t-mono t-small">body</td><td class="t-mono t-small">Sans 400 · 16/24</td><td><p>Strip splits the file into packets and adds repair packets.</p></td></tr>
+      <tr><td class="t-mono t-small">.t-small</td><td class="t-mono t-small">Sans 400 · 14/20</td><td><p class="t-small">Max 256 KB. Stays on this device.</p></td></tr>
+      <tr><td class="t-mono t-small">.t-label</td><td class="t-mono t-small">Mono 500 · 12/16 · +0.08em · caps</td><td><p class="t-label">Packet 38 of 96 + repair</p></td></tr>
+      <tr><td class="t-mono t-small">.t-num-lg</td><td class="t-mono t-small">Mono 600 · 28/28 · tabular</td><td><p class="t-num-lg">0123456789 · 9f2c 41ab e07d</p></td></tr>
+    </table>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="s-h">
+    <div class="ds__h"><span class="t-label t-muted">03</span><h2 id="s-h" class="t-h2">Space, radii, stroke</h2></div>
+    <div class="ds__grid ds__grid--3">
+      <div class="panel">
+        <h3 class="t-label">Space · 4 px base</h3>
+        <sc-for list="{{space}}" as="s" hint-placeholder-count="9">
+          <div class="demo"><span class="t-mono t-small">{{s.name}}</span><span class="t-mono t-small t-muted">{{s.px}}</span><div class="bar {{s.cls}}"></div></div>
+        </sc-for>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Radii · mostly square</h3>
+        <div class="demo">
+          <sc-for list="{{radii}}" as="r" hint-placeholder-count="5">
+            <div><div class="rd {{r.cls}}"></div><p class="t-mono t-small">{{r.name}}</p><p class="t-mono t-small t-muted">{{r.px}}</p></div>
+          </sc-for>
+        </div>
+        <p class="t-small t-muted">Codes are always r-0: square, sharp. r-1 for controls, r-2 for cards, r-3 for dialogs only.</p>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Stroke, target, elevation</h3>
+        <p class="t-small"><span class="t-mono">--bw</span> 2px rules on every container. <span class="t-mono">--tap</span> 48px minimum target; primary receive actions 56px.</p>
+        <p class="t-small"><span class="t-mono">--shadow-stamp</span> 4px 4px 0 ink. The only elevation: a hard offset, never a blur.</p>
+        <div class="demo"><div class="rd rd-2 bg-paper-0 stamp"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="m-h">
+    <div class="ds__h"><span class="t-label t-muted">04</span><h2 id="m-h" class="t-h2">Motion</h2></div>
+    <p class="t-small t-muted">Short, mechanical, no bounce. Under <span class="t-mono">prefers-reduced-motion</span> every chrome transition and loop collapses to instant or static. Code playback is data, not decoration: it keeps its frame rate regardless.</p>
+    <div class="ds__grid ds__grid--4">
+      <sc-for list="{{motion}}" as="m" hint-placeholder-count="4">
+        <div class="panel">
+          <svg class="curve" viewBox="0 0 80 80" role="img" aria-label="{{m.name}} easing curve"><path d="{{m.curve}}"/></svg>
+          <p class="t-mono">{{m.name}}</p>
+          <p class="t-mono t-small t-muted">{{m.value}}</p>
+          <p class="t-small">{{m.use}}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="k-h">
+    <div class="ds__h"><span class="t-label t-muted">05</span><h2 id="k-h" class="t-h2">Components</h2></div>
+
+    <div class="ds__grid ds__grid--2">
+      <div class="panel">
+        <h3 class="t-label">Buttons · .btn</h3>
+        <div class="demo">
+          <button class="btn btn--primary" type="button">Continue</button>
+          <button class="btn" type="button">Secondary</button>
+          <button class="btn btn--signal" type="button">Print</button>
+          <button class="btn btn--cobalt" type="button">Save file</button>
+          <button class="btn btn--ghost" type="button">Ghost</button>
+          <button class="btn" type="button" disabled>Disabled</button>
+          <button class="btn btn--icon" type="button" aria-label="Torch"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L5 14h6l-1 8 8-12h-6z"/></svg></button>
+        </div>
+        <button class="btn btn--primary btn--lg btn--block" type="button">btn--lg btn--block · 56 px</button>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Tags, keys · .tag .kbd</h3>
+        <div class="demo">
+          <span class="tag">Idle</span><span class="tag tag--cobalt">Scanning</span><span class="tag tag--signal">Other session</span><span class="tag tag--solid">Complete</span><span class="kbd">Space</span>
+        </div>
+        <h3 class="t-label">Focus · :focus-visible</h3>
+        <p class="t-small">3 px Cobalt ring, 3 px offset, on every interactive element. White on dark surfaces (<span class="t-mono">.on-dark</span>). Never removed.</p>
+        <div class="demo"><a class="btn" href="#k-h">Tab here</a></div>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Controls · .seg .range .progress</h3>
+        <fieldset class="seg"><legend class="t-label">Code size</legend>
+          <div class="seg__row">
+            <label class="seg__opt"><input class="seg__in" type="radio" name="ds-size" value="s"><span class="seg__box">S</span></label>
+            <label class="seg__opt"><input class="seg__in" type="radio" name="ds-size" value="m" checked><span class="seg__box">M</span></label>
+            <label class="seg__opt"><input class="seg__in" type="radio" name="ds-size" value="l"><span class="seg__box">L</span></label>
+          </div>
+        </fieldset>
+        <div class="field"><div class="field__top"><label class="t-label" for="ds-speed">Speed</label><span class="field__val">8 fps</span></div><input id="ds-speed" class="range" type="range" min="2" max="15" value="8"></div>
+        <progress class="progress" value="38" max="96" aria-label="Packets"></progress>
+        <progress class="progress progress--cobalt" value="70" max="100" aria-label="Solved"></progress>
+        <progress class="progress progress--signal" value="100" max="100" aria-label="Over limit"></progress>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Callouts · .callout</h3>
+        <div class="callout callout--tip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div class="callout__body"><p class="callout__title">Tip</p><p class="t-small">Hold the phone steady, 30–50 cm away.</p></div></div>
+        <div class="callout callout--warn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg><div class="callout__body"><p class="callout__title">Warning</p><p class="t-small">Packets from another session are ignored.</p></div></div>
+        <div class="callout callout--error"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg><div class="callout__body"><p class="callout__title">Error</p><p class="t-small">Hash mismatch. Nothing was saved.</p></div></div>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Progress ring · .ring</h3>
+        <div class="demo">
+          <sc-for list="{{rings}}" as="r" hint-placeholder-count="4">
+            <div class="demo"><div class="ring {{r.cls}}" role="img" aria-label="{{r.label}}"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{r.d}}"/></svg><div class="ring__label"><span>{{r.pct}}</span><span class="ring__unit">%</span></div></div><span class="t-small t-muted">{{r.label}}</span></div>
+          </sc-for>
+        </div>
+        <p class="t-small t-muted">One tick per block (96 ticks). Arc set through the SVG <span class="t-mono">d</span> attribute, a presentation attribute, so no inline style.</p>
+      </div>
+      <div class="panel">
+        <h3 class="t-label">Code surface · .code .reg .br</h3>
+        <div class="demo">
+          <div class="rd rd-0 bg-paper-0"><svg class="code" viewBox="0 0 31 31" role="img" aria-label="Sample code"><rect class="code__bg" width="31" height="31"/><path class="code__ink" d="{{sample}}"/></svg></div>
+        </div>
+        <p class="t-small t-muted"><span class="t-mono">--code-ink #000</span> on <span class="t-mono">--code-paper #FFF</span>. Square, 4-module quiet zone, never a gradient, shadow or overlay behind it. Registration marks (<span class="t-mono">.reg</span>) are circle + crosshair, ink on paper, pure #000 in print.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="r-h">
+    <div class="ds__h"><span class="t-label t-muted">06</span><h2 id="r-h" class="t-h2">Conventions</h2></div>
+    <div class="ds__grid ds__grid--3">
+      <div class="panel"><h3 class="t-label">CSP</h3><p class="t-small">No <span class="t-mono">style=""</span> anywhere. State is a class (<span class="t-mono">.ring--bad</span>, <span class="t-mono">.stage__code--l</span>), a native attribute (<span class="t-mono">value</span>, <span class="t-mono">checked</span>) or an SVG presentation attribute. No inline script handlers.</p></div>
+      <div class="panel"><h3 class="t-label">Responsive</h3><p class="t-small">Roots are containers (<span class="t-mono">.page</span>, <span class="t-mono">.rx</span>, <span class="t-mono">.err</span>); layout switches at 760 px container width, not viewport. The same markup renders desktop and mobile.</p></div>
+      <div class="panel"><h3 class="t-label">Print</h3><p class="t-small"><span class="t-mono">.paper</span> is built in container units (cqw) so A4 and Letter scale with no per-size CSS. Print resets every colour to #000 on #FFF; accents never print. Switch <span class="t-mono">@page size</span> for Letter.</p></div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4300}}'>
+class Component extends DCLogic {
+  arc(p) {
+    if (p <= 0) return '';
+    if (p >= 100) return 'M50 6A44 44 0 1 1 49.99 6';
+    var t = p / 100 * 2 * Math.PI;
+    return 'M50 6A44 44 0 ' + (p > 50 ? 1 : 0) + ' 1 ' + (50 + 44 * Math.sin(t)).toFixed(2) + ' ' + (50 - 44 * Math.cos(t)).toFixed(2);
+  }
+  curve(a, b, c, d) {
+    return 'M0 80C' + (a * 80) + ' ' + (80 - b * 80) + ' ' + (c * 80) + ' ' + (80 - d * 80) + ' 80 0';
+  }
+  renderVals() {
+    var self = this;
+    var g = window.StripCode ? window.StripCode.make(25, 7, 3) : { d: '' };
+    return {
+      sample: g.d,
+      colorGroups: [
+        { name: 'Ink · text, rules, primary action', items: [
+          { name: '--ink-900', hex: '#121210', cls: 'bg-ink-900', use: 'Text, rules, primary button' },
+          { name: '--ink-700', hex: '#3A3935', cls: 'bg-ink-700', use: 'Secondary text, hover' },
+          { name: '--ink-500', hex: '#66655D', cls: 'bg-ink-500', use: 'Muted text (5.4:1)' },
+          { name: '--ink-300', hex: '#BDBAAE', cls: 'bg-ink-300', use: 'Idle borders' },
+          { name: '--ink-200', hex: '#DAD7CB', cls: 'bg-ink-200', use: 'Hairlines, ring track' },
+          { name: '--ink-100', hex: '#E9E6DB', cls: 'bg-ink-100', use: 'Hover fill' } ] },
+        { name: 'Paper · ground and surfaces', items: [
+          { name: '--paper-50', hex: '#F7F5EF', cls: 'bg-paper-50', use: 'App ground' },
+          { name: '--paper-0', hex: '#FFFFFF', cls: 'bg-paper-0', use: 'Cards, code stage' },
+          { name: '--paper-100', hex: '#EFECE3', cls: 'bg-paper-100', use: 'Sunken, hash chips' } ] },
+        { name: 'Signal · accent 1 (send, attention, error)', items: [
+          { name: '--signal-700', hex: '#9E2F06', cls: 'bg-signal-700', use: 'Pressed, text on tint' },
+          { name: '--signal-600', hex: '#C23A08', cls: 'bg-signal-600', use: 'Fill, icon, link' },
+          { name: '--signal-500', hex: '#E4500F', cls: 'bg-signal-500', use: 'Large graphics only' },
+          { name: '--signal-400', hex: '#FF7A45', cls: 'bg-signal-400', use: 'On dark surfaces' },
+          { name: '--signal-100', hex: '#FBE7DD', cls: 'bg-signal-100', use: 'Warning fill' } ] },
+        { name: 'Cobalt · accent 2 (receive, progress, verified)', items: [
+          { name: '--cobalt-700', hex: '#173BA6', cls: 'bg-cobalt-700', use: 'Pressed, text on tint' },
+          { name: '--cobalt-600', hex: '#1F4FD8', cls: 'bg-cobalt-600', use: 'Progress, focus ring' },
+          { name: '--cobalt-300', hex: '#8CA7F2', cls: 'bg-cobalt-300', use: 'Viewfinder marks' },
+          { name: '--cobalt-100', hex: '#E4EAFC', cls: 'bg-cobalt-100', use: 'Tip, success fill' } ] },
+        { name: 'Fixed · code and print', items: [
+          { name: '--code-ink / --print-ink', hex: '#000000', cls: 'bg-print-ink', use: 'Modules, every printed mark' },
+          { name: '--code-paper / --print-paper', hex: '#FFFFFF', cls: 'bg-print-paper', use: 'Code ground, page' } ] }
+      ],
+      contrast: [
+        { pair: 'ink-900 on paper-50', ratio: '≈ 17 : 1', use: 'Body text' },
+        { pair: 'ink-500 on paper-50', ratio: '≈ 5.4 : 1', use: 'Muted text, labels' },
+        { pair: 'signal-600 on paper-50', ratio: '≈ 4.9 : 1', use: 'Accent text, links' },
+        { pair: 'white on signal-600', ratio: '≈ 5.4 : 1', use: 'Signal buttons, error callout' },
+        { pair: 'cobalt-600 on paper-50', ratio: '≈ 6.1 : 1', use: 'Progress, focus ring' },
+        { pair: 'cobalt-300 on ink-900', ratio: '≈ 8 : 1', use: 'Viewfinder marks' },
+        { pair: '#000 on #FFF', ratio: '21 : 1', use: 'Code modules, printed page' }
+      ],
+      space: [
+        { name: '--s-1', px: '4', cls: 'w-s-1' }, { name: '--s-2', px: '8', cls: 'w-s-2' }, { name: '--s-3', px: '12', cls: 'w-s-3' },
+        { name: '--s-4', px: '16', cls: 'w-s-4' }, { name: '--s-5', px: '24', cls: 'w-s-5' }, { name: '--s-6', px: '32', cls: 'w-s-6' },
+        { name: '--s-7', px: '48', cls: 'w-s-7' }, { name: '--s-8', px: '64', cls: 'w-s-8' }, { name: '--s-9', px: '96', cls: 'w-s-9' }
+      ],
+      radii: [
+        { name: '--r-0', px: '0', cls: 'rd-0' }, { name: '--r-1', px: '4', cls: 'rd-1' }, { name: '--r-2', px: '8', cls: 'rd-2' },
+        { name: '--r-3', px: '14', cls: 'rd-3' }, { name: '--r-pill', px: '999', cls: 'rd-pill' }
+      ],
+      motion: [
+        { name: '--dur-fast', value: '90ms · ease-out', use: 'Hover, press, focus.', curve: self.curve(.2, .7, .2, 1) },
+        { name: '--dur-base', value: '160ms · ease-out', use: 'Card lift, choice select, fills.', curve: self.curve(.2, .7, .2, 1) },
+        { name: '--dur-slow', value: '280ms · ease-snap', use: 'Panel and state swaps.', curve: self.curve(.3, 0, 0, 1) },
+        { name: '--dur-scan', value: '2400ms · ease-snap · alternate', use: 'Viewfinder scan line. Static under reduced motion.', curve: self.curve(.3, 0, 0, 1) }
+      ],
+      rings: [
+        { pct: 0, label: 'Idle', cls: 'ring--dim', d: self.arc(0) },
+        { pct: 37, label: 'Scanning', cls: '', d: self.arc(37) },
+        { pct: 100, label: 'Complete', cls: '', d: self.arc(100) },
+        { pct: 100, label: 'Failed', cls: 'ring--bad', d: self.arc(100) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

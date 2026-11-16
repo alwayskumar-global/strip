@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error states</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="strip page {{rootCls}}">
+
+  <header class="nav">
+    <a class="brand" href="Home.dc.html" aria-label="Strip home"><svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="2" width="22" height="24"/><path d="M8 8h12M8 12h7M8 16h12M8 20h5"/></svg><span>Strip</span></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a class="nav__link" href="Send.dc.html">Send</a>
+      <a class="nav__link" href="Receive.dc.html">Receive</a>
+      <a class="nav__link" href="About.dc.html">About</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="pagehead">
+      <p class="t-label t-muted">Screen 7</p>
+      <h1 class="t-h1">Error states</h1>
+      <p class="t-lead">Say what happened, show the numbers, offer one clear next step. Signal colour marks the problem; nothing blames the user.</p>
+    </div>
+    <div class="errgrid">
+      <dc-import name="ErrorState" kind="size" hint-size="100%,620px"></dc-import>
+      <dc-import name="ErrorState" kind="camera" hint-size="100%,620px"></dc-import>
+      <dc-import name="ErrorState" kind="stall" hint-size="100%,620px"></dc-import>
+    </div>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return { rootCls: this.props.mobile ? 'page--m' : '' }; }
+}
+</script>
+</body>
+</html>
