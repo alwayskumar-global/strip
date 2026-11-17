@@ -64,6 +64,8 @@ The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `se
 
 Packet length is `blockSize + 30`.
 
+maxPayloadBytes bounds L on both sides, so a stream the Encoder accepts is never rejected by a Decoder with the same limit.
+
 `decodePacket` check order. Steps 3 to 9 run only after the header CRC passes, and no buffer is sized from L or K before steps 5 and 6.
 
 | # | Check | Failure |
@@ -227,7 +229,7 @@ Reference vector (design-time, to be re-derived by the independent Python genera
 3. Build the Metadata_Record.
 4. `await hash(record)` and take the sessionId.
 5. Copy the Coded_Stream into the strided buffer (K Blocks).
-6. Check limits (`PAYLOAD_TOO_LARGE`, `TOO_MANY_BLOCKS`).
+6. Check limits (`PAYLOAD_TOO_LARGE`, `TOO_MANY_BLOCKS`). The limit applies to the coded stream (record + payload). The `PAYLOAD_TOO_LARGE` check happens after the Metadata_Record is built, as L > maxPayloadBytes with L = record length + payload length.
 7. Return `Encoder { next(), page(), sessionId, K, blockSize, packetSize, totalLength }`.
 
 `next()` and `page()` are synchronous.
@@ -358,7 +360,8 @@ Validators run on every argument before any other processing. On failure they th
 |---|---|
 | `packetSize` | integer in [46, 65565] |
 | `repairCount` | integer, >= 0, <= 2^32 - 1 - K |
-| `maxPayloadBytes`, `maxBlockCount` | integer >= 1 |
+| `maxPayloadBytes` | integer >= 1. The limit applies to the coded stream (record + payload), not the payload alone |
+| `maxBlockCount` | integer >= 1 |
 | `maxGaussianBlocks` | integer >= 0 |
 | `hash` | function |
 | payload | `Uint8Array`, plus name (string) and mime (string) |

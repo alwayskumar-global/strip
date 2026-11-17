@@ -78,6 +78,7 @@ export async function encodeWith(payload: unknown, options: unknown, internals: 
   const format = internals.format ?? DEFAULT_FORMAT;
   const startSeq = internals.startSeq === undefined ? 0 : assertUint32("startSeq", internals.startSeq);
 
+  // The limit applies to L = record + payload; the payload alone already over the limit is a cheap early exit.
   if (shape.bytes.length > maxPayloadBytes) {
     throw new CodecError("PAYLOAD_TOO_LARGE", `payload of ${shape.bytes.length} bytes exceeds maxPayloadBytes`);
   }
@@ -85,7 +86,9 @@ export async function encodeWith(payload: unknown, options: unknown, internals: 
   const sha256 = await computeDigest(hash, shape.bytes);
   const record = serializeMetadata({ name: shape.name, mime: shape.mime, byteLength: shape.bytes.length, sha256 });
   const totalLength = record.length + shape.bytes.length;
-  if (totalLength > UINT32_MAX) throw new CodecError("PAYLOAD_TOO_LARGE", "coded stream does not fit a 32-bit length");
+  if (totalLength > maxPayloadBytes || totalLength > UINT32_MAX) {
+    throw new CodecError("PAYLOAD_TOO_LARGE", `coded stream of ${totalLength} bytes exceeds maxPayloadBytes ${maxPayloadBytes}`);
+  }
   const sessionId = new DataView((await computeDigest(hash, record)).buffer).getUint32(0);
 
   const blockSize = packetSize - PACKET_OVERHEAD;

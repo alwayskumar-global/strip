@@ -33,7 +33,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - **repairCount**: The number of Repair_Packets in a Page_Mode set.
 - **packetSize**: Total bytes of one Packet. Default 2953, the byte-mode capacity of QR version 40 at error correction level L.
 - **blockSize**: packetSize - 26 - 4. Default 2923.
-- **maxPayloadBytes**: Maximum Payload size parameter. Default 32 MiB.
+- **maxPayloadBytes**: Maximum coded-stream length L (Metadata_Record plus Payload bytes) in bytes. Default 32 MiB.
 - **maxBlockCount**: Maximum K parameter. Default 16384.
 - **maxGaussianBlocks**: Maximum number of unsolved Blocks for which the Decoder runs Gaussian elimination. Default 1024.
 - **ErrorCode**: The closed union INVALID_INPUT, PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS, BAD_METADATA, BAD_HEADER, UNSUPPORTED_VERSION, BAD_CRC, SESSION_MISMATCH, INCOMPLETE_DECODE, HASH_MISMATCH.
@@ -185,7 +185,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 
 1. THE Codec SHALL accept a maxPayloadBytes parameter with default 33554432 (32 MiB), and SHALL accept only integer values of 1 or more. [unit]
 2. THE Codec SHALL accept a maxBlockCount parameter with default 16384, and SHALL accept only integer values of 1 or more. [unit]
-3. IF a Payload length in bytes is greater than maxPayloadBytes, THEN THE Encoder SHALL reject it by throwing a CodecError with code PAYLOAD_TOO_LARGE, and SHALL produce no Packets. A Payload length equal to maxPayloadBytes SHALL be accepted. [unit]
+3. IF the length of the Metadata_Record plus the length of the Payload bytes is greater than maxPayloadBytes, THEN THE Encoder SHALL reject it by throwing a CodecError with code PAYLOAD_TOO_LARGE, and SHALL produce no Packets. A coded-stream length L equal to maxPayloadBytes SHALL be accepted by the Encoder and by the Decoder. [unit]
 4. IF the Payload and packetSize yield a K greater than maxBlockCount, THEN THE Encoder SHALL reject them by throwing a CodecError with code TOO_MANY_BLOCKS, and SHALL produce no Packets. A K equal to maxBlockCount SHALL be accepted. [unit]
 5. THE Codec SHALL define ErrorCode as a closed union containing exactly ten values and no others: INVALID_INPUT, PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS, BAD_METADATA, BAD_HEADER, UNSUPPORTED_VERSION, BAD_CRC, SESSION_MISMATCH, INCOMPLETE_DECODE, HASH_MISMATCH (the ten values listed in the Glossary). [unit]
 6. IF the Codec fails an operation, THEN THE Codec SHALL throw an instance of the single CodecError class carrying `{ code, message }`, where code is one of the ten ErrorCode values and message is a non-empty string. [unit]

@@ -7,7 +7,8 @@ import { isDense, Neighbors, rowWords } from "../src/neighbors.js";
 import { decodePacket } from "../src/packet.js";
 import { R } from "../src/overhead.js";
 import { getSolitonTable } from "../src/soliton.js";
-import { codeOf } from "./helpers.js";
+import { createDecoder } from "../src/decoder.js";
+import { codeOf, rawPacket } from "./helpers.js";
 
 const bytesOf = (n: number, seed = 1): Uint8Array => {
   let x = seed >>> 0 || 1;
@@ -88,9 +89,25 @@ describe("packetSize and limits (R3.4, R3.5, R7.3, R7.4)", () => {
     expect(await rejects(encode(payload(5), { packetSize: 65566 }))).toBe("INVALID_INPUT");
     expect(await rejects(encode(payload(5), { packetSize: 100.5 }))).toBe("INVALID_INPUT");
   });
-  it("payload length equal to maxPayloadBytes is accepted, one more is PAYLOAD_TOO_LARGE", async () => {
-    expect((await encode(payload(64), { maxPayloadBytes: 64 })).K).toBeGreaterThan(0);
-    expect(await rejects(encode(payload(65), { maxPayloadBytes: 64 }))).toBe("PAYLOAD_TOO_LARGE");
+  it("the limit applies to the coded stream: L = limit is accepted by encoder and decoder, L + 1 is not (R7.3)", async () => {
+    const p = payload(64); // record for name "a", empty mime is 41 bytes, so L = 105
+    const L = 41 + 64;
+    const e = await encode(p, { ...small, maxPayloadBytes: L });
+    expect(e.totalLength).toBe(L);
+    const d = createDecoder({ maxPayloadBytes: L });
+    for (let i = 0; i < e.K; i++) expect((await d.push(e.next())).kind).toBe("accepted");
+    expect(d.result().payload).toEqual(p.bytes);
+    expect(await rejects(encode(p, { ...small, maxPayloadBytes: L - 1 }))).toBe("PAYLOAD_TOO_LARGE");
+    // a payload that alone fits but whose record pushes L over the limit is rejected too
+    expect(await rejects(encode(p, { ...small, maxPayloadBytes: 64 }))).toBe("PAYLOAD_TOO_LARGE");
+  });
+  it("a hand-built header with L + 1 is rejected by a decoder with the same limit (R3.13)", async () => {
+    const L = 105;
+    const d = createDecoder({ maxPayloadBytes: L });
+    const over = rawPacket({ blockSize: 16, totalLength: L + 1, blockCount: Math.ceil((L + 1) / 16), sessionId: 7 });
+    expect(await d.push(over)).toMatchObject({ kind: "rejected", code: "PAYLOAD_TOO_LARGE" });
+    const at = rawPacket({ blockSize: 16, totalLength: L, blockCount: Math.ceil(L / 16), sessionId: 7 });
+    expect((await d.push(at)).kind).toBe("accepted");
   });
   it("K equal to maxBlockCount is accepted, one more is TOO_MANY_BLOCKS", async () => {
     // record for name "a", empty mime is 41 bytes; blockSize 16: L = 41 + n
