@@ -41,12 +41,12 @@ describe("the written JSON records c, delta and D (R10.7)", () => {
   it("passes the command-line values through to the file", async () => {
     let written = "";
     const out = await runCli(`--c 3/100 --delta 1/10 --D 8 --K ${all} --samples 5 --write`, (j) => (written = j), full);
-    const file = JSON.parse(written) as { c: number[]; delta: number[]; D: number; quantile: string; samples: number; rows: Array<{ K: number }> };
+    const file = JSON.parse(written) as { c: number[]; delta: number[]; D: number; quantile: string; rows: Array<{ K: number; N: number }> };
     expect(file.c).toEqual([3, 100]);
     expect(file.delta).toEqual([1, 10]);
     expect(file.D).toBe(8);
     expect(file.quantile).toBe("0.995");
-    expect(file.samples).toBe(5);
+    expect(file.rows.every((r) => r.N === 5)).toBe(true);
     expect(file.rows.map((r) => r.K)).toEqual([...TABLE_KS]);
     expect(out.table.D).toBe(8);
     expect(written.endsWith("\n")).toBe(true);

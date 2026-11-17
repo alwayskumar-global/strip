@@ -5,6 +5,6 @@ import { it } from "vitest";
 import { runCli } from "./calibrate.js";
 
 it("calibrate", async () => {
-  const out = await runCli(process.env["CAL_ARGS"] ?? "", (json) => writeFileSync(`${process.cwd()}/src/overhead-table.json`, json));
+  const out = await runCli(process.env["CAL_ARGS"] ?? "", (json) => writeFileSync(`${process.cwd()}/src/overhead-table.json`, json), undefined, (l) => process.stdout.write(l + "\n"));
   process.stdout.write(out.text + "\n");
 }, 24 * 3600 * 1000);

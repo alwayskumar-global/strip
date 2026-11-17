@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { coldLimit, fColdPermille, fLatePermille, interpolate, lateCount, overheadTable, R, type OverheadRow } from "../src/overhead.js";
+import { calibrate } from "../perf/calibrate.js";
+import { DENSE_PERIOD, SOLITON_C, SOLITON_DELTA } from "../src/constants.js";
 import { codeOf } from "./helpers.js";
 
 const rows: OverheadRow[] = [
@@ -9,18 +11,45 @@ const rows: OverheadRow[] = [
 ];
 
 describe("table file (R10.2, R10.7)", () => {
-  it("holds the eight K values in ascending order with integer values", () => {
-    expect(overheadTable.rows.map((r) => r.K)).toEqual([10, 25, 50, 100, 250, 500, 1000, 2000]);
+  it("holds the eleven K values in ascending order with integer values and a per-row N", () => {
+    expect(overheadTable.rows.map((r) => r.K)).toEqual([10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384]);
     for (const r of overheadTable.rows) {
       for (const v of [r.K, r.fLatePermille, r.fColdPermille, r.R]) expect(Number.isInteger(v) && v >= 0).toBe(true);
+      expect(Number.isInteger(r.N) && (r.N as number) > 0).toBe(true);
+      expect(r.fLatePermille).toBeGreaterThanOrEqual(1000);
+      expect(r.fColdPermille).toBeGreaterThanOrEqual(1000);
     }
+    expect("samples" in overheadTable).toBe(false);
   });
-  it("records c, delta and D, and is marked provisional until calibrated", () => {
-    expect(overheadTable.c).toEqual([1, 10]);
-    expect(overheadTable.delta).toEqual([1, 2]);
-    expect(overheadTable.D).toBe(4);
-    expect(overheadTable.provisional).toBe(true);
+  it("is calibrated (not provisional) and records the frozen c, delta and D", () => {
+    expect(overheadTable.provisional).toBeUndefined();
+    expect(overheadTable.quantile).toBe("0.995");
+    expect(overheadTable.c).toEqual(SOLITON_C);
+    expect(overheadTable.delta).toEqual(SOLITON_DELTA);
+    expect(overheadTable.D).toBe(DENSE_PERIOD);
   });
+});
+
+describe("fresh calibration matches the committed rows for K = 10, 25, 50 (R10.4, R10.5)", () => {
+  it("reproduces fLate, fCold and R with the table's own N, c, delta and D", async () => {
+    const small = overheadTable.rows.filter((r) => [10, 25, 50].includes(r.K));
+    expect(small.length).toBe(3);
+    const fresh = await calibrate({
+      format: { c: overheadTable.c, delta: overheadTable.delta, D: overheadTable.D },
+      Ks: small.map((r) => r.K),
+      samples: Object.fromEntries(small.map((r) => [r.K, r.N as number])),
+    });
+    fresh.forEach((f, i) => {
+      const row = small[i] as OverheadRow;
+      expect({ K: f.K, N: f.N, fLatePermille: f.fLatePermille, fColdPermille: f.fColdPermille, R: f.R }).toEqual({
+        K: row.K,
+        N: row.N,
+        fLatePermille: row.fLatePermille,
+        fColdPermille: row.fColdPermille,
+        R: row.R,
+      });
+    });
+  }, 180000);
 });
 
 describe("interpolation and clamping (R10.3)", () => {

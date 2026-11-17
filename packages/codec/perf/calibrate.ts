@@ -28,6 +28,8 @@ export interface CalibrationOptions {
   /** Trials per K. */
   readonly samples: Readonly<Record<number, number>>;
   readonly seed?: number;
+  /** Optional progress callback, called after each K. */
+  readonly log?: (line: string) => void;
 }
 
 export interface Quantiles {
@@ -175,7 +177,9 @@ export async function calibrate(options: CalibrationOptions): Promise<KResult[]>
   for (const K of options.Ks) {
     const N = options.samples[K];
     if (N === undefined) throw new Error(`no sample count for K=${K}`);
+    const t0 = process.hrtime.bigint();
     out.push(await calibrateK(K, N, options.format, options.seed ?? CALIBRATION_SEED));
+    options.log?.(`K=${K} N=${N} done in ${(Number(process.hrtime.bigint() - t0) / 1e9).toFixed(1)} s`);
   }
   return out;
 }
@@ -193,9 +197,9 @@ export interface TableFile {
   readonly c: readonly [number, number];
   readonly delta: readonly [number, number];
   readonly D: number;
-  readonly samples: number;
   readonly quantile: "0.995";
-  readonly rows: ReadonlyArray<{ K: number; fLatePermille: number; fColdPermille: number; R: number }>;
+  /** N is the number of calibration trials behind the row. */
+  readonly rows: ReadonlyArray<{ K: number; N: number; fLatePermille: number; fColdPermille: number; R: number }>;
 }
 
 export function toTableFile(format: FormatParams, results: readonly KResult[]): TableFile {
@@ -204,9 +208,8 @@ export function toTableFile(format: FormatParams, results: readonly KResult[]): 
     c: format.c,
     delta: format.delta,
     D: format.D,
-    samples: Math.min(...results.map((r) => r.N)),
     quantile: "0.995",
-    rows: results.map((r) => ({ K: r.K, fLatePermille: r.fLatePermille, fColdPermille: r.fColdPermille, R: r.R })),
+    rows: results.map((r) => ({ K: r.K, N: r.N, fLatePermille: r.fLatePermille, fColdPermille: r.fColdPermille, R: r.R })),
   };
 }
 
@@ -307,9 +310,10 @@ export async function runCli(
   args: string,
   writer?: (json: string) => void,
   run: (options: CalibrationOptions) => Promise<KResult[]> = calibrate,
+  log?: (line: string) => void,
 ): Promise<CliOutput> {
   const a = parseArgs(args);
-  const results = await run({ format: a.format, Ks: a.Ks, samples: a.samples, seed: a.seed });
+  const results = await run({ format: a.format, Ks: a.Ks, samples: a.samples, seed: a.seed, ...(log ? { log } : {}) });
   const bad = failingK(results);
   if (bad !== undefined) throw new Error(`calibration failed: an infinite quantile at K=${bad}; nothing written`);
   const table = toTableFile(a.format, results);

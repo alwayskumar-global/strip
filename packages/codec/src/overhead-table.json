@@ -1,19 +1,92 @@
 {
   "formatVersion": 1,
-  "provisional": true,
-  "c": [1, 10],
-  "delta": [1, 2],
-  "D": 4,
-  "samples": 0,
+  "c": [
+    1,
+    10
+  ],
+  "delta": [
+    1,
+    2
+  ],
+  "D": 3,
   "quantile": "0.995",
   "rows": [
-    { "K": 10, "fLatePermille": 2000, "fColdPermille": 2500, "R": 10 },
-    { "K": 25, "fLatePermille": 2000, "fColdPermille": 2500, "R": 25 },
-    { "K": 50, "fLatePermille": 2000, "fColdPermille": 2500, "R": 50 },
-    { "K": 100, "fLatePermille": 2000, "fColdPermille": 2500, "R": 100 },
-    { "K": 250, "fLatePermille": 2000, "fColdPermille": 2500, "R": 250 },
-    { "K": 500, "fLatePermille": 2000, "fColdPermille": 2500, "R": 500 },
-    { "K": 1000, "fLatePermille": 2000, "fColdPermille": 2500, "R": 1000 },
-    { "K": 2000, "fLatePermille": 2000, "fColdPermille": 2500, "R": 2000 }
+    {
+      "K": 10,
+      "N": 1000,
+      "fLatePermille": 2000,
+      "fColdPermille": 2100,
+      "R": 11
+    },
+    {
+      "K": 25,
+      "N": 1000,
+      "fLatePermille": 1320,
+      "fColdPermille": 1760,
+      "R": 20
+    },
+    {
+      "K": 50,
+      "N": 1000,
+      "fLatePermille": 1180,
+      "fColdPermille": 1440,
+      "R": 27
+    },
+    {
+      "K": 100,
+      "N": 1000,
+      "fLatePermille": 1100,
+      "fColdPermille": 1290,
+      "R": 30
+    },
+    {
+      "K": 250,
+      "N": 500,
+      "fLatePermille": 1032,
+      "fColdPermille": 1164,
+      "R": 54
+    },
+    {
+      "K": 500,
+      "N": 500,
+      "fLatePermille": 1016,
+      "fColdPermille": 1144,
+      "R": 87
+    },
+    {
+      "K": 1000,
+      "N": 300,
+      "fLatePermille": 1008,
+      "fColdPermille": 1126,
+      "R": 144
+    },
+    {
+      "K": 2000,
+      "N": 300,
+      "fLatePermille": 1820,
+      "fColdPermille": 1113,
+      "R": 257
+    },
+    {
+      "K": 4000,
+      "N": 100,
+      "fLatePermille": 1759,
+      "fColdPermille": 1115,
+      "R": 489
+    },
+    {
+      "K": 8000,
+      "N": 100,
+      "fLatePermille": 1690,
+      "fColdPermille": 1405,
+      "R": 975
+    },
+    {
+      "K": 16384,
+      "N": 100,
+      "fLatePermille": 1661,
+      "fColdPermille": 1618,
+      "R": 1932
+    }
   ]
 }
