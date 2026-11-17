@@ -62,11 +62,14 @@ export interface DecoderDebug {
 
 export interface InternalDecoder extends Decoder {
   debug(): DecoderDebug;
+  peekBlock(i: number): Uint8Array | undefined;
 }
 
 type Phase = "idle" | "collecting" | "verifying" | "complete" | "failed";
 
+const FREE = 0;
 const LIVE = 1;
+const DEAD = 2;
 const CHUNK = 64;
 
 class DecoderImpl implements InternalDecoder {
@@ -102,6 +105,11 @@ class DecoderImpl implements InternalDecoder {
   private readonly eqFreeIds: number[] = [];
   private eqNext = 0;
   private liveEqs = 0;
+  private readonly pendingFree: number[] = [];
+
+  // Solved Blocks whose equations have not been reduced yet (peeling work stack).
+  private stack!: Uint32Array;
+  private stackLen = 0;
 
   // Adjacency: per Block a linked list of edges to the equations that contain it.
   private head!: Int32Array;
@@ -139,6 +147,11 @@ class DecoderImpl implements InternalDecoder {
 
   result(): DecodedFile {
     throw new CodecError("INCOMPLETE_DECODE", "decode is not complete");
+  }
+
+  /** Test hook: a copy of solved Block i, or undefined while it is unsolved. */
+  peekBlock(i: number): Uint8Array | undefined {
+    return this.solved[i] === 1 ? this.blocks.block(i).slice() : undefined;
   }
 
   debug(): DecoderDebug {
@@ -181,6 +194,7 @@ class DecoderImpl implements InternalDecoder {
     }
     this.seen.add(f.seq);
     this.acceptSparse(f);
+    this.drain();
     return this.accepted();
   }
 
@@ -197,6 +211,7 @@ class DecoderImpl implements InternalDecoder {
     this.scratch = new BlockBuffer(1, this.bs);
     this.setBuf = new Uint32Array(K);
     this.unsolvedBuf = new Uint32Array(K);
+    this.stack = new Uint32Array(K);
     this.eqCap = 2 * K + 64;
     this.eqState = new Uint8Array(this.eqCap);
     this.eqDegree = new Uint32Array(this.eqCap);
@@ -240,6 +255,52 @@ class DecoderImpl implements InternalDecoder {
     copyBlock(this.blocks, b, src, si);
     this.solved[b] = 1;
     this.solvedCount++;
+    this.stack[this.stackLen++] = b;
+  }
+
+  /**
+   * Peeling: reduce every equation touching a newly solved Block. An equation that drops to degree 1
+   * solves its last Block, which is queued in turn. Equations that reach degree 0 are discarded.
+   */
+  private drain(): void {
+    while (this.stackLen > 0) {
+      const b = this.stack[--this.stackLen] as number;
+      let e = this.head[b] as number;
+      this.head[b] = -1;
+      while (e >= 0) {
+        const next = this.edgeNext[e] as number;
+        const eq = this.edgeEq[e] as number;
+        this.edgeNext[e] = this.edgeFree;
+        this.edgeFree = e;
+        if (this.eqState[eq] === LIVE) {
+          const buf = this.eqBuf(eq);
+          xorBlock(buf, eq % CHUNK, this.blocks, b);
+          this.eqIdx[eq] = (this.eqIdx[eq] as number) ^ b;
+          const degree = (this.eqDegree[eq] as number) - 1;
+          this.eqDegree[eq] = degree;
+          if (degree === 0) {
+            this.kill(eq);
+          } else if (degree === 1) {
+            const c = this.eqIdx[eq] as number;
+            if (this.solved[c] === 0) this.markSolved(c, buf, eq % CHUNK);
+            this.kill(eq);
+          }
+        }
+        e = next;
+      }
+    }
+    // Ids are recycled only after every list that may still hold a stale edge has been walked.
+    for (const id of this.pendingFree) {
+      this.eqState[id] = FREE;
+      this.eqFreeIds.push(id);
+    }
+    this.pendingFree.length = 0;
+  }
+
+  private kill(eq: number): void {
+    this.eqState[eq] = DEAD;
+    this.liveEqs--;
+    this.pendingFree.push(eq);
   }
 
   private allocEq(): number {

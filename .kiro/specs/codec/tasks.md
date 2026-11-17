@@ -145,7 +145,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests for each status and for state unchanged on ignore and reject.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.17, 5.18, 7.7_
 
-  - [ ] 3.5 `decoder.ts` (b): peeling
+  - [x] 3.5 `decoder.ts` (b): peeling
     - Implement peeling with adjacency lists and a ripple queue.
     - Peeling-only completion does not run Gaussian elimination.
     - When peeling stalls and the residual exceeds `maxGaussianBlocks`, keep collecting Packets with no error and no `rejected` status.
