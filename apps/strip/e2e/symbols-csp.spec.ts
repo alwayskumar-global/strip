@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import type { Page, Response } from "@playwright/test";
 const EXPECTED =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const STRIP = "http://127.0.0.1:5180";
 const ALT = "http://127.0.0.1:5181";
 const PAGE = "/e2e-harness/symbols.html";
@@ -101,4 +101,19 @@ test("i: the production build emits a hashed same-origin .wasm, not inlined, tha
     expect(Object.keys(pkg[k] ?? {})).not.toContain("zxing-wasm");
     expect(Object.keys(pkg[k] ?? {})).not.toContain("qr");
   }
+});
+
+test("k: the decode worker is a same-origin file (not blob: or data:), carries the CSP header, loads the wasm and decodes with no violation (R9.11)", async ({ page }) => {
+  const workers: string[] = [];
+  page.on("worker", (w) => workers.push(w.url()));
+  const w = watch(page);
+  await open(page, STRIP);
+  expect(await page.evaluate(() => (window as unknown as { __symbols: Api }).__symbols.startWorker())).toMatchObject({ ok: true });
+  expect(workers.length).toBe(1);
+  expect(workers[0]).toMatch(/^http:\/\/127\.0\.0\.1:5180\/assets\/decode\.worker-[\w-]+\.js$/);
+  const res = w.responses.find((r) => r.url() === workers[0]);
+  expect(res?.headers()["content-security-policy"]).toBe(EXPECTED);
+  expect(EXPECTED).toContain("worker-src 'self'");
+  expect(await page.evaluate(() => (window as unknown as { __symbols: Api }).__symbols.violations)).toEqual([]);
+  expect(w.consoleProblems).toEqual([]);
 });

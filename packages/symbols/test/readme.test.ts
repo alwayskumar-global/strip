@@ -13,7 +13,7 @@ describe("documentation (R14.6, R9.6, R6.7, R7.12)", () => {
   it("R9.6: states that the CSP is an HTTP header because frame-ancestors is ignored in a meta element", () => {
     expect(readme).toMatch(/HTTP response header/);
     expect(readme).toMatch(/`frame-ancestors` is ignored in a `<meta>` element/);
-    expect(readme).toContain("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'");
+    expect(readme).toContain("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'");
   });
   it("documents the wasm-url subpath, the Latin-1 mapping and measured claims with N", () => {
     expect(readme).toContain("@strip/symbols/wasm-url");

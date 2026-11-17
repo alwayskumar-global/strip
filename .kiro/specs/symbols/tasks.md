@@ -376,7 +376,7 @@ Tag legend, as in design.md "Test configs":
     - Run `pnpm test:e2e` and report the output.
     - _Requirements: 9.8, 9.9, 16.2, 16.12, 16.13_
 
-  - [ ] 5.5 CSP amendment (`worker-src 'self'`)
+  - [x] 5.5 CSP amendment (`worker-src 'self'`)
     - `apps/strip/src/csp.ts`: the new exact string `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. Update `apps/strip/src/csp.test.ts` (exact string, no `'unsafe-eval'`, no `'unsafe-inline'`, `'wasm-unsafe-eval'` once, `worker-src 'self'` present, `img-src` and `style-src` absent).
     - Update every pinned copy of the policy: the Playwright expected strings in `apps/strip/e2e/symbols-csp.spec.ts`, `symbols-server.spec.ts`, `symbols-worker.spec.ts` and `symbols-notices.spec.ts`, `apps/strip/playwright.config.ts`, the harness server alternative policy in `apps/strip/e2e-harness/server.mjs` (the same string without `'wasm-unsafe-eval'`, so test b still fails the wasm load for the right reason), `packages/symbols/test/readme.test.ts` and the CSP statement in `packages/symbols/README.md`. Search the repository (excluding `node_modules`, `dist` and the spec and spike documents) for `wasm-unsafe-eval` and for `tools/*.test.ts` pins; edit a tools test only if it pins the string. The design and requirement text is already amended in the docs commit, so no spec file is edited.
     - Test: the string in `csp.ts` equals the R9.3 string character for character (R9.3, R9.7) [unit].

@@ -38,10 +38,10 @@ Version and ECC level can be overridden. The defaults come from a synthetic expe
 The app runs under one exact policy, kept in `apps/strip/src/csp.ts`:
 
 ```
-default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 ```
 
-No `'unsafe-eval'`, no `'unsafe-inline'`. `'wasm-unsafe-eval'` allows compiling and instantiating WebAssembly only, not `eval` or `new Function`. The host must deliver the policy as an HTTP response header on every response, including the worker script and the `.wasm`, because `frame-ancestors` is ignored in a `<meta>` element and a worker is governed by the policy of its own response. The `.wasm` must be served as `application/wasm`; otherwise the streaming compile falls back with a console warning.
+No `'unsafe-eval'`, no `'unsafe-inline'`. `worker-src 'self'` is explicit: the decode worker is a same-origin file, not a `blob:` worker. `'wasm-unsafe-eval'` allows compiling and instantiating WebAssembly only, not `eval` or `new Function`. The host must deliver the policy as an HTTP response header on every response, including the worker script and the `.wasm`, because `frame-ancestors` is ignored in a `<meta>` element and a worker is governed by the policy of its own response. The `.wasm` must be served as `application/wasm`; otherwise the streaming compile falls back with a console warning.
 
 ## wasm-url subpath
 
