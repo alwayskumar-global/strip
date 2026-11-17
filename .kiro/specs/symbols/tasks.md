@@ -89,7 +89,7 @@ Tag legend, as in design.md "Test configs":
     - Test: `package.json` lists `qr` as exactly `0.7.2` with no range, and `tools/deps.test.ts` passes (R11.1, R11.2, R11.3) [unit].
     - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6, 1.9, 1.12, 1.13, 1.14, 2.1, 8.3, 8.4, 11.1, 11.2, 11.3, 11.6_
 
-  - [ ] 1.6 Property tests P2, P3, P4, P5
+  - [x] 1.6 Property tests P2, P3, P4, P5
     - `test/helpers/matrix-structure.ts`: independent structural helper that checks finder patterns, separators, timing row and column 6, the dark module, format information (BCH check, both copies) and, for version >= 7, version information (BCH check, both copies). It is written from the QR specification and does not import from `src` beyond the matrix type.
     - Property P2: **Feature: symbols, Property 2: for any bytes and options, two encodeSymbol calls return deep-equal matrices with the same mask** (R1.9, R10.2) [property].
     - Property P3: **Feature: symbols, Property 3: for any encoded matrix, size and length match 17 + 4 * version and finder, separators, timing, dark module, format and version information match the spec** (R2.1, R2.4, R14.4) [property]. Also assert the width including a 4-module Quiet_Zone equals 17 + 4 x version + 8 for every version 1..40 (580 px at v30 and 740 px at v40 at 4 ppm) [unit].
