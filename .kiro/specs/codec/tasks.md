@@ -374,7 +374,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 2.8, 2.9, 10.6, 10.7**
     - _Requirements: 2.8, 2.9, 10.6, 10.7_
 
-  - [ ] 5.24 M3: Page_Mode with 5% loss
+  - [x] 5.24 M3: Page_Mode with 5% loss
     - **Property M3** (design M3). Same N, K values, seed policy and frozen D as M1.
     - The default `page()` of T = K + R(K) Packets with loss 0.05 completes in >= 0.99 of trials. Report R(K), the observed rate and the Wilson lower bound per K. Also report success at loss 0.02 and 0.10 as informational output with no assertion.
     - Tag: `Feature: codec, Property M3: default page completes under 5% loss`.
