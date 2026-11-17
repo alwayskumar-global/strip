@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./wasm-url": "./src/wasm-url.ts"
+  },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "test": "vitest run --passWithNoTests",
+    "test:measured": "vitest run --config vitest.measured.config.ts --passWithNoTests",
+    "perf": "vitest run --config vitest.perf.config.ts --passWithNoTests"
   },
   "dependencies": {
     "@strip/codec": "workspace:*"

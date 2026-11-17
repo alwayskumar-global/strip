@@ -26,6 +26,36 @@ const boundary = (allowed, message) => ({
   ],
 });
 
+// symbolsImports: option overrides replace the default restriction for one file group.
+// A false value lifts that restriction for the group.
+const symbolsImports = (override) => {
+  const regexes = {
+    qr: "^qr(/|$)",
+    zxing: "^zxing-wasm(/|$)",
+    url: "\\?url$",
+    wasmUrl: "(^|/)wasm-url(\\.[cm]?[jt]s)?$",
+    ...override,
+  };
+  return {
+    "no-restricted-imports": [
+      "error",
+      {
+        patterns: [
+          internals,
+          { group: ["@strip/*", "!@strip/codec"], message: "symbols may import only @strip/codec." },
+          ...(regexes.qr ? [{ regex: regexes.qr, message: "qr is imported only by qr-encoder.ts, and never its decoder (R11.4, R11.5)." }] : []),
+          ...(regexes.zxing ? [{ regex: regexes.zxing, message: "zxing-wasm/reader is imported only by zxing-backend.ts (R11.4)." }] : []),
+          ...(regexes.url ? [{ regex: regexes.url, message: "Asset-URL imports are only allowed in wasm-url.ts (R10.4)." }] : []),
+          { regex: regexes.wasmUrl, message: "No src file imports wasm-url.ts (R10.4)." },
+        ],
+      },
+    ],
+    "@typescript-eslint/no-restricted-imports": [
+      "error",
+      { patterns: [{ group: ["@strip/codec"], allowTypeImports: true, message: "Import only types from @strip/codec (R1.11)." }] },
+    ],
+  };
+};
 export default tseslint.config(
   { ignores: ["design/**", "**/dist/**", "**/node_modules/**", "**/coverage/**", "**/playwright-report/**", "**/test-results/**"] },
   js.configs.recommended,
@@ -46,9 +76,26 @@ export default tseslint.config(
     files: ["packages/codec/src/**/*.ts"],
     rules: boundary([], "codec depends on nothing in the workspace."),
   },
+  // symbols: workspace boundary plus the third-party import rules of the symbols design (R10.4, R11.4, R11.5).
+  // Later blocks replace the whole rule options, so each block lists its own full pattern set.
   {
     files: ["packages/symbols/src/**/*.ts"],
-    rules: boundary(["codec"], "symbols may import only @strip/codec."),
+    rules: symbolsImports({}),
+  },
+  {
+    files: ["packages/symbols/src/qr-encoder.ts"],
+    rules: symbolsImports({ qr: "^qr/" }),
+  },
+  {
+    files: ["packages/symbols/src/zxing-backend.ts"],
+    rules: symbolsImports({ zxing: "^zxing-wasm(?!/reader$)(/|$)" }),
+  },
+  {
+    files: ["packages/symbols/src/wasm-url.ts"],
+    rules: symbolsImports({
+      zxing: "^zxing-wasm(?!/reader/zxing_reader\\.wasm\\?url$)(/|$)",
+      url: false,
+    }),
   },
   {
     files: ["apps/strip/src/**/*.ts"],

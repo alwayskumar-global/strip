@@ -33,7 +33,7 @@ Tag legend, as in design.md "Test configs":
 ## Tasks
 
 - [ ] 1. Group 1: Encoder, Latin-1 mapping, capacity table, renderers, fitScale, tooling
-  - [ ] 1.1 Package tooling and static import checks
+  - [x] 1.1 Package tooling and static import checks
     - `packages/symbols/tsconfig.json` for `src` with `lib: ["ES2023"]`, no DOM, no Node types. `tsconfig.test.json` for `test`, `perf` and `e2e`-free test code, including the ambient shims `test/node-shim.d.ts` and `perf/node-shim.d.ts`. The `typecheck` script covers both.
     - `vitest.config.ts` (default, `test/**/*.test.ts`), `vitest.measured.config.ts` (`perf/measured/*.measured.ts`) and `vitest.perf.config.ts` (`perf/*.perf.ts`). Scripts `test`, `test:measured`, `perf`, `typecheck` in `package.json`.
     - `src/vite-url.d.ts` declaring `module "*?url"`.

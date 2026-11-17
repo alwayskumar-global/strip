@@ -64,3 +64,40 @@ describe("package boundaries", () => {
     expect(await ruleIds(CLOCK, imp("@strip/codec/src/index"))).toContain(IMPORTS);
   });
 });
+describe("symbols import rules (R1.11, R10.4, R11.4, R11.5)", () => {
+  const f = (name: string) => `packages/symbols/src/${name}`;
+  const imp = (spec: string) => `import ${JSON.stringify(spec)};\n`;
+  const ruleIdsFor = (name: string, code: string) => ruleIds(f(name), code);
+  it("qr is allowed only in qr-encoder.ts, and its decoder entry never", async () => {
+    expect(await ruleIdsFor("qr-encoder.ts", imp("qr"))).not.toContain(IMPORTS);
+    expect(await ruleIdsFor("qr-encoder.ts", imp("qr/decode.js"))).toContain(IMPORTS);
+    expect(await ruleIdsFor("encode-symbol.ts", imp("qr"))).toContain(IMPORTS);
+  });
+  it("zxing-wasm/reader is allowed only in zxing-backend.ts", async () => {
+    expect(await ruleIdsFor("zxing-backend.ts", imp("zxing-wasm/reader"))).not.toContain(IMPORTS);
+    for (const s of ["zxing-wasm", "zxing-wasm/full", "zxing-wasm/writer"]) {
+      expect(await ruleIdsFor("zxing-backend.ts", imp(s))).toContain(IMPORTS);
+    }
+    expect(await ruleIdsFor("decode.ts", imp("zxing-wasm/reader"))).toContain(IMPORTS);
+  });
+  it("asset-URL imports are allowed only in wasm-url.ts", async () => {
+    const wasm = "zxing-wasm/reader/zxing_reader.wasm?url";
+    expect(await ruleIdsFor("wasm-url.ts", imp(wasm))).not.toContain(IMPORTS);
+    expect(await ruleIdsFor("decode.ts", imp(wasm))).toContain(IMPORTS);
+    expect(await ruleIdsFor("decode.ts", imp("./x.png?url"))).toContain(IMPORTS);
+  });
+  it("no src file imports wasm-url.ts", async () => {
+    for (const s of ["./wasm-url", "./wasm-url.ts", "./wasm-url.js"]) {
+      expect(await ruleIdsFor("index.ts", imp(s))).toContain(IMPORTS);
+    }
+  });
+  it("@strip/codec is type-only", async () => {
+    const ids = (code: string) => ruleIdsFor("capacity.ts", code);
+    expect(await ids(`import type { Packet } from "@strip/codec";\nexport type P = Packet;\n`)).not.toContain(
+      "@typescript-eslint/no-restricted-imports",
+    );
+    expect(await ids(`import { encode } from "@strip/codec";\nexport const e = encode;\n`)).toContain(
+      "@typescript-eslint/no-restricted-imports",
+    );
+  });
+});
