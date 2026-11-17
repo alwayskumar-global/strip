@@ -32,7 +32,7 @@ Tag legend, as in design.md "Test configs":
 
 ## Tasks
 
-- [ ] 1. Group 1: Encoder, Latin-1 mapping, capacity table, renderers, fitScale, tooling
+- [x] 1. Group 1: Encoder, Latin-1 mapping, capacity table, renderers, fitScale, tooling
   - [x] 1.1 Package tooling and static import checks
     - `packages/symbols/tsconfig.json` for `src` with `lib: ["ES2023"]`, no DOM, no Node types. `tsconfig.test.json` for `test`, `perf` and `e2e`-free test code, including the ambient shims `test/node-shim.d.ts` and `perf/node-shim.d.ts`. The `typecheck` script covers both.
     - `vitest.config.ts` (default, `test/**/*.test.ts`), `vitest.measured.config.ts` (`perf/measured/*.measured.ts`) and `vitest.perf.config.ts` (`perf/*.perf.ts`). Scripts `test`, `test:measured`, `perf`, `typecheck` in `package.json`.
@@ -132,7 +132,7 @@ Tag legend, as in design.md "Test configs":
     - Test: pixels equal the union of `fillRect` calls from the recording fake context of task 1.8 for a v1 and a v10 matrix (ties the Node helper to the renderer logic; the Chromium tie is task 3.5) [unit].
     - _Requirements: 3.1, 13.2_
 
-  - [ ] 1.11 Group 1 checkpoint
+  - [x] 1.11 Group 1 checkpoint
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs. Confirm `tools/deps.test.ts` passes with the `qr` row.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 1.14, 10.1, 11.3_

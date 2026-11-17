@@ -124,7 +124,7 @@ const rows: boolean[][] = encodeQR(bytesToLatin1(bytes), "raw", {
   version,                     // always passed: chosen by capacity.ts, not by qr
   encoding: "byte",            // forces byte mode (R1.13); no auto-detect
   textEncoder: latin1TextEncoder,
-  border: 0,                   // quiet zone is a rendering option (R2.2)
+  border: 1,                   // qr rejects border 0; the one-module ring is sliced off (R2.2)
 });
 ```
 
@@ -133,7 +133,7 @@ Design points:
 - **Capacity check is ours.** When `textEncoder` is given, `qr` skips its UTF-8 length pre-check, so the package checks first: `bytes.length > QR_CAPACITY_BY_VERSION[version][ecc]` throws `PACKET_TOO_LARGE` (R1.5, R1.12). With no version option the limit is `QR_CAPACITY[ecc]`. If our check passed and `qr` still throws (including its `Capacity overflow` error), the adapter maps it to `ENCODE_FAILED` (R8.4). That mapping is a defect signal, not a normal path.
 - **Version.** `smallestVersion(len, ecc)` scans the table for the smallest version with capacity >= len (R1.2), and the adapter passes it explicitly, so version never depends on `qr` internals. Length exactly `QR_CAPACITY[ecc]` gives version 40 (R1.6).
 - **ECC and mask.** ECC defaults to L (R1.3). The mask is whatever `qr` selects by its penalty rule; the package does not pass a mask. It is deterministic for equal input (R1.9), and a test asserts equal matrices from repeated calls and from fresh module state (P2). The chosen mask is read back from the format information in the matrix and stored in `SymbolMatrix.mask`.
-- **Matrix.** `encodeQR(..., 'raw')` returns `boolean[][]` (`true` = dark), `size x size`. `matrixFromRows` flattens it row-major to `modules: boolean[]` after checking `size === 17 + 4 * version` (R2.1).
+- **Matrix.** `encodeQR(..., 'raw')` returns `boolean[][]` (`true` = dark). `qr` 0.7.2 rejects `border: 0` ("invalid border=0"), so the adapter requests `border: 1` and slices the one-module ring off every side, leaving `size x size`. (Implementation deviation approved by the user at the Group 1 checkpoint.) `matrixFromRows` flattens it row-major to `modules: boolean[]` after checking `size === 17 + 4 * version` (R2.1).
 - **Decode side.** `zxing-backend.ts` takes `result.bytes` (Uint8Array) and copies it out. It never reads `result.text` (R5.6).
 - **Evidence.** The spike round-tripped 51 payload cases (49 exact, 2 deliberate or mistaken over-capacity failures that raised a capacity error) and 30 real codec packets at sizes 2953, 1000 and 500, all 256 byte values included. Those become P1 and its fixtures.
 
