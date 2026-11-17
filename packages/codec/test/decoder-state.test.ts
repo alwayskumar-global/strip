@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createDecoder, createDecoderWith } from "../src/decoder.js";
 import { encode, encodeWith } from "../src/encoder.js";
+import { Neighbors } from "../src/neighbors.js";
+import { decodePacket } from "../src/packet.js";
+import { getSolitonTable } from "../src/soliton.js";
 import { DEFAULT_FORMAT } from "../src/format.js";
 import { rawPacket } from "./helpers.js";
 
@@ -68,10 +71,14 @@ describe("duplicates (R5.3)", () => {
   it("counts each distinct sequence number once, for systematic and repair packets", async () => {
     const e = await encodeWith(payload(300), small, { format: noDense });
     const d = createDecoderWith({}, noDense);
-    const packets = Array.from({ length: e.K + 10 }, () => e.next());
+    const sys = Array.from({ length: 5 }, () => e.next());
+    for (let i = 5; i < e.K; i++) e.next(); // leave most systematic packets out
+    const repair = Array.from({ length: 5 }, () => e.next());
+    const packets = [...sys, ...repair];
     for (const p of packets) await d.push(p);
+    expect(d.progress().complete).toBe(false);
     for (const p of packets) await d.push(p);
-    expect(d.progress().distinctPackets).toBe(e.K + 10);
+    expect(d.progress().distinctPackets).toBe(10);
   });
 });
 
@@ -144,14 +151,23 @@ describe("sparse equation memory bound (2K + 64)", () => {
   it("never stores more than 2K + 64 equations, but still counts packets as distinct", async () => {
     const e = await encodeWith(payload(2000), small, { format: noDense });
     const K = e.K;
-    const d = createDecoderWith({}, noDense);
+    const probe = new Neighbors(K, getSolitonTable(K, noDense), 0);
+    const buf = new Uint32Array(K);
+    const d = createDecoderWith({ maxGaussianBlocks: 0 }, noDense);
     for (let i = 0; i < K; i++) e.next(); // skip systematic packets
-    const N = 4 * K;
-    for (let i = 0; i < N; i++) await d.push(e.next());
+    // Only degree >= 2 repair packets: nothing is ever solved, so every one is stored until the bound.
+    let pushed = 0;
+    while (pushed < 3 * K) {
+      const p = e.next();
+      if (probe.select(e.sessionId, decodePacket(p).seq, buf) < 2) continue;
+      await d.push(p);
+      pushed++;
+    }
     const dbg = d.debug();
     expect(dbg.equationCapacity).toBe(2 * K + 64);
-    expect(dbg.liveEquations).toBeLessThanOrEqual(2 * K + 64);
-    expect(d.progress().distinctPackets).toBe(N);
+    expect(dbg.liveEquations).toBe(2 * K + 64);
+    expect(d.progress().solvedBlocks).toBe(0);
+    expect(d.progress().distinctPackets).toBe(3 * K);
   });
 });
 

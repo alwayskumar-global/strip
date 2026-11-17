@@ -6,3 +6,4 @@ declare module "node:fs" {
   export function statSync(path: string): { isDirectory(): boolean };
 }
 declare const process: { cwd(): string };
+declare function setTimeout(callback: () => void, ms: number): unknown;

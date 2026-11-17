@@ -162,7 +162,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests: dense row stored and counted (R5.18); the store never exceeds `maxDenseRows` (R5.19); DENSE_STORE_FULL ignore leaves state deep-equal, is not distinct and not seen, and the same Packet is accepted after a row is freed (R5.20, R5.22); sparse and systematic Packets still peel when the store is full (R5.21); a row with all columns solved is freed (R5.22); folding XORs each Block at most once; the folded payload equals a naive recomputation.
     - _Requirements: 5.18, 5.19, 5.20, 5.21, 5.22, 2.11, 2.12_
 
-  - [ ] 3.7 `gauss.ts` and completion
+  - [x] 3.7 `gauss.ts` and completion
     - `gauss.ts`: GF(2) elimination on bitset rows. Phase A finds rank on a copy, building rows from stored sparse equations (degree >= 2) and from the folded dense rows, restricted to unsolved columns. Phase B solves at full rank. The retry backoff is `max(1, U - r)` further equations. Default `maxGaussianBlocks` is 1024, configurable.
     - Trigger: ripple empty, unsolved U > 0, U <= `maxGaussianBlocks`, (stored sparse equations + stored dense rows) >= U, and the backoff satisfied. Run lazy dense folding at the start of each attempt.
     - Completion: assemble the Coded_Stream, `readRecordLength`, `parseMetadata`, `await hash`, then compare hash and length.

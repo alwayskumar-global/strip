@@ -1,8 +1,9 @@
 import { DEFAULT_MAX_BLOCK_COUNT, DEFAULT_MAX_GAUSSIAN_BLOCKS, DEFAULT_MAX_PAYLOAD_BYTES, maxDenseRows } from "./constants.js";
 import { CodecError, type ErrorCode, type IgnoreReason } from "./errors.js";
 import { DEFAULT_FORMAT, type FormatParams } from "./format.js";
-import { sha256WebCrypto, type HashFn } from "./hash.js";
-import type { Metadata } from "./metadata.js";
+import { findPivots, solveSquare } from "./gauss.js";
+import { computeDigest, sha256WebCrypto, type HashFn } from "./hash.js";
+import { parseMetadata, readRecordLength, type Metadata } from "./metadata.js";
 import { Neighbors, rowWords } from "./neighbors.js";
 import { decodePacket, type Limits, type PacketFields } from "./packet.js";
 import { getSolitonTable } from "./soliton.js";
@@ -49,7 +50,8 @@ export interface Decoder {
 
 /** Internal observation points for tests and calibration. */
 export interface DecoderHooks {
-  readonly onGauss?: () => void;
+  /** Called at the start of every Gaussian elimination attempt. */
+  readonly onGauss?: (info: { rows: number; unsolved: number }) => void;
 }
 
 export interface DecoderDebug {
@@ -137,6 +139,12 @@ class DecoderImpl implements InternalDecoder {
   private readonly denseFreeSlots: number[] = [];
   private denseCount = 0;
   private rowScratch!: Uint32Array;
+  private rowsAdded = 0;
+  private nextGaussAt = 0;
+
+  // Completion.
+  private failure: ErrorCode = "HASH_MISMATCH";
+  private decoded: DecodedFile | undefined;
 
   // Adjacency: per Block a linked list of edges to the equations that contain it.
   private head!: Int32Array;
@@ -173,7 +181,10 @@ class DecoderImpl implements InternalDecoder {
   }
 
   result(): DecodedFile {
-    throw new CodecError("INCOMPLETE_DECODE", "decode is not complete");
+    if (this.phase !== "complete" || this.decoded === undefined) {
+      throw new CodecError("INCOMPLETE_DECODE", "decode is not complete");
+    }
+    return this.decoded;
   }
 
   /** Test hook: a copy of solved Block i, or undefined while it is unsolved. */
@@ -205,6 +216,7 @@ class DecoderImpl implements InternalDecoder {
 
   private async pushInner(packet: Uint8Array): Promise<PushStatus> {
     validatePacketBytes(packet);
+    if (this.phase === "failed") return this.rejected(this.failure);
     let f: PacketFields;
     try {
       f = decodePacket(packet, this.limits);
@@ -212,15 +224,21 @@ class DecoderImpl implements InternalDecoder {
       if (e instanceof CodecError) return this.rejected(e.code);
       throw e;
     }
+    if (this.phase === "complete") return this.ignored("ALREADY_COMPLETE");
     if (this.phase === "idle") this.startSession(f);
     else if (f.sessionId !== this.sessionId) return this.ignored("SESSION_MISMATCH");
     else if (f.totalLength !== this.L || f.blockSize !== this.bs || f.blockCount !== this.K) return this.rejected("BAD_HEADER");
     if (this.seen.has(f.seq)) return this.ignored("DUPLICATE_PACKET");
 
-    if (f.seq >= this.K && this.neighbors.isDense(f.seq)) return this.acceptDense(f);
-    this.seen.add(f.seq);
-    this.acceptSparse(f);
-    this.drain();
+    if (f.seq >= this.K && this.neighbors.isDense(f.seq)) {
+      if (this.acceptDense(f) === "full") return this.ignored("DENSE_STORE_FULL");
+    } else {
+      this.seen.add(f.seq);
+      this.acceptSparse(f);
+      this.drain();
+    }
+    this.maybeGauss();
+    if (this.solvedCount === this.K) return this.finish();
     return this.accepted();
   }
 
@@ -287,7 +305,121 @@ class DecoderImpl implements InternalDecoder {
     this.eqIdx[id] = idx;
     this.eqState[id] = LIVE;
     this.liveEqs++;
+    this.rowsAdded++;
     for (let i = 0; i < degree; i++) this.addEdge(unsolvedBuf[i] as number, id);
+  }
+
+  /**
+   * Gaussian elimination on the residual. Runs when peeling has stalled, the unsolved count U is at
+   * most maxGaussianBlocks, there are at least U stored rows (sparse equations plus dense rows),
+   * and the retry backoff allows it. Above the cap the decoder just keeps collecting.
+   */
+  private maybeGauss(): void {
+    const U = this.K - this.solvedCount;
+    if (U === 0 || U > this.maxGauss) return;
+    const R = this.liveEqs + this.denseCount;
+    if (R < U || this.rowsAdded < this.nextGaussAt) return;
+    this.hooks.onGauss?.({ rows: R, unsolved: U });
+
+    this.foldDense();
+    const W = (U + 31) >>> 5;
+    const colOf = new Int32Array(this.K).fill(-1);
+    const cols = new Uint32Array(U);
+    let u = 0;
+    for (let b = 0; b < this.K; b++) {
+      if (this.solved[b] === 0) {
+        colOf[b] = u;
+        cols[u++] = b;
+      }
+    }
+    const bits = new Uint32Array(R * W);
+    const rowId = new Int32Array(R); // equation id, or -1 - slot for a dense row
+    const eqRow = new Int32Array(this.eqNext).fill(-1);
+    let r = 0;
+    for (let id = 0; id < this.eqNext; id++) {
+      if (this.eqState[id] === LIVE) {
+        eqRow[id] = r;
+        rowId[r++] = id;
+      }
+    }
+    for (let slot = 0; slot < this.denseCap; slot++) {
+      if (this.denseUsed[slot] === 1) rowId[r++] = -1 - slot;
+    }
+    for (let c = 0; c < U; c++) {
+      let e = this.head[cols[c] as number] as number;
+      while (e >= 0) {
+        const row = eqRow[this.edgeEq[e] as number] as number;
+        if (row >= 0) bits[row * W + (c >>> 5)] = (bits[row * W + (c >>> 5)] as number) | (1 << (c & 31));
+        e = this.edgeNext[e] as number;
+      }
+    }
+    for (let row = this.liveEqs; row < R; row++) {
+      const slot = -1 - (rowId[row] as number);
+      for (let c = 0; c < U; c++) {
+        const b = cols[c] as number;
+        if (((this.denseBits[slot * this.nw + (b >>> 5)] as number) >>> (b & 31)) & 1) {
+          bits[row * W + (c >>> 5)] = (bits[row * W + (c >>> 5)] as number) | (1 << (c & 31));
+        }
+      }
+    }
+
+    const { rank, pivotRow } = findPivots(bits, R, U);
+    if (rank < U) {
+      this.nextGaussAt = this.rowsAdded + Math.max(1, U - rank);
+      return;
+    }
+    const m = new Uint32Array(U * W);
+    const values = new BlockBuffer(U, this.bs);
+    for (let c = 0; c < U; c++) {
+      const row = pivotRow[c] as number;
+      m.set(bits.subarray(row * W, (row + 1) * W), c * W);
+      const id = rowId[row] as number;
+      if (id >= 0) copyBlock(values, c, this.eqBuf(id), id % CHUNK);
+      else copyBlock(values, c, this.densePayload, -1 - id);
+    }
+    const ord = solveSquare(m, U, values);
+    for (let c = 0; c < U; c++) this.markSolved(cols[c] as number, values, ord[c] as number);
+    this.drain();
+  }
+
+  /** All Blocks are solved: assemble, parse the record, then verify length and SHA-256 before exposing bytes. */
+  private async finish(): Promise<PushStatus> {
+    if (this.phase !== "collecting") return this.accepted();
+    this.phase = "verifying";
+    let meta: Metadata;
+    let payload: Uint8Array;
+    try {
+      const stream = new Uint8Array(this.L);
+      for (let i = 0; i < this.K; i++) {
+        stream.set(this.blocks.block(i).subarray(0, Math.min(this.bs, this.L - i * this.bs)), i * this.bs);
+      }
+      const recordLength = readRecordLength(stream);
+      meta = parseMetadata(stream.subarray(0, recordLength));
+      payload = stream.subarray(recordLength);
+    } catch (e) {
+      if (e instanceof CodecError) return this.fail(e.code);
+      throw e;
+    }
+    if (payload.length !== meta.byteLength) return this.fail("HASH_MISMATCH");
+    let digest: Uint8Array;
+    try {
+      digest = await computeDigest(this.hash, payload);
+    } catch (e) {
+      this.phase = "collecting"; // a failing hash function is not a verdict on the data; a later push retries
+      throw e;
+    }
+    for (let i = 0; i < digest.length; i++) {
+      if (digest[i] !== meta.sha256[i]) return this.fail("HASH_MISMATCH");
+    }
+    this.decoded = { payload, metadata: meta };
+    this.phase = "complete";
+    return this.accepted();
+  }
+
+  private fail(code: ErrorCode): PushStatus {
+    this.phase = "failed";
+    this.failure = code;
+    return this.rejected(code);
   }
 
   private markSolved(b: number, src: BlockBuffer, si: number): void {
@@ -303,14 +435,14 @@ class DecoderImpl implements InternalDecoder {
    * Dense Packets never touch adjacency or the ripple. A Dense_Row is stored as a K-bit row plus
    * payload and is used only by Gaussian elimination.
    */
-  private acceptDense(f: PacketFields): PushStatus {
-    if (this.denseCount >= this.denseCap) return this.ignored("DENSE_STORE_FULL");
+  private acceptDense(f: PacketFields): "full" | "ok" {
+    if (this.denseCount >= this.denseCap) return "full";
     this.seen.add(f.seq);
     const { nw, rowScratch, solvedBits } = this;
     this.neighbors.denseRow(this.sessionId, f.seq, rowScratch);
     let left = 0;
     for (let w = 0; w < nw; w++) left += popcount((rowScratch[w] as number) & ~(solvedBits[w] as number));
-    if (left === 0) return this.accepted(); // every column is already known: nothing to keep
+    if (left === 0) return "ok"; // every column is already known: nothing to keep
     const slot = this.denseFreeSlots.pop() as number;
     this.denseBits.set(rowScratch, slot * nw);
     this.denseFolded.fill(0, slot * nw, (slot + 1) * nw);
@@ -319,7 +451,8 @@ class DecoderImpl implements InternalDecoder {
     this.denseLeft[slot] = left;
     this.denseUsed[slot] = 1;
     this.denseCount++;
-    return this.accepted();
+    this.rowsAdded++;
+    return "ok";
   }
 
   /** Block b was solved: rows with bit b lose a column; a row with no unsolved column is discarded. */

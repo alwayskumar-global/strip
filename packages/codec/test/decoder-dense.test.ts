@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { createDecoderWith } from "../src/decoder.js";
 import { encodeWith } from "../src/encoder.js";
 import { DEFAULT_FORMAT } from "../src/format.js";
+import { Neighbors, rowWords } from "../src/neighbors.js";
 import { decodePacket } from "../src/packet.js";
+import { getSolitonTable } from "../src/soliton.js";
 
 const bytesOf = (n: number, seed = 1): Uint8Array => {
   let x = seed >>> 0 || 1;
@@ -131,7 +133,7 @@ describe("sparse and systematic packets keep peeling while the store is full (R5
 });
 
 describe("fully solved rows are discarded (R5.22)", () => {
-  it("frees a row once all its columns are solved, and never stores one that is already solved", async () => {
+  it("frees a row once all its columns are solved", async () => {
     const { e, sys, K } = await setup(200);
     const d = createDecoderWith(noGauss, allDense);
     for (let i = 0; i < K; i++) e.next();
@@ -140,10 +142,30 @@ describe("fully solved rows are discarded (R5.22)", () => {
     for (const p of sys) await d.push(p);
     expect(d.progress().solvedBlocks).toBe(K);
     expect(d.debug().denseStored).toBe(0);
-    const s = await d.push(e.next());
-    expect(s.kind).toBe("accepted"); // all columns known, counted, nothing stored
+  });
+
+  it("does not store a row whose columns are all solved, but still counts the packet", async () => {
+    const { e, sys, K } = await setup(200);
+    const d = createDecoderWith(noGauss, allDense);
+    const probe = new Neighbors(K, getSolitonTable(K, allDense), 1);
+    const row = new Uint32Array(rowWords(K));
+    for (let i = 0; i < K; i++) e.next();
+    const repair = Array.from({ length: 40 }, () => e.next());
+    for (let i = 1; i < K; i++) await d.push(sys[i] as Uint8Array); // everything except Block 0
+    const hasCol0 = (p: Uint8Array) => {
+      probe.denseRow(e.sessionId, decodePacket(p).seq, row);
+      return ((row[0] as number) & 1) === 1;
+    };
+    const without = repair.find((p) => !hasCol0(p)) as Uint8Array;
+    const withCol = repair.find((p) => hasCol0(p)) as Uint8Array;
+    expect(without).toBeDefined();
+    expect(withCol).toBeDefined();
+    const distinct = d.progress().distinctPackets;
+    expect((await d.push(without)).kind).toBe("accepted");
     expect(d.debug().denseStored).toBe(0);
-    expect(d.progress().distinctPackets).toBe(K + 6 + 1);
+    expect(d.progress().distinctPackets).toBe(distinct + 1);
+    expect((await d.push(withCol)).kind).toBe("accepted");
+    expect(d.debug().denseStored).toBe(1);
   });
 });
 
