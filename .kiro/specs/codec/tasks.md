@@ -391,7 +391,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Time `test:measured` and the default `pnpm test`. If the default `pnpm test` exceeds 60 s, stop and report the exception per the design.
     - _Requirements: 2.7, 2.8, 4.7_
 
-- [ ] 6. Group 6: Perf, browser and docs
+- [x] 6. Group 6: Perf, browser and docs
   - [x] 6.1 Encode and decode perf under `packages/codec/perf`
     - Method: 3 discarded warm-ups, 20 timed runs, `process.hrtime.bigint`. Output the Node version, the CPU model and the p95 (the 19th sorted value), and use the same seed and input every run.
     - Encode a 1 MiB seeded input with median < 200 ms.
@@ -423,7 +423,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Large files placeholder section: state the cap behaviour above about K = 1000 (1.6x to 1.9x packets for late join), that maxGaussianBlocks is configurable, the Gaussian cost trade-off at the real block size, and the measured K = 1500 number (456 ms with maxGaussianBlocks = 2048, 1501 packets; 62 ms but 2805 packets with 1024). Fill in from the design's Large files note.
     - _Requirements: 2.2, 2.7, 2.8, 4.7, 5.20, 8.7, 10.2, 10.7_
 
-  - [ ] 6.6 Final verification
+  - [x] 6.6 Final verification
     - Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm test:e2e`, and report the outputs.
     - Summarize the measured results (M1 to M3, perf medians including dense `next()`).
     - Ensure all tests pass, ask the user if questions arise.
