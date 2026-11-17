@@ -187,7 +187,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5, 9.4_
 
-- [ ] 4. Group 4: Calibration tooling and (c, delta, D) sweep
+- [x] 4. Group 4: Calibration tooling and (c, delta, D) sweep
   - [x] 4.1 `perf/calibrate.ts`
     - Seeded through `prng.ts`, using the real encoder and decoder with `sha256WebCrypto`. Payload bytes vary per trial. `packetSize` 62 (blockSize 32).
     - Simulate M1 (repair-only shuffle of seq K..5K-1, 4K cap), M2 (loss `next() < 1288490189`, 20K cap) and M3 (loss `next() < 214748365`).
@@ -222,7 +222,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Do not freeze c, delta or D, do not generate `overhead-table.json`, do not commit golden vectors.
     - _Requirements: 2.2, 2.7, 2.8, 8.7_
 
-  - [ ] 4.6 STOP CHECKPOINT: report the c/delta sweep and wait for approval
+  - [x] 4.6 STOP CHECKPOINT: report the c/delta sweep and wait for approval
     - Report the full sweep table (f_late, f_cold and R at K = 50, 100, 500 for each of the 8 (c, delta, D) combinations), the measured dense `next()` cost at K = 359 against the 20 ms budget and at K = 11,500, and the recommended (c, delta, D). Flag any combination or claim that looks unreachable.
     - The user may instead choose to change the code design at this checkpoint (see design Risk 1).
     - Then STOP and wait for the user's approval. Do not freeze c, delta or D, do not generate `overhead-table.json`, do not commit golden vectors, and do not start Group 5 until the user answers.
