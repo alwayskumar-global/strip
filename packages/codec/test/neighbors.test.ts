@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Neighbors } from "../src/neighbors.js";
 import { getSolitonTable } from "../src/soliton.js";
 
-const make = (K: number) => new Neighbors(K, getSolitonTable(K));
+// D = 0: these tests cover the systematic and sparse paths only (dense is in dense.test.ts).
+const make = (K: number) => new Neighbors(K, getSolitonTable(K), 0);
 const setOf = (n: Neighbors, session: number, seq: number, K: number): number[] => {
   const out = new Uint32Array(K);
   const d = n.select(session, seq, out);

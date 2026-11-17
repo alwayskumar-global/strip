@@ -94,7 +94,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Do NOT commit golden vectors in this group.
     - _Requirements: 2.3, 2.4, 6.2_
 
-  - [ ] 2.4 `neighbors.ts`: `isDense` and the dense Block set
+  - [x] 2.4 `neighbors.ts`: `isDense` and the dense Block set
     - Implement `isDense(seq, K, D) = D > 0 && seq >= K && ((seq - K) % D) == D - 1`, using plain integer arithmetic and no PRNG or session data.
     - Implement the dense Block set with no degree draw: PRNG seeded as for sparse, `nw = ceil(K / 32)` words taken as the (w+1)-th output, Block b included iff bit (b mod 32) of word floor(b / 32) is 1, high bits of the last word ignored, and an empty set replaced by `{seq mod K}`. Share the scratch buffers with the sparse path. Dispatch order: `seq < K` systematic, else dense if `isDense`, else sparse.
     - Unit tests for `isDense` against the index rule at examples, at seq just above K, at seq near 2^32 - 1 and after the wrap to K, for D in {0, 3, 4, 8}, and for D = 0 giving never dense.
