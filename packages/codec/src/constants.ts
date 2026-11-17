@@ -35,3 +35,14 @@ export const UINT32_MAX = 0xffff_ffff;
  */
 export const SOLITON_C: readonly [number, number] = [1, 10];
 export const SOLITON_DELTA: readonly [number, number] = [1, 2];
+
+/**
+ * Dense period D: repair packet with j = seq - K is dense iff D > 0 and j mod D == D - 1.
+ * 0 means no dense packets. PROVISIONAL until the sweep checkpoint (tasks 4.6 and 5.1).
+ */
+export const DENSE_PERIOD = 4;
+
+/** Dense rows the decoder may store: maxGaussianBlocks + 64. Derived, not a constant. */
+export function maxDenseRows(maxGaussianBlocks: number): number {
+  return maxGaussianBlocks + 64;
+}

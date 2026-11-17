@@ -82,7 +82,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Do NOT commit golden vectors in this group.
     - _Requirements: 2.2, 6.2_
 
-  - [ ] 2.2 Dense constants in `constants.ts`
+  - [x] 2.2 Dense constants in `constants.ts`
     - Add `DENSE_PERIOD` (D) with the PROVISIONAL value 4, where 0 means no Dense_Packets. Mark it PROVISIONAL until Group 5.
     - Add a derived helper `maxDenseRows(maxGaussianBlocks) = maxGaussianBlocks + 64`. It is derived, not a constant.
     - Unit tests: default D is 4, `maxDenseRows(1024) = 1088`, `maxDenseRows(0) = 64`.
