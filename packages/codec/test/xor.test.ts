@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BlockBuffer, strideOf, xorBlock, xorSetInto } from "../src/xor.js";
+import { BlockBuffer, copyBlock, strideOf, xorBlock, xorSetInto } from "../src/xor.js";
 
 // Deterministic filler without Math.random.
 function fill(buf: BlockBuffer, seed: number): void {
@@ -111,5 +111,19 @@ describe("xorSetInto (R2.13)", () => {
     xorSetInto(dst, 2, store, Uint32Array.of(0, 4), 2);
     expect(dst.block(2)).toEqual(naiveXor(store.block(0), store.block(4)));
     expect([...dst.block(1)].every((v) => v === 0)).toBe(true);
+  });
+});
+
+describe("copyBlock", () => {
+  it("copies one Block (with padding) and leaves the others alone", () => {
+    const src = new BlockBuffer(3, 19);
+    fill(src, 13);
+    const dst = new BlockBuffer(4, 19);
+    dst.bytes.fill(0xee);
+    copyBlock(dst, 2, src, 1);
+    expect(dst.block(2)).toEqual(src.block(1));
+    expect(dst.bytes[2 * 20 + 19]).toBe(0);
+    expect(dst.bytes[1 * 20]).toBe(0xee);
+    expect(dst.bytes[3 * 20]).toBe(0xee);
   });
 });

@@ -136,7 +136,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests for dense emission: the Packet kind at each seq matches the index rule (for D = 0, 3, 4, 8 via an internal override), a Dense_Packet payload equals the XOR of the Blocks in its dense set, two Encoders give byte-identical dense Packets, and the kind rule still holds after the seq wrap.
     - _Requirements: 1.2, 1.8, 2.1, 2.2, 2.3, 2.10, 2.13, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.8, 6.7, 7.3, 7.4_
 
-  - [ ] 3.4 `decoder.ts` (a): state, push flow and session handling
+  - [x] 3.4 `decoder.ts` (a): state, push flow and session handling
     - Implement the state structures: params, `blocks`, `solved`, the equation slab, adjacency and the `seen` set.
     - Push flow for systematic and sparse Packets: `decodePacket` with limits, the first Packet fixes the session, SESSION_MISMATCH and DUPLICATE_PACKET are ignored, inconsistent params are rejected with BAD_HEADER, ALREADY_COMPLETE, and progress fields.
     - Dispatch point: after the duplicate check, a Packet with `seq >= K` and `isDense(seq, K, D)` is routed to the dense path (implemented in 3.6). Dense Packets are never inserted into adjacency or the ripple.

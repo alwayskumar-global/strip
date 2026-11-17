@@ -72,3 +72,10 @@ export function xorSetInto(dst: BlockBuffer, di: number, src: BlockBuffer, set: 
   dst.clear(di);
   for (let i = 0; i < n; i++) xorBlock(dst, di, src, set[i] as number);
 }
+
+/** dst[block di] = src[block si], including padding. Both stores must use the same blockSize. */
+export function copyBlock(dst: BlockBuffer, di: number, src: BlockBuffer, si: number): void {
+  const nw = dst.stride >>> 2;
+  const sw = (si * src.stride) >>> 2;
+  dst.words.set(src.words.subarray(sw, sw + nw), (di * dst.stride) >>> 2);
+}
