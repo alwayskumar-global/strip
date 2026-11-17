@@ -1,4 +1,5 @@
 import fc from "fast-check";
+import { CodecError } from "../src/errors.js";
 
 /** Deterministic bytes from a seed (no Math.random). */
 export function lcgBytes(n: number, seed: number): Uint8Array {
@@ -67,3 +68,20 @@ export const arbSmallCase: fc.Arbitrary<PayloadCase> = fc
   .map((r) => ({ bytes: lcgBytes(r.len, r.seed), packetSize: r.packetSize, name: r.name, mime: r.mime }));
 
 export const toHex = (b: Uint8Array): string => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+
+export const arbMeta = fc.record({ name: arbName, mime: arbMime, byteLength: fc.integer({ min: 0, max: 0xffffffff }), seed: fc.integer() }).map((r) => ({
+  name: r.name,
+  mime: r.mime,
+  byteLength: r.byteLength,
+  sha256: lcgBytes(32, r.seed),
+}));
+
+/** The ErrorCode thrown by fn, undefined when it does not throw. */
+export function codeOf(fn: () => unknown): string | undefined {
+  try {
+    fn();
+  } catch (e) {
+    return e instanceof CodecError ? e.code : `non-CodecError: ${String(e)}`;
+  }
+  return undefined;
+}

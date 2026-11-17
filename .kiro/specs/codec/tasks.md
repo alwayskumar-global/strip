@@ -284,7 +284,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 3.1, 3.15**
     - _Requirements: 3.1, 3.15_
 
-  - [ ] 5.10 P7a: Metadata round trip
+  - [x] 5.10 P7a: Metadata round trip
     - **Property 7a** (design P7a). numRuns 500. Valid Metadata including unicode names.
     - Tag: `Feature: codec, Property 7a: parseMetadata(serializeMetadata(m)) equals m`.
     - **Validates: Requirements 1.3**
