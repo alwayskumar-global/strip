@@ -332,6 +332,10 @@ All K Blocks solved: assemble the Coded_Stream (strip stride padding, truncate t
 
 Bytes are exposed only after the SHA-256 match, whichever Packet kinds (dense, sparse, systematic) contributed (R5.23).
 
+HASH_MISMATCH and BAD_METADATA-after-full-recovery are decoder-level verdicts returned as `rejected`, terminal, with state already changed (R5.11, R7.7). Every later `push` returns `rejected` with the same code and does not throw.
+
+CRC detects corruption, not forgery: a deliberately re-CRC'd forged packet is out of scope; it is absorbed like any valid packet and, if it corrupts the recovered bytes, ends in the terminal HASH_MISMATCH state.
+
 `push()` is async only because of the hash. Overlapping calls are serialized with an internal promise chain, so state transitions never interleave. After completion, same-session Packets return `ignored` with reason `ALREADY_COMPLETE` and no state change.
 
 ```ts
@@ -404,7 +408,7 @@ All use fast-check. Measured properties use fixed seeds.
 | P8 | For any payload and options, two independent `encode` calls give identical bytes for the first 3K Packets and identical `page()`. | As P1 | 100 | R6.1, R4.1 |
 | P9 | For any push sequence, `solvedBlocks` and `distinctPackets` never decrease, `solvedBlocks <= totalBlocks`, and `complete` holds iff all Blocks are solved and the hash matched. With an injected wrong-digest HashFn the result is `HASH_MISMATCH` and `complete` stays false. | Random sequences with duplicates and foreign Packets; call-recording HashFn | 200 | R5.6, R5.10, R5.11 |
 | P10 | For any (sessionId, seq, K), `neighbors` is pure, returns d distinct values in [0, K) with d in [1, K], and a systematic seq i gives {i}. | Random triples | 500 | R2.3, R2.4, R6.2 |
-| P11 | For any arbitrary or mutated bytes, `push` never throws, a `rejected` status carries a valid ErrorCode, and the progress snapshot is unchanged. | Random bytes; mutated valid Packets | 500 | R7.7, R9.2 |
+| P11 | For any arbitrary or mutated bytes, `push` never throws; a `rejected` status carries a valid ErrorCode; packet-level rejections and ignores leave the progress snapshot unchanged. HASH_MISMATCH and BAD_METADATA verdicts are exempt (decoder-level, terminal, state already changed), and later pushes after such a verdict are rejected without throwing. | Random bytes; mutated valid Packets | 500 | R7.7, R9.2 |
 | P12 | For any K in 1..20000, the overhead module returns integers with R >= 0, values equal to the table at table K, linear in between within ceil rounding, and clamped outside [10, 16384]. | `fc.integer(1, 20000)` | 300 | R10.3 |
 | P13 | For any invalid option or payload shape, the public function throws `CodecError` (`INVALID_INPUT` or a more specific code) with no partial effect on existing Encoder or Decoder state. | Invalid options and shapes | 300 | R9.2, R9.3 |
 | P14 | Dense-or-sparse rule. For any K in 1..20000, any seq (including seq >= 2^32 - 50 and the wrap) and every D in {0, 3, 4, 8}, kind(seq) equals the index rule: systematic if seq < K, dense iff D > 0 and (seq-K) mod D == D-1, else sparse. | K, seq and D arbitraries with wrap-biased seq | 1000 | R2.2, R2.10 |

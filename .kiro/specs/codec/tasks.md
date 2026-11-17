@@ -321,8 +321,9 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.3, 2.4, 6.2_
 
   - [ ] 5.16 P11: push never throws on arbitrary bytes
-    - **Property 11** (design P11). numRuns 500. Random bytes and mutated valid Packets. `push` never throws, a `rejected` status carries a valid ErrorCode, and the progress snapshot is unchanged. This validates public-API rejection behaviour.
-    - Tag: `Feature: codec, Property 11: push never throws and leaves state unchanged on bad input`.
+    - **Property 11** (design P11). numRuns 500. Random bytes and mutated valid Packets. `push` never throws; a `rejected` status carries a valid ErrorCode; packet-level rejections and ignores leave the progress snapshot unchanged. HASH_MISMATCH and BAD_METADATA verdicts are exempt (decoder-level, terminal, state already changed), and later pushes after such a verdict are rejected without throwing. This validates public-API rejection behaviour.
+    - Include a regression case for the shrunk counterexample (empty payload, packetSize 51, session started, header byte 18 set to 212 with CRCs recomputed, base packet seq 0): status rejected/HASH_MISMATCH, then every later push rejected without throwing.
+    - Tag: `Feature: codec, Property 11: packet-level rejections leave state unchanged and push never throws`.
     - **Validates: Requirements 7.7, 9.2**
     - _Requirements: 7.7, 9.2_
 
