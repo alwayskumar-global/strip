@@ -163,7 +163,7 @@ Tag legend, as in design.md "Test configs":
     - Test: `decodeFrame` completes asynchronously and the first call initialises the wasm from the given source (R5.7) [unit].
     - _Requirements: 1.1, 1.7, 1.8, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 8.1, 8.2, 8.3, 8.5, 8.6_
 
-  - [ ] 2.3 `frame-decoder.ts`, `test/helpers/fake-backend.ts`, P12, P13
+  - [x] 2.3 `frame-decoder.ts`, `test/helpers/fake-backend.ts`, P12, P13
     - `createFrameDecoder(options)` returns a Promise that resolves after the wasm init (rejects with UNSUPPORTED_ENVIRONMENT on init failure). One staging `Uint8ClampedArray(maxWidth * maxHeight * 4)` allocated at creation and reused. `busy` flag set before the backend call and cleared in `finally`; a `submit` while busy resolves `{ kind: "dropped" }` and holds no pending frame. An oversize frame throws INVALID_INPUT before the busy check. `dispose()`; `submit` after `dispose` throws INVALID_INPUT. `mode` `video` (default) or `photo`.
     - Reader options: `video` is exactly `{ formats: ["QRCode"], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: 1, binarizer: "LocalAverage", tryInvert: false }`; `photo` adds `tryInvert: true` and one retry with `GlobalHistogram` on a miss. The benefit of the retry is measured and reported, not gated.
     - `test/helpers/fake-backend.ts`: controllable `DecoderBackend` (resolves on demand, records calls and the buffer it received).
