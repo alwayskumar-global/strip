@@ -313,7 +313,7 @@ Tag legend, as in design.md "Test configs":
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.1, 7.5, 15.5_
 
-- [ ] 5. Group 5: Multi-symbol decoding and the app CSP (user-approved amendment)
+- [x] 5. Group 5: Multi-symbol decoding and the app CSP (user-approved amendment)
   - [x] 5.1 Backend and `decodeFrame` multi-symbol support
     - `maxSymbols?: number` on `DecodeOptions` (integer 1..16, default 1); `assertDecodeOptions` rejects anything else with INVALID_INPUT before the backend is called. The `DecodeOutcome` type gains `{ kind: "found_many"; symbols: FoundSymbol[]; skipped: number }` and the new `FoundSymbol` type (`bytes`, `version?`, `ecc?`, `corners?`).
     - `DecoderBackend` keeps `read` unchanged and gains `readMany(frame, options): Promise<BackendResult[]>`; `zxing-backend.ts` implements it on the same reader call and copies each `result.bytes` into its own `Uint8Array` (never `result.text`). `decodeFrame` with `maxSymbols` 1 or absent takes the existing `read` path unchanged; with `maxSymbols` above 1 it calls `readMany` with `maxNumberOfSymbols` equal to `maxSymbols`, every other option of the mode unchanged, and applies the rule of design "Multi-symbol decoding": symbols of at most 2953 bytes go to `symbols`, longer ones are counted in `skipped`, no valid symbol gives `not_found`, only longer ones give `found_many` with an empty list, `not_strip_packet` only for `maxSymbols` 1. Photo mode retries with GlobalHistogram only when the first read is empty.
@@ -394,7 +394,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the README's barrel export statement still lists exactly the 11 runtime names and names `FoundSymbol` as type-only (R12.4) [unit].
     - _Requirements: 6.12, 12.4, 16.4, 16.14_
 
-  - [ ] 5.7 Group 5 checkpoint
+  - [x] 5.7 Group 5 checkpoint
     - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:measured`, `pnpm perf` and `pnpm test:e2e` and report the outputs and test counts.
     - Report the Page_Photo_Gate result (symbols read of 900, pages with at least 8 of 9, Wilson lower bound, decode median and p95), the informational 75% batch, the 12 MP perf median, and whether the TypeScript generator reproduced the spike within the Wilson interval.
     - Verify the traceability table: every requirement id R1.1..R16.14 is in at least one sub-task and every property P1..P37 is in exactly one test sub-task. Verify `tools/deps.test.ts` still passes (no dependency was added in Group 5). Report any gap.
