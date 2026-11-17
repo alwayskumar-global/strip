@@ -98,7 +98,7 @@ Tag legend, as in design.md "Test configs":
     - If any property reports a counterexample, STOP and report.
     - _Requirements: 1.2, 1.5, 1.6, 1.9, 1.12, 1.14, 2.1, 2.4, 10.2, 14.4_
 
-  - [ ] 1.7 `fit-scale.ts` and P7
+  - [x] 1.7 `fit-scale.ts` and P7
     - `fitScale(matrix, quietZone, box)` returning the largest integer ppm and the pixel size, or `{ ppm: 0, width: 0, height: 0 }` without throwing when the box is too small.
     - Test (R14.5 examples): quiet zone 4, box 504 (720p at 70%): v25 gives scale >= 4, v26 gives scale below 4 (3); box 756 (1080p): v40 gives scale >= 4 (R14.5) [unit].
     - Test: box smaller than the module count returns `{0, 0, 0}` and does not throw (R3.6) [unit].
