@@ -416,7 +416,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Add a test under `tools/` that every dependency in every `package.json` is exact-pinned and has a row in `docs/dependencies.md`, and that `packages/codec` has no `dependencies` key.
     - _Requirements: 9.6, 9.7_
 
-  - [ ] 6.5 `packages/codec/README.md`
+  - [x] 6.5 `packages/codec/README.md`
     - Cover usage of `encode` and `createDecoder`, a packet format summary, and the measured M1 to M3 table from `overhead-table.json` with N and Wilson bounds.
     - Document the dense repair rows: the index rule, the frozen D and (c, delta), the dense Block-set derivation, the `maxDenseRows` bound, the DENSE_STORE_FULL ignore reason and the dense `next()` cost measurements.
     - Include the no-fixed-overhead note and the non-goals.
