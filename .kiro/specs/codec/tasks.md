@@ -260,7 +260,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 5.8, 5.9, 5.15, 5.16, 5.17**
     - _Requirements: 5.8, 5.9, 5.15, 5.16, 5.17_
 
-  - [ ] 5.6 P3: order independence
+  - [x] 5.6 P3: order independence
     - **Property 3** (design P3). numRuns 200. Two permutations of a sufficient Packet set from P1.
     - Tag: `Feature: codec, Property 3: any two permutations recover equal bytes`.
     - **Validates: Requirements 5.14**
