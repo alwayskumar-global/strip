@@ -293,7 +293,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the README contains the 70% statement and the CSP header-only statement [unit].
     - _Requirements: 6.7, 7.12, 9.6, 14.6_
 
-  - [ ] 4.5 Verify dependency rows
+  - [x] 4.5 Verify dependency rows
     - Verify that `docs/dependencies.md` has rows for `qr` 0.7.2 and `zxing-wasm` 3.1.7 (added in tasks 1.5 and 2.1), that `packages/symbols/package.json` lists exactly those two runtime dependencies plus the workspace link to `@strip/codec`, and that `tools/deps.test.ts` passes. If the contingency was taken in 2.6, also verify the `apps/strip` row and the amended R11.8 and R9.10.
     - Test: `tools/deps.test.ts` passes, and a package entry without a row would fail it (mutation example in the test) (R11.3) [unit].
     - Test: both runtime dependencies are exact-pinned (no `^` or `~`) and the writer and full builds of `zxing-wasm` are not imported anywhere in `src` (R11.1, R11.2, R11.4) [unit].

@@ -93,3 +93,48 @@ describe("dependency log consistency (R9.6, R9.7)", () => {
     expect(Object.keys(find("apps/strip/package.json")?.dependencies ?? {}).filter((n) => n.startsWith("@strip/")).sort()).toEqual(["@strip/codec", "@strip/symbols"]);
   });
 });
+function missingRows(rows: Map<string, unknown>): string[] {
+  return declared()
+    .filter((d) => !d.spec.startsWith("workspace:") && !rows.has(d.name))
+    .map((d) => d.name);
+}
+function srcFiles(dir: string): string[] {
+  return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? srcFiles(`${dir}/${e.name}`) : e.name.endsWith(".ts") ? [`${dir}/${e.name}`] : [],
+  );
+}
+describe("symbols dependencies (R11.1 to R11.4)", () => {
+  const symbols = () => JSON.parse(read("packages/symbols/package.json")) as Pkg;
+  it("lists exactly qr 0.7.2, zxing-wasm 3.1.7 and the workspace link to @strip/codec, with no range", () => {
+    expect(symbols().dependencies).toEqual({ "@strip/codec": "workspace:*", qr: "0.7.2", "zxing-wasm": "3.1.7" });
+    expect(symbols().devDependencies).toBeUndefined();
+    for (const spec of Object.values(symbols().dependencies ?? {})) expect(spec).not.toMatch(/^[\^~]/);
+  });
+  it("has a logged row for both runtime dependencies with the same exact version", () => {
+    const rows = loggedRows();
+    expect(rows.get("qr")?.version).toBe("0.7.2");
+    expect(rows.get("zxing-wasm")?.version).toBe("3.1.7");
+    expect(rows.get("qr")?.license).toContain("MIT");
+    expect(rows.get("zxing-wasm")?.license).toBe("MIT");
+  });
+  it("mutation: removing a logged row, or adding an unlogged dependency, would fail the row check", () => {
+    expect(missingRows(loggedRows())).toEqual([]);
+    const without = loggedRows();
+    without.delete("qr");
+    expect(missingRows(without)).toEqual(["qr"]);
+    const none = new Map<string, unknown>();
+    expect(missingRows(none).sort()).toContain("zxing-wasm");
+  });
+  it("the apps declare neither qr nor zxing-wasm (R11.8)", () => {
+    const app = JSON.parse(read("apps/strip/package.json")) as Pkg;
+    for (const n of ["qr", "zxing-wasm"]) expect(Object.keys(app.dependencies ?? {})).not.toContain(n);
+  });
+  it("the writer and full builds of zxing-wasm are not imported anywhere in src (packages and app)", () => {
+    for (const f of [...srcFiles("packages/symbols/src"), ...srcFiles("apps/strip/src"), ...srcFiles("apps/strip/e2e-harness")]) {
+      const code = read(f);
+      expect(/from\s+["']zxing-wasm(\/full|\/writer)/.test(code), f).toBe(false);
+      expect(/from\s+["']zxing-wasm["']/.test(code), f).toBe(false);
+      expect(/zxing_(full|writer)/.test(code), f).toBe(false);
+    }
+  });
+});
