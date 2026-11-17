@@ -36,6 +36,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - **maxPayloadBytes**: Maximum coded-stream length L (Metadata_Record plus Payload bytes) in bytes. Default 32 MiB.
 - **maxBlockCount**: Maximum K parameter. Default 16384.
 - **maxGaussianBlocks**: Maximum number of unsolved Blocks for which the Decoder runs Gaussian elimination. Default 1024.
+- **HashPrefixes**: The pair of strings `expected` and `actual`, each the first 12 lowercase hexadecimal characters (the first 6 bytes) of a SHA-256 digest. A display aid only, not a security claim.
 - **ErrorCode**: The closed union INVALID_INPUT, PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS, BAD_METADATA, BAD_HEADER, UNSUPPORTED_VERSION, BAD_CRC, SESSION_MISMATCH, INCOMPLETE_DECODE, HASH_MISMATCH.
 - **Ignore_Reason**: The closed union DUPLICATE_PACKET, SESSION_MISMATCH, ALREADY_COMPLETE, DENSE_STORE_FULL, reported when the Decoder ignores a Packet without error.
 - **Dense_Packet**: A Repair_Packet whose sequence number satisfies D > 0 and (sequence number - K) mod D == D - 1, and whose Block set is a random subset of all K Blocks, each included with probability 1/2.
@@ -163,6 +164,13 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 22. WHEN a stored Dense_Row has every column solved, THE Decoder SHALL discard it and free its slot. [unit]
 23. THE Decoder SHALL never expose bytes that fail the SHA-256 check regardless of which Packet kinds were received (dense, sparse, systematic). [property]
 
+24. IF the Decoder rejects a reassembled file with HASH_MISMATCH at the verification step, THEN THE Decoder SHALL attach to the `rejected` status a `hashes` field of type HashPrefixes whose `expected` is the first 12 lowercase hex characters of the SHA-256 stored in the Metadata_Record and whose `actual` is the first 12 lowercase hex characters of the SHA-256 of the reassembled Payload bytes. [property]
+25. IF the length of the reassembled Payload bytes differs from the byte length in the Metadata_Record, THEN THE Decoder SHALL still compute the SHA-256 of the reassembled Payload bytes and SHALL report HASH_MISMATCH with `hashes` as in criterion 24. [unit]
+26. WHEN a Packet is pushed to a Decoder that is terminal after HASH_MISMATCH, THE Decoder SHALL return the same `rejected` status as the verdict, including the same `hashes` values. [property]
+27. THE Decoder SHALL omit `hashes` from every status whose kind is accepted or ignored and from every rejected status whose code is not HASH_MISMATCH. [property]
+28. IF the hash function throws while the Decoder verifies a reassembled file, THEN THE Decoder SHALL return to the collecting phase and SHALL propagate the error, as it does without `hashes`. [unit]
+29. THE Decoder SHALL expose only the HashPrefixes and SHALL NOT expose either full SHA-256 digest in any status. [unit]
+
 ### Requirement 6: Determinism
 
 **User Story:** As a maintainer, I want byte-identical output everywhere, so that golden vectors and cross-engine tests are meaningful.
@@ -249,6 +257,8 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 - Dense-or-sparse rule: the kind of every repair Packet matches the index rule (dense iff D > 0 and (sequence number - K) mod D == D - 1).
 - A Decoder fed dense and systematic Packets never outputs wrong bytes.
 - Dense Packet determinism: the same inputs yield identical Dense_Packet bytes.
+
+- HASH_MISMATCH digest detail: for any payload and any injected hash function returning a digest different from the stored one, the rejected status carries the 12-hex prefixes of the stored and injected digests, repeats on later pushes, and is absent from every other status.
 
 ## Out of scope
 

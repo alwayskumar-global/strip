@@ -42,7 +42,7 @@ graph TD
 ```
 
 The graph is acyclic and leaf modules import nothing. Tests live in `packages/codec/test` and perf scripts in `packages/codec/perf`, both outside `src`. `packages/codec/perf/calibrate.ts` (outside `src`) generates `overhead-table.json`.
-The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, `CodecError`, `ERROR_CODES`, `sha256WebCrypto`. Its type-only exports are exactly: `PayloadInput`, `Metadata`, `EncodeOptions`, `DecoderOptions`, `Encoder`, `Decoder`, `PushStatus`, `PacketFields`, `Limits`, `HashFn`, `ErrorCode`, `IgnoreReason`, `Progress`.
+The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, `CodecError`, `ERROR_CODES`, `sha256WebCrypto`. Its type-only exports are exactly: `PayloadInput`, `Metadata`, `EncodeOptions`, `DecoderOptions`, `Encoder`, `Decoder`, `PushStatus`, `PacketFields`, `Limits`, `HashFn`, `ErrorCode`, `IgnoreReason`, `Progress`, `HashPrefixes`.
 
 ## Wire formats
 
@@ -330,6 +330,8 @@ All K Blocks solved: assemble the Coded_Stream (strip stride padding, truncate t
 | Match | `complete = true`; `result()` returns `{ payload, metadata }` |
 | Mismatch | Terminal failed state. `push` returns `rejected` with `HASH_MISMATCH`. Bytes are never exposed. `result()` throws `INCOMPLETE_DECODE`. |
 
+HASH_MISMATCH digest detail (R5.24 to R5.29). The Decoder always awaits `hash(payload bytes)` before comparing. It then compares the digest with the stored one and the payload length with the record `byteLength`. Both mismatch paths (length differs, digest differs) build `hashes = { expected: hex12(stored sha256), actual: hex12(computed digest) }` where hex12 is the first 6 bytes as lowercase hex. The length-mismatch path computes the digest too, so `actual` always exists. The terminal state stores the rejected status object, so every later push returns the same status with the same `hashes`. If the hash function throws on either path, behaviour is unchanged: the phase returns to collecting and the error propagates. No other status gains the field. The full digests are not exposed. The prefix is a display aid, not a security claim. No wire format, packet, golden vector, overhead table or calibrated constant changes. `HashPrefixes` is a type-only barrel export; the runtime export list is unchanged.
+
 Bytes are exposed only after the SHA-256 match, whichever Packet kinds (dense, sparse, systematic) contributed (R5.23).
 
 HASH_MISMATCH and BAD_METADATA-after-full-recovery are decoder-level verdicts returned as `rejected`, terminal, with state already changed (R5.11, R7.7). Every later `push` returns `rejected` with the same code and does not throw.
@@ -343,9 +345,12 @@ type PushStatus = {
   kind: 'accepted' | 'ignored' | 'rejected'
   reason?: IgnoreReason   // 'DUPLICATE_PACKET' | 'SESSION_MISMATCH' | 'ALREADY_COMPLETE' | 'DENSE_STORE_FULL'
   code?: ErrorCode
+  hashes?: HashPrefixes   // present iff code is 'HASH_MISMATCH' reached through the verification step (R5.24 to R5.27)
   progress: { solvedBlocks: number; totalBlocks: number; distinctPackets: number; complete: boolean }
 }
 ```
+
+`HashPrefixes` is `{ readonly expected: string; readonly actual: string }`, 12 lowercase hex characters each.
 
 Complexity: peeling is O(E * stride/4) with E the total edge count (about n times the mean degree, which scales with ln K). Gaussian cost is as in the table above.
 
@@ -414,6 +419,7 @@ All use fast-check. Measured properties use fixed seeds.
 | P14 | Dense-or-sparse rule. For any K in 1..20000, any seq (including seq >= 2^32 - 50 and the wrap) and every D in {0, 3, 4, 8}, kind(seq) equals the index rule: systematic if seq < K, dense iff D > 0 and (seq-K) mod D == D-1, else sparse. | K, seq and D arbitraries with wrap-biased seq | 1000 | R2.2, R2.10 |
 | P15 | Hash-gated dense safety. For any decoder fed only dense and systematic Packets (random subsets, some dense payloads corrupted with a recomputed valid CRC), the Decoder either never completes or completes with bytes equal to the original, and never exposes bytes when the hash fails. | Subset and corruption arbitraries; blockSize 32 | 200 | R5.18 to R5.23, R5.10, R5.11 |
 | P16 | Dense determinism. For any payload and options, two independent encodes give byte-identical dense Packets, and the dense Block set equals a reference algorithm re-implemented inside the test from the word/bit rule. | As P1 | 200 | R6.7, R2.11, R2.12, R2.13 |
+| P17 | HASH_MISMATCH digest detail. For any payload and any injected hash function whose digest differs from the stored one (the existing `hash` decoder option is the test seam), the rejected status has `hashes.expected` equal to the first 12 hex of the stored sha256 and `hashes.actual` equal to the first 12 hex of the injected digest; every later push returns an equal status with equal hashes; and `hashes` is absent for every other rejection code and for accepted and ignored statuses. | As P1 with a wrong-digest HashFn arbitrary (32 bytes, differing from the stored digest); foreign, duplicate and corrupted Packets for the absent case | 200 | R5.24, R5.26, R5.27, R5.29 |
 | M1 | Late join. Pool is repair seq K..5K-1; subset of size `ceil(f_late x K)`; asserts observed success >= 0.99. Reports the observed rate and Wilson lower bound. | Fixed fast-check seed (not the calibration seed); payload varies per trial; blockSize 32; K in {50, 100, 500} | N = 1000 per K | R2.7, R2.9, R10.6 |
 | M2 | Cold start with loss 0.30. Stream from seq 0; asserts received count <= `ceil(f_cold x K)` in >= 0.99 of trials. Reports rate and Wilson lower bound. | As M1 | N = 1000 per K | R2.8, R2.9, R10.6 |
 | M3 | Page mode. Default `page()` of T = K + R(K) Packets, loss 0.05; asserts completion >= 0.99. Reports rate and Wilson lower bound, plus informational success at loss 0.02 and 0.10 (no assertion). | As M1 | N = 1000 per K | R4.7, R2.9, R10.6 |

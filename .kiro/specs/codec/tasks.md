@@ -2,7 +2,7 @@
 
 ## Overview
 
-Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse and dense), encoder/decoder/barrel including the dense-row path, calibration tooling with a user-approval stop, calibrated table plus golden vectors plus all property tests, then perf, browser and docs. Source goes in `packages/codec/src`. Tests go in `packages/codec/test`. Perf and calibration scripts go in `packages/codec/perf`. Property ids (P1..P16, M1..M3) are the ones in design.md "Correctness properties". Dense repair rows are part of the format: repair Packet with j = seq - K is dense iff D > 0 and j mod D == D - 1. D (`DENSE_PERIOD`) starts at a PROVISIONAL 4 and is frozen, together with c and delta, only after the user approves at the Group 4 STOP CHECKPOINT.
+Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse and dense), encoder/decoder/barrel including the dense-row path, calibration tooling with a user-approval stop, calibrated table plus golden vectors plus all property tests, then perf, browser and docs. Source goes in `packages/codec/src`. Tests go in `packages/codec/test`. Perf and calibration scripts go in `packages/codec/perf`. Property ids (P1..P17, M1..M3) are the ones in design.md "Correctness properties". Dense repair rows are part of the format: repair Packet with j = seq - K is dense iff D > 0 and j mod D == D - 1. D (`DENSE_PERIOD`) starts at a PROVISIONAL 4 and is frozen, together with c and delta, only after the user approves at the Group 4 STOP CHECKPOINT.
 
 ## Global rules
 
@@ -429,11 +429,29 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 2.9, 6.5, 8.3, 8.7, 9.5_
 
+- [ ] 7. Group 7: HASH_MISMATCH digest detail (user-approved addendum)
+  - [ ] 7.1 Decoder change, barrel type export and unit tests
+    - In the `packages/codec/src` decoder: add `hashes?: HashPrefixes` to the rejected `PushStatus`. In the completion step always compute `hash(payload bytes)`, then on a length mismatch or a digest mismatch return HASH_MISMATCH with `hashes = { expected, actual }` (12 lowercase hex chars each, first 6 bytes of the stored digest and of the computed digest). Store the status in the terminal state so later pushes return the same status and hashes. If the hash function throws in either path keep the existing behaviour (phase returns to collecting, error propagates).
+    - Add the type-only export `HashPrefixes` to `src/index.ts`. The runtime export list is unchanged. Update the barrel test for the type-only list if it checks it.
+    - Extend `test/decoder-complete.test.ts`: digest-mismatch path (encoder-embedded liar digest and decoder-side wrong digest) checks both prefixes against independently computed hex; length-mismatch path via the existing crafted-record test (`byteLength: 39` against 40 recovered bytes) checks `expected` from the record digest and `actual` from the digest of the 40 recovered bytes; a later push returns the same hashes; accepted, ignored and other rejected statuses have no `hashes`; a throwing hash function leaves the phase collecting and propagates in both paths; no status contains a full 64-character digest.
+    - No change to packets, wire format, golden vectors, overhead table, c, delta, D or any calibrated constant. No new dependency.
+    - _Requirements: 5.24, 5.25, 5.26, 5.27, 5.28, 5.29, 5.11_
+  - [ ] 7.2 P17 property test and README note
+    - **Property 17** (design P17). numRuns 200. Tag: `Feature: codec, Property 17: HASH_MISMATCH carries 12-hex prefixes of stored and actual digests`. One test. Generators as P1 plus a wrong-digest HashFn arbitrary; checks the prefixes, repeat on later pushes, and absence on other codes, accepted and ignored.
+    - **Validates: Requirements 5.24, 5.26, 5.27, 5.29**
+    - Update `packages/codec/README.md` to document `hashes` on the rejected status, the 12-hex format, that it is a display aid and not a security claim, and the type-only `HashPrefixes` export.
+    - _Requirements: 5.24, 5.26, 5.27, 5.29_
+  - [ ] 7.3 Group 7 checkpoint
+    - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` (codec default suite including `calibrate.test.ts` and the golden vector tests, unchanged) and `pnpm --filter @strip/codec test:measured`. Report the pass counts.
+    - Run `git diff` against the Group 6 commit for the golden vector files and `overhead-table.json` and report that they are byte-identical (empty diff).
+    - Ensure all tests pass, ask the user if questions arise.
+    - _Requirements: 5.24, 5.25, 5.26, 5.27, 5.28, 5.29, 6.4, 10.5_
 ## Notes
 
 - No task is optional. Every property test is required.
 - Group 5 starts only after the user approves at the Group 4 STOP CHECKPOINT (task 4.6). c, delta and D are frozen only in task 5.1.
 - Each task cites the criterion ids it covers.
+- Group 7 is a user-approved addendum. It changes no wire format, golden vector, overhead table or calibrated constant, and adds no dependency.
 
 ## Task Dependency Graph
 
@@ -502,7 +520,10 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     { "id": 59, "tasks": ["6.3"] },
     { "id": 60, "tasks": ["6.4"] },
     { "id": 61, "tasks": ["6.5"] },
-    { "id": 62, "tasks": ["6.6"] }
+    { "id": 62, "tasks": ["6.6"] },
+    { "id": 63, "tasks": ["7.1"] },
+    { "id": 64, "tasks": ["7.2"] },
+    { "id": 65, "tasks": ["7.3"] }
   ]
 }
 ```
