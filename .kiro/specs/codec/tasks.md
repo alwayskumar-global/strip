@@ -326,7 +326,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 7.7, 9.2**
     - _Requirements: 7.7, 9.2_
 
-  - [ ] 5.17 P12: overhead interpolation
+  - [x] 5.17 P12: overhead interpolation
     - **Property 12** (design P12). numRuns 300. `fc.integer(1, 20000)`: integer outputs, R >= 0, the table value at table K, linear in between within ceil rounding, clamped outside [10, 16384].
     - Tag: `Feature: codec, Property 12: overhead values interpolate linearly and clamp`.
     - **Validates: Requirements 10.3**
