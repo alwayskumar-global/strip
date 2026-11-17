@@ -88,7 +88,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests: default D is 4, `maxDenseRows(1024) = 1088`, `maxDenseRows(0) = 64`.
     - _Requirements: 2.2, 5.19_
 
-  - [ ] 2.3 `neighbors.ts`: systematic and sparse Block sets
+  - [x] 2.3 `neighbors.ts`: systematic and sparse Block sets
     - Implement `seed32`, degree sampling by binary search on `cumT`, partial Fisher-Yates with an undo log, and `seq < K` returning `{seq}` without using the PRNG. Take the soliton table as a parameter.
     - Unit tests for purity and determinism, distinct values, range [0, K), degree in [1, K], and systematic Packets.
     - Do NOT commit golden vectors in this group.
