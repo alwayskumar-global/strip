@@ -8,7 +8,9 @@ const bad = (message: string): never => {
 };
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
-const COLOUR = /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20})$/;
+const KEYWORDS = new Set(["black", "white", "red", "green", "blue", "navy", "gray", "grey", "silver", "transparent"]);
+const COLOUR = /^#[0-9a-fA-F]{3,8}$/;
+const isColour = (c: unknown): boolean => typeof c === "string" && (COLOUR.test(c) || KEYWORDS.has(c));
 
 export function assertBytes(v: unknown, name = "bytes"): asserts v is Uint8Array {
   if (!(v instanceof Uint8Array)) bad(`${name} must be a Uint8Array`);
@@ -48,7 +50,7 @@ export function assertRenderOptions(v: unknown): asserts v is RenderOptions {
     bad("quietZone below 4 modules needs allowShortQuietZone");
   }
   for (const [name, c] of [["dark", dark], ["light", light]] as const) {
-    if (c !== undefined && (typeof c !== "string" || !COLOUR.test(c))) bad(`${name} must be a hex or keyword colour`);
+    if (c !== undefined && !isColour(c)) bad(`${name} must be a hex colour or a short keyword`);
   }
   if (mm !== undefined && (typeof mm !== "number" || !Number.isFinite(mm) || mm <= 0)) {
     bad("mm must be a positive finite number");

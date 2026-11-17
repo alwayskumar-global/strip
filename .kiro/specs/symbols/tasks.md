@@ -116,7 +116,7 @@ Tag legend, as in design.md "Test configs":
     - Property P22: **Feature: symbols, Property 22: for any ppm, a quiet zone below 4 without allowShortQuietZone throws INVALID_INPUT, and with it renders** (R2.3) [property].
     - _Requirements: 2.2, 2.3, 3.1, 3.2, 3.4, 8.5_
 
-  - [ ] 1.9 `render-svg.ts` and P8 (Node part)
+  - [x] 1.9 `render-svg.ts` and P8 (Node part)
     - `renderToSvg(matrix, options)` in the one-line shape of the design: viewBox in module units including the Quiet_Zone, `shape-rendering="crispEdges"`, a light background rect, one path of merged horizontal runs, `width` and `height` in mm only when `mm` is given, colours in `fill` presentation attributes only, colour strings validated against `^#[0-9a-fA-F]{3,8}$` or a short keyword list.
     - Test: viewBox is `0 0 W W` with `W = size + 2 * quietZone` (R4.1) [unit].
     - Test: `shape-rendering="crispEdges"` present; dark modules are a single path (R4.2) [unit].
