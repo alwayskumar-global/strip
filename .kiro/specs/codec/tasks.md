@@ -272,7 +272,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 2.6, 5.3, 5.4**
     - _Requirements: 2.6, 5.3, 5.4_
 
-  - [ ] 5.8 P5: single-bit corruption detection
+  - [x] 5.8 P5: single-bit corruption detection
     - **Property 5** (design P5). numRuns 1000. `fc.nat` over the bit index of a valid Packet, with `decodePacket` failing and `push` returning `rejected`.
     - Tag: `Feature: codec, Property 5: any single flipped bit is rejected`.
     - **Validates: Requirements 3.9**
