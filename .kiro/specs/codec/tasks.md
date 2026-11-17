@@ -351,7 +351,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 5.18, 5.19, 5.20, 5.21, 5.22, 5.23, 5.10, 5.11**
     - _Requirements: 5.18, 5.19, 5.20, 5.21, 5.22, 5.23, 5.10, 5.11_
 
-  - [ ] 5.21 P16: dense determinism
+  - [x] 5.21 P16: dense determinism
     - **Property 16** (design P16). numRuns 200. Same generators as P1. Two independent encodes give byte-identical dense Packets, and the dense Block set equals a reference algorithm re-implemented inside the test from the word/bit rule (including the empty-set rule).
     - Tag: `Feature: codec, Property 16: dense Packets are deterministic and match the reference rule`.
     - **Validates: Requirements 6.7, 2.11, 2.12, 2.13**
