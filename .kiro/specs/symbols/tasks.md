@@ -151,7 +151,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the `DecoderBackend` interface is the only seam the runtime exposes to `decode.ts` (R11.6) [unit].
     - _Requirements: 5.7, 5.8, 8.5, 9.2, 11.1, 11.2, 11.3, 11.6_
 
-  - [ ] 2.2 `decode.ts` (`decodeFrame`, outcome types) with P1, P9, P10, P11, P24
+  - [x] 2.2 `decode.ts` (`decodeFrame`, outcome types) with P1, P9, P10, P11, P24
     - `decodeFrame(frame, options)`: `assertImageDataLike` first, then the backend. Outcomes `found` (fresh copy of the bytes; `version`, `ecc`, `corners` when reported), `not_found`, `not_strip_packet` (payload longer than 2953 bytes). It never throws for a missing symbol.
     - Test: a rendered symbol decodes to the exact bytes, with `version` and `ecc` reported when the backend gives them (R5.1, R5.2) [unit].
     - Test (P1 unit): all 256 byte values, and the 30-packet codec set (sizes 2953, 1000 and 500, produced by the codec encoder in the test), round-trip byte for byte through `qr`, `matrixToImageData` at 4 ppm and the zxing backend (R1.7, R5.6) [unit].

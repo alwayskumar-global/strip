@@ -1,9 +1,10 @@
 // renderToSvg (R4): crisp, script-free SVG text. Colours go in `fill` presentation attributes only.
 import type { SymbolMatrix } from "./matrix.js";
 import type { RenderOptions } from "./types.js";
-import { assertRenderOptions } from "./validate.js";
+import { assertMatrix, assertRenderOptions } from "./validate.js";
 
 export function renderToSvg(m: SymbolMatrix, options: RenderOptions): string {
+  assertMatrix(m);
   assertRenderOptions(options);
   const qz = options.quietZone ?? 4;
   const w = m.size + 2 * qz;

@@ -2,7 +2,7 @@
 import { SymbolError } from "./errors.js";
 import type { SymbolMatrix } from "./matrix.js";
 import type { RenderOptions } from "./types.js";
-import { assertRenderOptions } from "./validate.js";
+import { assertMatrix, assertRenderOptions } from "./validate.js";
 
 export type Canvas2DLike = {
   fillStyle: unknown;
@@ -13,6 +13,7 @@ export type Canvas2DLike = {
 };
 
 export function renderToCanvas(ctx: Canvas2DLike, m: SymbolMatrix, options: RenderOptions): { width: number; height: number } {
+  assertMatrix(m);
   assertRenderOptions(options);
   if (typeof ctx !== "object" || ctx === null || typeof ctx.fillRect !== "function" || !("imageSmoothingEnabled" in ctx)) {
     throw new SymbolError("UNSUPPORTED_ENVIRONMENT", "canvas context needs fillRect and imageSmoothingEnabled");

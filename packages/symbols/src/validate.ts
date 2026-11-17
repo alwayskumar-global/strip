@@ -1,6 +1,7 @@
 // Hand-written validators (R5.5, R8.3). Each throws SymbolError INVALID_INPUT before any other processing.
 import { SymbolError } from "./errors.js";
 import { ECC_LEVELS } from "./types.js";
+import type { SymbolMatrix } from "./matrix.js";
 import type { DecodeOptions, EncodeOptions, ImageDataLike, RenderOptions } from "./types.js";
 
 const bad = (message: string): never => {
@@ -70,4 +71,14 @@ export function assertDecodeOptions(v: unknown): asserts v is DecodeOptions {
     if (!(b instanceof ArrayBuffer) && !(b instanceof Uint8Array)) bad("wasm bytes must be an ArrayBuffer or Uint8Array");
     if ((b as ArrayBuffer | Uint8Array).byteLength === 0) bad("wasm bytes must not be empty");
   } else bad("wasm source kind must be url or bytes");
+}
+
+export function assertMatrix(v: unknown): asserts v is SymbolMatrix {
+  if (!isRecord(v)) return bad("matrix must be an object");
+  const { size, modules, version, ecc, mask } = v;
+  if (!isInt(version) || version < 1 || version > 40) bad("matrix version must be an integer in 1..40");
+  if (size !== 17 + 4 * (version as number)) bad("matrix size must equal 17 + 4 x version");
+  if (!Array.isArray(modules) || modules.length !== (size as number) * (size as number)) bad("matrix modules length must equal size x size");
+  if (!(ECC_LEVELS as readonly unknown[]).includes(ecc)) bad("matrix ecc must be one of L, M, Q, H");
+  if (!isInt(mask) || mask < 0 || mask > 7) bad("matrix mask must be an integer in 0..7");
 }
