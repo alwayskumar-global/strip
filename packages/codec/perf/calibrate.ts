@@ -5,7 +5,7 @@
 //   M2 cold start:     stream from seq 0, each packet lost with probability 0.30 -> packets received
 //   M3 page mode:      same stream with loss 0.05 -> stream position at completion; R = position - K
 //
-// Factors are the 0.995 quantile (the table value; properties assert 0.99 so sampling noise has margin),
+// Factors are the per-row table quantile (0.995 by default, 0.999 for the small-K rows; properties assert 0.99 so sampling noise has margin),
 // rounded up to permille. The 0.99 quantile is reported alongside.
 import { createDecoderWith } from "../src/decoder.js";
 import { encodeWith } from "../src/encoder.js";
@@ -14,7 +14,7 @@ import { ceilDiv } from "../src/header.js";
 import { Prng } from "../src/prng.js";
 
 export const CALIBRATION_SEED = 0x5ca11b00;
-export const TABLE_KS = [10, 25, 50, 100, 250, 500, 1000, 2000] as const;
+export const TABLE_KS = [10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384] as const;
 export const PACKET_SIZE = 62; // blockSize 32
 const BLOCK = 32;
 const RECORD = 41; // metadata record for name "a" and empty MIME
@@ -27,6 +27,8 @@ export interface CalibrationOptions {
   readonly Ks: readonly number[];
   /** Trials per K. */
   readonly samples: Readonly<Record<number, number>>;
+  /** Table quantile per K (default 0.995). A high quantile needs a large N: 0.999 from N <= 300 is the sample maximum. */
+  readonly quantiles?: Readonly<Record<number, number>>;
   readonly seed?: number;
   /** Optional progress callback, called after each K. */
   readonly log?: (line: string) => void;
@@ -34,15 +36,18 @@ export interface CalibrationOptions {
 
 export interface Quantiles {
   readonly q99: number;
-  readonly q995: number;
-  /** Observed fraction of trials at or below the 0.995 value. */
-  readonly rate995: number;
-  readonly wilson995: number;
+  /** The per-row table quantile (0.995 or 0.999). */
+  readonly qTable: number;
+  /** Observed fraction of trials at or below the table value. */
+  readonly rateTable: number;
+  readonly wilsonTable: number;
 }
 
 export interface KResult {
   readonly K: number;
   readonly N: number;
+  /** The quantile the table value is taken at. */
+  readonly quantile: number;
   /** Packets needed in M1. */
   readonly late: Quantiles;
   /** Packets received in M2. */
@@ -70,11 +75,11 @@ function quantile(sorted: readonly number[], q: number): number {
   return sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] as number;
 }
 
-function summarize(values: number[]): Quantiles {
+function summarize(values: number[], tableQuantile: number): Quantiles {
   const sorted = [...values].sort((a, b) => a - b);
-  const q995 = quantile(sorted, 0.995);
-  const within = sorted.filter((v) => v <= q995).length;
-  return { q99: quantile(sorted, 0.99), q995, rate995: within / sorted.length, wilson995: wilsonLower(within, sorted.length) };
+  const qTable = quantile(sorted, tableQuantile);
+  const within = sorted.filter((v) => v <= qTable).length;
+  return { q99: quantile(sorted, 0.99), qTable, rateTable: within / sorted.length, wilsonTable: wilsonLower(within, sorted.length) };
 }
 
 function shuffle<T>(items: T[], prng: Prng): void {
@@ -143,7 +148,7 @@ async function runTrial(K: number, trial: number, format: FormatParams, seed: nu
   return { late, cold: m2.received, page: m3.position };
 }
 
-export async function calibrateK(K: number, N: number, format: FormatParams, seed: number): Promise<KResult> {
+export async function calibrateK(K: number, N: number, format: FormatParams, seed: number, tableQuantile = 0.995): Promise<KResult> {
   const late: number[] = [];
   const cold: number[] = [];
   const page: number[] = [];
@@ -153,19 +158,20 @@ export async function calibrateK(K: number, N: number, format: FormatParams, see
     cold.push(r.cold);
     page.push(r.page);
   }
-  const L = summarize(late);
-  const C = summarize(cold);
-  const P = summarize(page);
+  const L = summarize(late, tableQuantile);
+  const C = summarize(cold, tableQuantile);
+  const P = summarize(page, tableQuantile);
   const permille = (count: number): number => ceilDiv(count * 1000, K);
   return {
     K,
     N,
+    quantile: tableQuantile,
     late: L,
     cold: C,
     page: P,
-    fLatePermille: permille(L.q995),
-    fColdPermille: permille(C.q995),
-    R: Math.max(0, P.q995 - K),
+    fLatePermille: permille(L.qTable),
+    fColdPermille: permille(C.qTable),
+    R: Math.max(0, P.qTable - K),
     fLate99Permille: permille(L.q99),
     fCold99Permille: permille(C.q99),
     R99: Math.max(0, P.q99 - K),
@@ -178,7 +184,7 @@ export async function calibrate(options: CalibrationOptions): Promise<KResult[]>
     const N = options.samples[K];
     if (N === undefined) throw new Error(`no sample count for K=${K}`);
     const t0 = process.hrtime.bigint();
-    out.push(await calibrateK(K, N, options.format, options.seed ?? CALIBRATION_SEED));
+    out.push(await calibrateK(K, N, options.format, options.seed ?? CALIBRATION_SEED, options.quantiles?.[K] ?? 0.995));
     options.log?.(`K=${K} N=${N} done in ${(Number(process.hrtime.bigint() - t0) / 1e9).toFixed(1)} s`);
   }
   return out;
@@ -187,7 +193,7 @@ export async function calibrate(options: CalibrationOptions): Promise<KResult[]>
 /** An infinite quantile means the claim could not be met at all: calibration must fail. */
 export function failingK(results: readonly KResult[]): number | undefined {
   for (const r of results) {
-    if (![r.late.q995, r.cold.q995, r.page.q995].every(Number.isFinite)) return r.K;
+    if (![r.late.qTable, r.cold.qTable, r.page.qTable].every(Number.isFinite)) return r.K;
   }
   return undefined;
 }
@@ -197,9 +203,8 @@ export interface TableFile {
   readonly c: readonly [number, number];
   readonly delta: readonly [number, number];
   readonly D: number;
-  readonly quantile: "0.995";
-  /** N is the number of calibration trials behind the row. */
-  readonly rows: ReadonlyArray<{ K: number; N: number; fLatePermille: number; fColdPermille: number; R: number }>;
+  /** N is the number of calibration trials behind the row and quantile the table quantile of that row. */
+  readonly rows: ReadonlyArray<{ K: number; N: number; quantile: string; fLatePermille: number; fColdPermille: number; R: number }>;
 }
 
 export function toTableFile(format: FormatParams, results: readonly KResult[]): TableFile {
@@ -208,8 +213,7 @@ export function toTableFile(format: FormatParams, results: readonly KResult[]): 
     c: format.c,
     delta: format.delta,
     D: format.D,
-    quantile: "0.995",
-    rows: results.map((r) => ({ K: r.K, N: r.N, fLatePermille: r.fLatePermille, fColdPermille: r.fColdPermille, R: r.R })),
+    rows: results.map((r) => ({ K: r.K, N: r.N, quantile: String(r.quantile), fLatePermille: r.fLatePermille, fColdPermille: r.fColdPermille, R: r.R })),
   };
 }
 
@@ -218,12 +222,12 @@ const f2 = (permille: number): string => (permille / 1000).toFixed(3);
 
 export function renderTable(format: FormatParams, results: readonly KResult[]): string {
   const lines = [
-    `c=${format.c[0]}/${format.c[1]} delta=${format.delta[0]}/${format.delta[1]} D=${format.D}  (loss: M2 0.30, M3 0.05; table value = 0.995 quantile, rounded up to permille)`,
-    "   K     N | f_late 0.99  0.995 (wilson) | f_cold 0.99  0.995 (wilson) |  R 0.99  0.995 (wilson)",
+    `c=${format.c[0]}/${format.c[1]} delta=${format.delta[0]}/${format.delta[1]} D=${format.D}  (loss: M2 0.30, M3 0.05; table value = per-row quantile, rounded up to permille)`,
+    "   K     N   q | f_late 0.99  table (wilson) | f_cold 0.99  table (wilson) |  R 0.99  table (wilson)",
   ];
   for (const r of results) {
     lines.push(
-      `${String(r.K).padStart(5)} ${String(r.N).padStart(5)} | ${f2(r.fLate99Permille).padStart(10)} ${f2(r.fLatePermille).padStart(6)} (${pct(r.late.wilson995)}) | ${f2(r.fCold99Permille).padStart(10)} ${f2(r.fColdPermille).padStart(6)} (${pct(r.cold.wilson995)}) | ${String(r.R99).padStart(6)} ${String(r.R).padStart(6)} (${pct(r.page.wilson995)})`,
+      `${String(r.K).padStart(5)} ${String(r.N).padStart(5)} ${String(r.quantile).padStart(5)} | ${f2(r.fLate99Permille).padStart(10)} ${f2(r.fLatePermille).padStart(6)} (${pct(r.late.wilsonTable)}) | ${f2(r.fCold99Permille).padStart(10)} ${f2(r.fColdPermille).padStart(6)} (${pct(r.cold.wilsonTable)}) | ${String(r.R99).padStart(6)} ${String(r.R).padStart(6)} (${pct(r.page.wilsonTable)})`,
     );
   }
   return lines.join("\n");
@@ -254,18 +258,39 @@ export interface CliArgs {
   readonly format: FormatParams;
   readonly Ks: readonly number[];
   readonly samples: Readonly<Record<number, number>>;
+  readonly quantiles: Readonly<Record<number, number>>;
   readonly write: boolean;
+  readonly merge: boolean;
   readonly seed: number;
 }
 
-/** Parse `--c 1/10 --delta 1/2 --D 4 --K 50,100 --samples 200 [--samples 50:1000,500:300] [--write] [--seed n]`. */
+function parseMap(text: string, Ks: readonly number[], name: string): Record<number, number> {
+  const out: Record<number, number> = {};
+  if (text.includes(":")) {
+    for (const part of text.split(",")) {
+      const [k, v] = part.split(":").map(Number);
+      if (!Number.isInteger(k) || v === undefined || !Number.isFinite(v)) throw new Error(`bad --${name} entry "${part}"`);
+      out[k as number] = v;
+    }
+  } else {
+    for (const k of Ks) out[k] = Number(text);
+  }
+  return out;
+}
+
+/**
+ * Parse `--c 1/10 --delta 1/2 --D 3 --K 50,100 --samples 200 | 50:1000,500:300 --quantile 0.995 | 10:0.999,25:0.999
+ * [--write] [--merge] [--seed n]`.
+ */
 export function parseArgs(text: string): CliArgs {
   const tokens = text.split(/\s+/).filter((t) => t.length > 0);
   const flags = new Map<string, string>();
   let write = false;
+  let merge = false;
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i] as string;
     if (t === "--write") write = true;
+    else if (t === "--merge") merge = true;
     else if (t.startsWith("--")) {
       const v = tokens[++i];
       if (v === undefined) throw new Error(`missing value for ${t}`);
@@ -274,16 +299,9 @@ export function parseArgs(text: string): CliArgs {
   }
   const Ks = (flags.get("K") ?? TABLE_KS.join(",")).split(",").map(Number);
   if (Ks.some((k) => !Number.isInteger(k) || k < 2)) throw new Error("--K must be a list of integers >= 2");
-  const samples: Record<number, number> = {};
-  const sampleText = flags.get("samples") ?? "1000";
-  if (sampleText.includes(":")) {
-    for (const part of sampleText.split(",")) {
-      const [k, n] = part.split(":").map(Number);
-      samples[k as number] = n as number;
-    }
-  } else {
-    for (const k of Ks) samples[k] = Number(sampleText);
-  }
+  const samples = parseMap(flags.get("samples") ?? "1000", Ks, "samples");
+  const quantiles = parseMap(flags.get("quantile") ?? "0.995", Ks, "quantile");
+  for (const q of Object.values(quantiles)) if (!(q > 0 && q < 1)) throw new Error("--quantile values must be in (0, 1)");
   const dText = flags.get("D") ?? String(DEFAULT_FORMAT.D);
   const D = dText === "none" ? 0 : Number(dText);
   if (!Number.isInteger(D) || D < 0) throw new Error("--D must be an integer >= 0 (0 or none = no dense packets)");
@@ -291,9 +309,32 @@ export function parseArgs(text: string): CliArgs {
     format: { c: parseRational(flags.get("c") ?? "1/10"), delta: parseRational(flags.get("delta") ?? "1/2"), D },
     Ks,
     samples,
+    quantiles,
     write,
+    merge,
     seed: flags.has("seed") ? Number(flags.get("seed")) : CALIBRATION_SEED,
   };
+}
+
+/**
+ * Replace the rows of `existing` for the recalibrated K values and keep every other row untouched.
+ * Rows of an older table without a per-row quantile get the old top-level quantile.
+ */
+export function mergeTable(existingJson: string, fresh: TableFile): TableFile {
+  const old = JSON.parse(existingJson) as {
+    c: [number, number];
+    delta: [number, number];
+    D: number;
+    quantile?: string;
+    rows: Array<{ K: number; N: number; quantile?: string; fLatePermille: number; fColdPermille: number; R: number }>;
+  };
+  if (JSON.stringify([old.c, old.delta, old.D]) !== JSON.stringify([fresh.c, fresh.delta, fresh.D])) {
+    throw new Error("--merge: the existing table was calibrated with different c, delta or D");
+  }
+  const byK = new Map(old.rows.map((r) => [r.K, { ...r, quantile: r.quantile ?? old.quantile ?? "0.995" }]));
+  for (const r of fresh.rows) byK.set(r.K, r);
+  const rows = [...byK.values()].sort((a, b) => a.K - b.K).map((r) => ({ K: r.K, N: r.N, quantile: r.quantile, fLatePermille: r.fLatePermille, fColdPermille: r.fColdPermille, R: r.R }));
+  return { formatVersion: 1, c: fresh.c, delta: fresh.delta, D: fresh.D, rows };
 }
 
 export interface CliOutput {
@@ -303,22 +344,29 @@ export interface CliOutput {
 }
 
 /**
- * Run calibration for CLI-style arguments. Writes through `writer` only with --write and only for the
- * full K list; fails (throws) without writing when any quantile is infinite.
+ * Run calibration for CLI-style arguments. Writes through `writer` only with --write and only when the
+ * resulting table covers every grid K (with --merge, the rows of `existing` that were not recalibrated
+ * count); fails (throws) without writing when any quantile is infinite.
  */
 export async function runCli(
   args: string,
   writer?: (json: string) => void,
   run: (options: CalibrationOptions) => Promise<KResult[]> = calibrate,
   log?: (line: string) => void,
+  existing?: string,
 ): Promise<CliOutput> {
   const a = parseArgs(args);
-  const results = await run({ format: a.format, Ks: a.Ks, samples: a.samples, seed: a.seed, ...(log ? { log } : {}) });
+  const results = await run({ format: a.format, Ks: a.Ks, samples: a.samples, quantiles: a.quantiles, seed: a.seed, ...(log ? { log } : {}) });
   const bad = failingK(results);
   if (bad !== undefined) throw new Error(`calibration failed: an infinite quantile at K=${bad}; nothing written`);
-  const table = toTableFile(a.format, results);
+  const fresh = toTableFile(a.format, results);
+  let table = fresh;
+  if (a.merge) {
+    if (existing === undefined) throw new Error("--merge needs an existing table");
+    table = mergeTable(existing, fresh);
+  }
   if (a.write) {
-    if (TABLE_KS.some((k) => !a.Ks.includes(k))) throw new Error("--write needs every table K; refusing to write a partial table");
+    if (TABLE_KS.some((k) => !table.rows.some((r) => r.K === k))) throw new Error("--write needs every table K; refusing to write a partial table");
     if (!writer) throw new Error("--write needs a writer");
     writer(JSON.stringify(table, null, 2) + "\n");
   }

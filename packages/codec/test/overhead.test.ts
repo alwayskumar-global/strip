@@ -21,9 +21,15 @@ describe("table file (R10.2, R10.7)", () => {
     }
     expect("samples" in overheadTable).toBe(false);
   });
+  it("records the quantile per row: 0.999 for K <= 500 (N >= 1000) and 0.995 for K >= 1000", () => {
+    for (const r of overheadTable.rows) {
+      expect(r.quantile).toBe(r.K <= 500 ? "0.999" : "0.995");
+      if (r.quantile === "0.999") expect(r.N as number).toBeGreaterThanOrEqual(1000);
+    }
+    expect("quantile" in overheadTable).toBe(false);
+  });
   it("is calibrated (not provisional) and records the frozen c, delta and D", () => {
     expect(overheadTable.provisional).toBeUndefined();
-    expect(overheadTable.quantile).toBe("0.995");
     expect(overheadTable.c).toEqual(SOLITON_C);
     expect(overheadTable.delta).toEqual(SOLITON_DELTA);
     expect(overheadTable.D).toBe(DENSE_PERIOD);
@@ -38,12 +44,14 @@ describe("fresh calibration matches the committed rows for K = 10, 25, 50 (R10.4
       format: { c: overheadTable.c, delta: overheadTable.delta, D: overheadTable.D },
       Ks: small.map((r) => r.K),
       samples: Object.fromEntries(small.map((r) => [r.K, r.N as number])),
+      quantiles: Object.fromEntries(small.map((r) => [r.K, Number(r.quantile)])),
     });
     fresh.forEach((f, i) => {
       const row = small[i] as OverheadRow;
-      expect({ K: f.K, N: f.N, fLatePermille: f.fLatePermille, fColdPermille: f.fColdPermille, R: f.R }).toEqual({
+      expect({ K: f.K, N: f.N, quantile: String(f.quantile), fLatePermille: f.fLatePermille, fColdPermille: f.fColdPermille, R: f.R }).toEqual({
         K: row.K,
         N: row.N,
+        quantile: row.quantile,
         fLatePermille: row.fLatePermille,
         fColdPermille: row.fColdPermille,
         R: row.R,

@@ -232,6 +232,7 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 5. WHEN the test suite runs, THE test suite SHALL run a fresh calibration for K in {10, 25, 50} and fail if the committed table values for those K differ from the fresh values. [unit]
 6. THE measured properties M1, M2 and M3 SHALL assert at the table values (f_late, f_cold, R) for each K in {50, 100, 500}. [property]
 7. THE overhead-table.json SHALL record the D value (0 meaning none) under which it was calibrated, alongside c and delta, and calibration, M1, M2 and M3 SHALL run with the frozen D. [unit]
+8. THE overhead-table.json SHALL record, for each row, the number of calibration trials N and the calibration quantile used for that row ("0.995" or "0.999") besides K, f_late, f_cold and R, and SHALL have no top-level quantile or samples field. The quantile is per row because it is limited by N: a 0.999 quantile from N <= 300 trials is the sample maximum, so rows for K >= 1000 (N <= 300) use 0.995 and rows for K <= 500 (N >= 1000) use 0.999 so that fresh-seed measurements at 0.99 have margin. M1, M2 and M3 SHALL still assert 0.99 at the table values, and the test output SHALL report the Wilson_Lower_Bound as before. [unit]
 
 ## Correctness properties to be numbered in design
 
@@ -269,4 +270,4 @@ Measured numeric bounds in this document are stated as measurements with a sampl
 3. **Session id.** The Session_Id is the first 4 bytes of the SHA-256 over the Metadata_Record.
 4. **Success-bound attainability: superseded.** The fixed bound at 1.1 x K was withdrawn; success is stated as measured claims M1 to M3 (R2, R4) with values from the calibrated Overhead_Table. The stop rule is unchanged: if an observed rate is below 0.99, report the numbers and stop.
 5. **Scaling at 32 MiB.** Measure and report with no budget. maxGaussianBlocks defaults to 1024 and maxBlockCount defaults to 16384.
-6. **Dense repair rows.** Dense repair rows: approved. Repair Packets are dense iff j mod D == D - 1 (initial D = 4); D is frozen at the sweep checkpoint from {3, 4, 8, none}; the 0.995 calibration quantile and the floating-point ban stay.
+6. **Dense repair rows.** Dense repair rows: approved. Repair Packets are dense iff j mod D == D - 1 (initial D = 4); D is frozen at the sweep checkpoint from {3, 4, 8, none}; the per-row calibration quantile and the floating-point ban stay.

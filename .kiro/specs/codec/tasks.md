@@ -236,6 +236,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
 
   - [x] 5.2 Calibrate and commit `overhead-table.json`
     - Run `calibrate --write` with the frozen c, delta and D for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384} with the committed seeds. N per K: 1000 for K <= 100, 500 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; drop the K = 16384 row to N = 30 if it would take more than 15 minutes. Commit the table without the `provisional` flag, recording c, delta and D. Each committed row carries its N; the table has no top-level samples field. Report the wall-clock time of the calibration run.
+    - Per-row quantile: rows carry N and the quantile (0.999 for K <= 500, 0.995 for K >= 1000); a later recalibration of K <= 500 used `--merge` and left the K >= 1000 rows untouched.
     - Add the unit test that a fresh calibration for K in {10, 25, 50} (using each row's N and the table's D) equals the committed rows.
     - Add a unit test that the table's recorded c, delta and D equal the frozen constants.
     - _Requirements: 10.2, 10.4, 10.5, 10.7_

@@ -9,53 +9,59 @@
     2
   ],
   "D": 3,
-  "quantile": "0.995",
   "rows": [
     {
       "K": 10,
-      "N": 1000,
-      "fLatePermille": 2000,
-      "fColdPermille": 2100,
-      "R": 11
+      "N": 3000,
+      "quantile": "0.999",
+      "fLatePermille": 2300,
+      "fColdPermille": 2300,
+      "R": 14
     },
     {
       "K": 25,
-      "N": 1000,
-      "fLatePermille": 1320,
-      "fColdPermille": 1760,
-      "R": 20
+      "N": 3000,
+      "quantile": "0.999",
+      "fLatePermille": 1480,
+      "fColdPermille": 1840,
+      "R": 24
     },
     {
       "K": 50,
-      "N": 1000,
-      "fLatePermille": 1180,
-      "fColdPermille": 1440,
-      "R": 27
+      "N": 3000,
+      "quantile": "0.999",
+      "fLatePermille": 1220,
+      "fColdPermille": 1480,
+      "R": 31
     },
     {
       "K": 100,
-      "N": 1000,
-      "fLatePermille": 1100,
-      "fColdPermille": 1290,
-      "R": 30
+      "N": 3000,
+      "quantile": "0.999",
+      "fLatePermille": 1110,
+      "fColdPermille": 1310,
+      "R": 36
     },
     {
       "K": 250,
-      "N": 500,
-      "fLatePermille": 1032,
-      "fColdPermille": 1164,
-      "R": 54
+      "N": 1000,
+      "quantile": "0.999",
+      "fLatePermille": 1040,
+      "fColdPermille": 1188,
+      "R": 60
     },
     {
       "K": 500,
-      "N": 500,
-      "fLatePermille": 1016,
-      "fColdPermille": 1144,
-      "R": 87
+      "N": 1000,
+      "quantile": "0.999",
+      "fLatePermille": 1018,
+      "fColdPermille": 1154,
+      "R": 93
     },
     {
       "K": 1000,
       "N": 300,
+      "quantile": "0.995",
       "fLatePermille": 1008,
       "fColdPermille": 1126,
       "R": 144
@@ -63,6 +69,7 @@
     {
       "K": 2000,
       "N": 300,
+      "quantile": "0.995",
       "fLatePermille": 1820,
       "fColdPermille": 1113,
       "R": 257
@@ -70,6 +77,7 @@
     {
       "K": 4000,
       "N": 100,
+      "quantile": "0.995",
       "fLatePermille": 1759,
       "fColdPermille": 1115,
       "R": 489
@@ -77,6 +85,7 @@
     {
       "K": 8000,
       "N": 100,
+      "quantile": "0.995",
       "fLatePermille": 1690,
       "fColdPermille": 1405,
       "R": 975
@@ -84,6 +93,7 @@
     {
       "K": 16384,
       "N": 100,
+      "quantile": "0.995",
       "fLatePermille": 1661,
       "fColdPermille": 1618,
       "R": 1932

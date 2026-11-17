@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { KResult } from "../perf/calibrate.js";
 import { type ComboResult, recommend, renderSweep, runSweep, sweepFormats } from "../perf/sweep.js";
 
-const q = { q99: 1, q995: 1, rate995: 1, wilson995: 0.9 };
-const row = (K: number): KResult => ({ K, N: 3, late: q, cold: q, page: q, fLatePermille: 1000, fColdPermille: 1000, R: 1, fLate99Permille: 1000, fCold99Permille: 1000, R99: 1 });
+const q = { q99: 1, qTable: 1, rateTable: 1, wilsonTable: 0.9 };
+const row = (K: number): KResult => ({ K, N: 3, quantile: 0.995, late: q, cold: q, page: q, fLatePermille: 1000, fColdPermille: 1000, R: 1, fLate99Permille: 1000, fCold99Permille: 1000, R99: 1 });
 const combo = (D: number, fCold: number, fLate: number, ms: number | null): ComboResult => ({
   format: { c: [1, 10], delta: [1, 2], D },
   results: [row(50)],

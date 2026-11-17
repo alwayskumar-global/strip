@@ -5,8 +5,8 @@ import { parseArgs, parseRational, runCli, TABLE_KS, wilsonLower, type Calibrati
 const SMALL = "--c 1/10 --delta 1/2 --D 4 --K 10,25 --samples 20";
 
 function fake(K: number, over: Partial<KResult> = {}): KResult {
-  const q = { q99: 1, q995: 1, rate995: 1, wilson995: 0.9 };
-  return { K, N: 5, late: q, cold: q, page: q, fLatePermille: 1500, fColdPermille: 2000, R: K, fLate99Permille: 1400, fCold99Permille: 1900, R99: K - 1, ...over };
+  const q = { q99: 1, qTable: 1, rateTable: 1, wilsonTable: 0.9 };
+  return { K, N: 5, quantile: 0.999, late: q, cold: q, page: q, fLatePermille: 1500, fColdPermille: 2000, R: K, fLate99Permille: 1400, fCold99Permille: 1900, R99: K - 1, ...over };
 }
 
 describe("calibration determinism (R10.4)", () => {
@@ -35,17 +35,18 @@ describe("calibration determinism (R10.4)", () => {
 });
 
 describe("the written JSON records c, delta and D (R10.7)", () => {
-  const full = async (o: CalibrationOptions): Promise<KResult[]> => o.Ks.map((K) => fake(K));
+  const full = async (o: CalibrationOptions): Promise<KResult[]> => o.Ks.map((K) => fake(K, { quantile: o.quantiles?.[K] ?? 0.995 }));
   const all = TABLE_KS.join(",");
 
   it("passes the command-line values through to the file", async () => {
     let written = "";
     const out = await runCli(`--c 3/100 --delta 1/10 --D 8 --K ${all} --samples 5 --write`, (j) => (written = j), full);
-    const file = JSON.parse(written) as { c: number[]; delta: number[]; D: number; quantile: string; rows: Array<{ K: number; N: number }> };
+    const file = JSON.parse(written) as { c: number[]; delta: number[]; D: number; quantile?: string; rows: Array<{ K: number; N: number; quantile: string }> };
     expect(file.c).toEqual([3, 100]);
     expect(file.delta).toEqual([1, 10]);
     expect(file.D).toBe(8);
-    expect(file.quantile).toBe("0.995");
+    expect(file.quantile).toBeUndefined(); // the quantile is per row
+    expect(file.rows.every((r) => r.quantile === "0.995")).toBe(true);
     expect(file.rows.every((r) => r.N === 5)).toBe(true);
     expect(file.rows.map((r) => r.K)).toEqual([...TABLE_KS]);
     expect(out.table.D).toBe(8);
@@ -71,7 +72,7 @@ describe("the written JSON records c, delta and D (R10.7)", () => {
 
   it("an infinite quantile fails the run and writes nothing", async () => {
     let calls = 0;
-    const inf = { q99: 1, q995: Number.POSITIVE_INFINITY, rate995: 1, wilson995: 0 };
+    const inf = { q99: 1, qTable: Number.POSITIVE_INFINITY, rateTable: 1, wilsonTable: 0 };
     const bad = async (o: CalibrationOptions): Promise<KResult[]> => o.Ks.map((K) => fake(K, K === 100 ? { cold: inf } : {}));
     await expect(runCli(`--K ${all} --samples 5 --write`, () => calls++, bad)).rejects.toThrow(/K=100/);
     expect(calls).toBe(0);
@@ -98,5 +99,55 @@ describe("argument parsing", () => {
   it("wilson lower bound matches the formula at n = 1000, p = 0.99", () => {
     expect(wilsonLower(990, 1000)).toBeCloseTo(0.9818, 3);
     expect(wilsonLower(0, 0)).toBe(0);
+  });
+});
+
+describe("per-row quantile and merge", () => {
+  it("parses a quantile map and a global quantile", () => {
+    expect(parseArgs("--K 10,25 --quantile 10:0.999,25:0.995").quantiles).toEqual({ 10: 0.999, 25: 0.995 });
+    expect(parseArgs("--K 10,25 --quantile 0.999").quantiles).toEqual({ 10: 0.999, 25: 0.999 });
+    expect(parseArgs("--K 10").quantiles).toEqual({ 10: 0.995 });
+    expect(() => parseArgs("--quantile 1.5")).toThrow();
+  });
+
+  it("each recalibrated row records its own quantile and N", async () => {
+    const out = await runCli("--K 10,25 --samples 10:40,25:20 --quantile 10:0.999,25:0.995");
+    expect(out.table.rows.map((r) => [r.K, r.N, r.quantile])).toEqual([[10, 40, "0.999"], [25, 20, "0.995"]]);
+    expect("quantile" in out.table).toBe(false);
+  }, 120000);
+
+  it("the quantile changes the value: 0.999 is the sample maximum for N = 40", async () => {
+    const hi = await runCli("--K 10 --samples 40 --quantile 0.999");
+    const lo = await runCli("--K 10 --samples 40 --quantile 0.5");
+    expect(hi.results[0]?.late.qTable).toBeGreaterThanOrEqual(lo.results[0]?.late.qTable ?? 0);
+    expect(hi.results[0]?.fColdPermille).toBeGreaterThanOrEqual(lo.results[0]?.fColdPermille ?? 0);
+  }, 120000);
+
+  it("--merge replaces only the recalibrated rows and keeps the others, adding the old top-level quantile", async () => {
+    const existing = JSON.stringify({
+      formatVersion: 1,
+      c: [1, 10],
+      delta: [1, 2],
+      D: 3,
+      quantile: "0.995",
+      rows: TABLE_KS.map((K) => ({ K, N: 300, fLatePermille: 1500, fColdPermille: 2000, R: K })),
+    });
+    let written = "";
+    const full = async (o: CalibrationOptions): Promise<KResult[]> => o.Ks.map((K) => fake(K, { fLatePermille: 1111, N: 77 }));
+    await runCli("--c 1/10 --delta 1/2 --D 3 --K 10,25 --samples 77 --quantile 0.999 --merge --write", (j) => (written = j), full, undefined, existing);
+    const t = JSON.parse(written) as { rows: Array<{ K: number; N: number; quantile: string; fLatePermille: number }> };
+    expect(t.rows.map((r) => r.K)).toEqual([...TABLE_KS]);
+    expect(t.rows[0]).toMatchObject({ K: 10, N: 77, quantile: "0.999", fLatePermille: 1111 });
+    expect(t.rows[1]).toMatchObject({ K: 25, N: 77, quantile: "0.999", fLatePermille: 1111 });
+    expect(t.rows[2]).toMatchObject({ K: 50, N: 300, quantile: "0.995", fLatePermille: 1500 });
+    expect(t.rows[10]).toMatchObject({ K: 16384, N: 300, quantile: "0.995" });
+  });
+
+  it("--merge refuses a table calibrated with different constants, and --write still needs a full grid", async () => {
+    const other = JSON.stringify({ formatVersion: 1, c: [1, 10], delta: [1, 2], D: 4, rows: [] });
+    const full = async (o: CalibrationOptions): Promise<KResult[]> => o.Ks.map((K) => fake(K));
+    await expect(runCli("--D 3 --K 10 --samples 5 --merge", undefined, full, undefined, other)).rejects.toThrow(/different/);
+    const partial = JSON.stringify({ formatVersion: 1, c: [1, 10], delta: [1, 2], D: 3, rows: [{ K: 10, N: 1, quantile: "0.995", fLatePermille: 1, fColdPermille: 1, R: 0 }] });
+    await expect(runCli("--D 3 --K 10 --samples 5 --merge --write", () => undefined, full, undefined, partial)).rejects.toThrow(/partial/);
   });
 });

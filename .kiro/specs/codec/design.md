@@ -247,24 +247,24 @@ Reference vector (design-time, to be re-derived by the independent Python genera
 
 ```json
 { "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "D": 4,
-  "quantile": "0.995",
-  "rows": [ { "K": 10, "N": 1000, "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
+  "rows": [ { "K": 10, "N": 3000, "quantile": "0.999", "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
 ```
 
-Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384}. Each row carries N, the number of calibration trials (N_cal) behind that row; there is no top-level samples field. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`. `D` is an integer (0 = none) and records the dense period under which the table was calibrated. `calibrate.ts` takes `--D`; M1, M2, M3 and calibration run with the frozen D. The sweep covers (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}.
+Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384}. Each row carries N, the number of calibration trials (N_cal) behind that row, and the calibration quantile used for that row; there is no top-level samples or quantile field. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`. `D` is an integer (0 = none) and records the dense period under which the table was calibrated. `calibrate.ts` takes `--D`; M1, M2, M3 and calibration run with the frozen D. The sweep covers (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}.
 
 **`overhead.ts` API.** `fLatePermille(K)`, `fColdPermille(K)`, `lateCount(K) = ceilDiv(fLatePermille(K) * K, 1000)`, `coldLimit(K)` likewise with `fColdPermille`, and `R(K)`.
 For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K - K_lo), K_hi - K_lo)`. K <= 10 or K >= 16384 clamps to the end row. Interpolated permille values are ceil'd again by the consumer. `R(K)` is always an integer >= 0 and is the default `page()` repairCount.
 
-**`perf/calibrate.ts`** is seeded and deterministic. It sits outside `src`, so it may import `src` modules by relative path. It uses the real encoder and decoder with `sha256WebCrypto`, and the codec's own xoshiro128** (`prng.ts`) seeded with a fixed constant mixed with K for all shuffles and loss draws (no `Math.random`). Payload bytes come from the same PRNG and vary per trial so session ids vary. `packetSize` 62 gives blockSize 32 for speed. For each K it runs N_cal trials (1000 for K <= 100, 500 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; the K = 16384 row drops to 30 if it would take more than 15 minutes, stated in that row's N):
+**`perf/calibrate.ts`** is seeded and deterministic. It sits outside `src`, so it may import `src` modules by relative path. It uses the real encoder and decoder with `sha256WebCrypto`, and the codec's own xoshiro128** (`prng.ts`) seeded with a fixed constant mixed with K for all shuffles and loss draws (no `Math.random`). Payload bytes come from the same PRNG and vary per trial so session ids vary. `packetSize` 62 gives blockSize 32 for speed. For each K it runs N_cal trials (3000 for K <= 100, 1000 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; the K = 16384 row drops to 30 if it would take more than 15 minutes, stated in that row's N):
 
 | Claim | Simulation | Recorded value |
 |---|---|---|
-| M1 | Seeded shuffle of repair seq K..5K-1, push in that order until complete. n_needed is Infinity if not complete within 4K pushes. | fLate = 0.995 quantile of n_needed / K, rounded up to permille |
-| M2 | Stream from seq 0. Each Packet is lost if `next() < 1288490189` (0.30 x 2^32). Stop at completion or after 20K sequence numbers. | fCold = 0.995 quantile of received count / K, rounded up to permille |
-| M3 | Same stream with loss `next() < 214748365` (0.05 x 2^32). Record the 1-based stream position at completion. | R = 0.995 quantile of (position - K), floored at 0 |
+| M1 | Seeded shuffle of repair seq K..5K-1, push in that order until complete. n_needed is Infinity if not complete within 4K pushes. | fLate = per-row quantile of n_needed / K, rounded up to permille |
+| M2 | Stream from seq 0. Each Packet is lost if `next() < 1288490189` (0.30 x 2^32). Stop at completion or after 20K sequence numbers. | fCold = per-row quantile of received count / K, rounded up to permille |
+| M3 | Same stream with loss `next() < 214748365` (0.05 x 2^32). Record the 1-based stream position at completion. | R = per-row quantile of (position - K), floored at 0 |
 
-Calibration targets the 0.995 quantile while the properties assert 0.99. The margin absorbs sampling noise between the calibration sample and the fresh-seed assertion sample.
+The table value is the per-row quantile of the simulated distribution (default 0.995; 0.999 for K <= 500, with N = 3000 for K <= 100 and N = 1000 for K = 250 and 500; K >= 1000 stay at 0.995 with N = 300 for K = 1000 and 2000 and N = 100 for K >= 4000), rounded up to permille. The properties assert 0.99, and the margin absorbs sampling noise between the calibration sample and the fresh-seed assertion sample. The quantile is per row because it is limited by N: a 0.999 quantile from N <= 300 trials is just the sample maximum, so K >= 1000 stays at 0.995. At 0.995 with N = 1000 at K = 100, M3 measured 0.987 on a fresh seed, which is why K <= 500 moved to 0.999 with larger N.
+Calibration derives its PRNG streams from 0x5ca11b00 xor K and the trial index. The measured properties draw trial seeds from fast-check with fixed seeds 0x4d31, 0x4d32 and 0x4d33, so they never share a stream with calibration. The `calibrate.ts` CLI accepts a per-K quantile map and a `--merge` mode that replaces only the recalibrated rows of an existing table.
 If any quantile is Infinity, calibrate exits non-zero, prints the failing K and writes nothing. It prints the table and a Wilson lower bound for each cell, and writes the JSON only with an explicit `--write` flag.
 The suite test re-runs calibrate for K in {10, 25, 50} with each row's N and fails on any difference from the committed rows (R10.5). Rows for K >= 100 are verified by running calibrate manually or in perf, not in the default suite (runtime).
 
@@ -512,6 +512,7 @@ One measured number (informational, no budget, one run, real 2923-byte block, Ap
 - **Conditional check, D = 2 vs D = 3 (c = 1/10, delta = 1/2):** summed f_cold 3.592 vs 3.868 (-7.1%, not more than 10%), R at K = 500 72 vs 86 (-16%), 1 MiB repair-only decode 31 ms vs 28 ms (under 100 ms). The rule required more than 10% on both summed f_cold and R at K = 500, so D = 3 was kept.
 - **Consequence:** changing any of the three now changes sampled packets. Regenerate golden vectors and the overhead table, and bump the format version after a release.
 - Decision B (large files): keep maxGaussianBlocks = 1024; overhead table grid extended to K = 16384 so values above K = 2000 are measured, not clamped.
+- Decision C (small-K margin): K <= 500 rows recalibrated at the 0.999 quantile (N = 3000 for K <= 100, N = 1000 for K = 250 and 500) after M3 at K = 100 measured 0.987 against the 0.99 bound on a fresh seed with the 0.995 table; K >= 1000 rows unchanged.
 
 ## Architecture
 
