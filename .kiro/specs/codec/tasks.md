@@ -18,32 +18,32 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
 
 ## Tasks
 
-- [ ] 1. Group 1: Foundations (pure leaf modules, unit tests only)
-  - [ ] 1.1 Package test tooling and static checks
+- [x] 1. Group 1: Foundations (pure leaf modules, unit tests only)
+  - [x] 1.1 Package test tooling and static checks
     - Add the `packages/codec` vitest config, a `tsconfig` for `src` with `lib: ["ES2023"]`, no DOM and no Node types, and a separate tsconfig for `test` and `perf` that includes the ambient shims `test/node-shim.d.ts` and `perf/node-shim.d.ts`.
     - Make the package `typecheck` script cover both tsconfigs.
     - Test: `src` compiles with zero errors without DOM (R9.4).
     - Test: `packages/codec/package.json` has no `dependencies` key (R9.6, R9.7).
     - _Requirements: 9.4, 9.6, 9.7_
 
-  - [ ] 1.2 `constants.ts` and `errors.ts`
+  - [x] 1.2 `constants.ts` and `errors.ts`
     - Constants: `MAGIC`, `FORMAT_VERSION`, `HEADER_SIZE`, `CRC_SIZE`, and the defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024).
     - Errors: `ERROR_CODES` (exactly ten), `ErrorCode`, `IgnoreReason` (exactly DUPLICATE_PACKET, SESSION_MISMATCH, ALREADY_COMPLETE, DENSE_STORE_FULL), `CodecError` with `code` and a non-empty message.
     - Unit tests for the exact ten codes, the exact four ignore reasons, `instanceof` and the non-empty message.
     - _Requirements: 7.1, 7.2, 7.5, 7.6, 3.4, 5.20_
 
-  - [ ] 1.3 `crc32.ts`
+  - [x] 1.3 `crc32.ts`
     - Table-driven IEEE CRC-32.
     - Unit tests with the design vectors: `crc32("123456789") = 0xCBF43926`, empty input = `0x00000000`, bytes 0..31 = `0x91267E8A`.
     - _Requirements: 3.1, 3.2_
 
-  - [ ] 1.4 `prng.ts`
+  - [x] 1.4 `prng.ts`
     - SplitMix32 seeding, xoshiro128** and `bounded(n)`, including n = 1 (no draw) and n = 2^32 (full range).
     - Unit tests with the three design vectors (seed32, state and the first 4 outputs).
     - Unit test that two initializations with the same (sessionId, seq) give identical output for the first 1,000 values.
     - _Requirements: 6.2, 6.3_
 
-  - [ ] 1.5 `header.ts` and `packet.ts`
+  - [x] 1.5 `header.ts` and `packet.ts`
     - Implement `encodePacket` and `decodePacket` with the 26-byte big-endian header, header CRC over the first 22 bytes, and the trailing CRC.
     - Implement the 9-step check order from the design table. Limits are checked before any buffer sized from L or K is allocated.
     - Unit tests: each failure code (BAD_HEADER, BAD_CRC, UNSUPPORTED_VERSION, PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS), the ordering rules (the header CRC wins over every later defect, version only after the magic check, L before K), the K != ceil(L / blockSize) case, and the blockSize 16 and 65535 bounds.
@@ -51,24 +51,24 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Exhaustive single-bit-flip unit test over a small Packet.
     - _Requirements: 3.1, 3.2, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.16_
 
-  - [ ] 1.6 `validate.ts`
+  - [x] 1.6 `validate.ts`
     - Hand-written validators that throw `CodecError` (INVALID_INPUT) for `packetSize` (integer in [46, 65565]), `repairCount`, `maxPayloadBytes`, `maxBlockCount`, `maxGaussianBlocks`, `hash`, payload shape and packet bytes.
     - Unit tests for boundaries and invalid types.
     - _Requirements: 3.5, 4.6, 7.1, 7.2, 5.9, 9.2, 9.3_
 
-  - [ ] 1.7 `metadata.ts`
+  - [x] 1.7 `metadata.ts`
     - Hand-written UTF-8 codec that rejects lone surrogates, overlong forms and invalid sequences.
     - `serializeMetadata`, `parseMetadata` and `readRecordLength`.
     - Unit tests for the field layout, every R1 rejection (name rules, MIME rules, truncation, trailing bytes, length overrun, unsupported version), the empty payload record, and `readRecordLength` ignoring trailing Payload bytes.
     - _Requirements: 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8, 1.12_
 
-  - [ ] 1.8 Extend the purity script and tools tests
+  - [x] 1.8 Extend the purity script and tools tests
     - Extend `.kiro/hooks/scripts/purity.mjs` so `packages/codec/src` also bans `Math.log`, `Math.sqrt`, `Math.exp` and `Math.pow`. The other packages keep the original three bans.
     - Add tests under `tools/` for both behaviours.
     - Add a codec test that scans every file under `src` and reports zero banned symbols.
     - _Requirements: 6.2, 6.5, 6.6_
 
-  - [ ] 1.9 Group 1 checkpoint
+  - [x] 1.9 Group 1 checkpoint
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5, 9.4_
