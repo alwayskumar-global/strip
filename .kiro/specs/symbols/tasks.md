@@ -105,7 +105,7 @@ Tag legend, as in design.md "Test configs":
     - Property P7: **Feature: symbols, Property 7: for any matrix, quiet zone and box, fitScale returns the largest integer ppm with modules * ppm at most min(box), width and height equal modules * ppm, and returns {0,0,0} without throwing when the box is smaller than modules** (R3.5, R3.6, R14.5) [property].
     - _Requirements: 3.5, 3.6, 14.5_
 
-  - [ ] 1.8 `render-canvas.ts` and P22
+  - [x] 1.8 `render-canvas.ts` and P22
     - `Canvas2DLike` structural type and `renderToCanvas(ctx, matrix, options)`: smoothing off, light fill, integer-coordinate `fillRect` per dark module or per merged horizontal run, `canvas.width` and `canvas.height` set when present, default black on white, configurable colours. Missing `fillRect` or `imageSmoothingEnabled` throws UNSUPPORTED_ENVIRONMENT. Test helper: a recording fake context.
     - Test: pixel width and height equal `(size + 2 * quietZone) * ppm`, the Quiet_Zone is the default 4 modules (R2.2, R3.1) [unit].
     - Test: every recorded `fillRect` has integer coordinates and sizes, and smoothing is false before the first draw (R3.1) [unit].
