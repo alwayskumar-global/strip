@@ -392,7 +392,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.7, 2.8, 4.7_
 
 - [ ] 6. Group 6: Perf, browser and docs
-  - [ ] 6.1 Encode and decode perf under `packages/codec/perf`
+  - [x] 6.1 Encode and decode perf under `packages/codec/perf`
     - Method: 3 discarded warm-ups, 20 timed runs, `process.hrtime.bigint`. Output the Node version, the CPU model and the p95 (the 19th sorted value), and use the same seed and input every run.
     - Encode a 1 MiB seeded input with median < 200 ms.
     - Decode fixture (a), the K systematic Packets, and fixture (b), `ceil(f_late x K)` seeded random repair Packets (which include dense Packets at the frozen D), each with median < 500 ms and output identical to the input in every run.
