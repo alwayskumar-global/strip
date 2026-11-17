@@ -264,7 +264,7 @@ Tag legend, as in design.md "Test configs":
     - _Requirements: 6.2, 12.1, 13.1_
 
 - [ ] 4. Group 4: Measured gates, perf, notices, README, final verification
-  - [ ] 4.1 Measured suite (P14, P25) and informational grids
+  - [x] 4.1 Measured suite (P14, P25) and informational grids
     - `perf/measured/*.measured.ts`, run by `pnpm test:measured`, printing the observed rate, N and the Wilson lower bound for every cell. Fixed seeds distinct from the fixture seeds. No `Math.random`.
     - Test P14: **Feature: symbols, Property 14: Default_Cell (v30 L, 1732 bytes, 4 ppm, blur 1) under the Typical_Profile, N = 200 fresh seeds, has a Wilson lower bound of at least 0.90 for screen and at least 0.97 for print** (R6.8, R6.9) [measured]. Payloads are 1732 bytes. If a bound is missed, or the rates differ from the spike's beyond the Wilson interval, STOP and report (Global rule 9).
     - Test P25: **Feature: symbols, Property 25: clean fixtures, every version 1..40 at each ecc, at 4 and 8 ppm (320 fixtures), decode to the input in 100% of cases** (R6.1) [measured].
