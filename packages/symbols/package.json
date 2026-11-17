@@ -15,6 +15,7 @@
     "perf": "vitest run --config vitest.perf.config.ts --passWithNoTests"
   },
   "dependencies": {
-    "@strip/codec": "workspace:*"
+    "@strip/codec": "workspace:*",
+    "qr": "0.7.2"
   }
 }

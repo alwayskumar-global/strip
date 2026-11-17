@@ -73,7 +73,7 @@ Tag legend, as in design.md "Test configs":
     - Property P20: **Feature: symbols, Property 20: for any bytes, bytesToLatin1 then latin1TextEncoder.encode returns the input and each char code equals the byte** [property].
     - _Requirements: 1.13_
 
-  - [ ] 1.5 Add `qr` 0.7.2, `matrix.ts`, `encoder.ts`, `qr-encoder.ts`, `encode-symbol.ts`
+  - [x] 1.5 Add `qr` 0.7.2, `matrix.ts`, `encoder.ts`, `qr-encoder.ts`, `encode-symbol.ts`
     - Add `qr` 0.7.2 to `packages/symbols/package.json` (exact pin, no range) and its row to `docs/dependencies.md` (name, exact version, license, reason) in the same commit. Re-check the option names (`ecc`, `encoding`, `textEncoder`, `version`, `mask`, `border`, `scale`, `optimize`) against the installed `.d.ts`. On any mismatch with the design, STOP and report.
     - `matrix.ts`: `SymbolMatrix` type, `matrixFromRows` (checks `size === 17 + 4 * version`), `moduleAt`. `encoder.ts`: internal `Encoder` interface. `qr-encoder.ts`: `createQrEncoder()`, the only file importing `qr`, passing `ecc`, explicit `version`, `encoding: "byte"`, `textEncoder: latin1TextEncoder`, `border: 0`; the mask is read back from the format information; any `qr` throw maps to ENCODE_FAILED. `encode-symbol.ts`: validate, capacity check against `QR_CAPACITY` or the version's table value (PACKET_TOO_LARGE), `smallestVersion`, delegate.
     - Test: 1 byte and 1732 bytes encode in byte mode, one segment, no ECI; the matrix has `modules.length == size * size` (R1.1, R2.1) [unit].

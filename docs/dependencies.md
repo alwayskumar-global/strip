@@ -6,6 +6,7 @@ This table lists direct dependencies (runtime and dev) declared in any `package.
 
 | name | exact version | license | reason |
 | ---- | ------------- | ------- | ------ |
+| qr | 0.7.2 | MIT OR Apache-2.0 | QR Code encoder (encoder only, used under MIT) for @strip/symbols. Pure JavaScript, no dependencies, no WebAssembly, no CSP change. Its decoder is not used. |
 | zod | 4.6.7 | MIT | Runtime input validation at public API boundaries. Approved for `apps/strip` only; `packages/codec` has no runtime dependencies. |
 | @eslint/js | 10.0.1 | MIT | ESLint recommended rule set (dev). |
 | @playwright/test | 1.65.1 | Apache-2.0 | Browser end-to-end tests in bundled Chromium against a localhost harness (dev). |
