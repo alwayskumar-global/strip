@@ -15,14 +15,14 @@ Candidates:
 
 `qr` takes strings. The lossless mapping is Latin-1: each byte becomes the character with the same code (`String.fromCharCode`), encoding is forced to `byte`, and `textEncoder` maps characters back to bytes (`charCodeAt`). On decode, `textDecoder` maps bytes to characters and the caller maps them back to bytes.
 
-51 cases, 49 round-trip exactly:
+51 payload cases (49 round-trip exactly) plus 30 real codec packets (all round-trip):
 
 - All 256 byte values.
 - 20 random 2953-byte payloads at v40 L.
 - Random payloads at full capacity for v10 L, v20 L, v30 L, v40 M and v40 L (5 each).
 - All-zero and all-0xFF 2953-byte payloads, and a UTF-8-looking sequence.
-- 30 real codec packets (packet sizes 2953, 1000 and 500; 10 each).
-- The two failures are deliberate over-capacity cases (2954 bytes, and 256 bytes at v10 M, whose capacity is 213). Both fail with a capacity error, as they should.
+- The two failures are over-capacity cases: 2954 bytes at v40 L (deliberate), and 256 bytes at v10 M, whose capacity is 213 (a mistake in the test case). Both fail with a capacity error, as they should.
+- The 30 real codec packets use packet sizes 2953, 1000 and 500 (10 each, at v40 L, v26 L and v19 L). All 30 round-trip.
 
 ### Synthetic camera degradation
 
@@ -126,3 +126,64 @@ zxing-wasm decodes. `qr` encodes (encoder only).
 - The weakness is rotation and perspective, which is what a phone shot of a screen or a printed strip contains. Speed is not a differentiator.
 - `qr` as an encoder passes the binary-safety test and has no CSP implication. It stays as the encoder.
 - CSP: zxing-wasm needs `'wasm-unsafe-eval'` in `script-src`. That token permits WebAssembly compilation only, not `eval` or `new Function`. The .wasm must be self-hosted, and the default CDN fetch must not be used.
+
+## Grid 2: typical-phone profile (zxing-wasm only)
+
+Run after the decision above, to choose defaults. The images come from the `qr` encoder and are decoded by zxing-wasm only.
+
+Profile: rotation up to ±5°, perspective up to ±4%, 70% contrast, 4% noise (sd 10 levels), mild brightness gradient (about ±10 levels). Versions 10, 15, 20, 25, 30. ECC L, M and Q. 4, 5 and 6 px/module. Blur sigma 0 and 1. N = 200 per cell, fixed seeds, payloads at full capacity.
+
+Cells show success at blur 0 / blur 1.
+
+| Version | ECC | bytes | px/module 4: blur 0 / 1 | 5: blur 0 / 1 | 6: blur 0 / 1 |
+|---|---|---|---|---|---|
+| 10 | L | 271 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 10 | M | 213 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 10 | Q | 151 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 15 | L | 520 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 15 | M | 412 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 15 | Q | 292 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 20 | L | 858 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 20 | M | 666 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 20 | Q | 482 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 25 | L | 1273 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 25 | M | 997 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 25 | Q | 715 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 30 | L | 1732 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 30 | M | 1370 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+| 30 | Q | 982 | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 |
+
+All 90 cells reach 1.000 (200 of 200) at both blur levels. The grid is saturated, so it cannot locate the edge of the working region. It also cannot rank cells by success.
+
+### Probe beyond the grid (informational, N = 100)
+
+The same profile at lower px/module and at v40, to find where the edge is.
+
+| Version | ECC | bytes | 2 px: blur 0 / 1 | 3 px: blur 0 / 1 | 4 px: blur 0 / 1 |
+|---|---|---|---|---|---|
+| 25 | L | 1273 | .96 / .00 | 1.00 / .32 | 1.00 / 1.00 |
+| 30 | L | 1732 | .98 / .00 | 1.00 / .45 | 1.00 / 1.00 |
+| 40 | L | 2953 | .99 / .00 | 1.00 / .26 | 1.00 / 1.00 |
+| 40 | M | 2331 | 1.00 / .00 | 1.00 / .30 | 1.00 / 1.00 |
+
+- The limit is the ratio of blur to module size, not the version. At blur sigma 1 px, 3 px/module fails (0.26 to 0.45) and 4 px/module passes at every version tested, including v40.
+- A bigger version needs a bigger symbol in the camera frame for the same px/module: a symbol is (17 + 4 v + 8) modules wide including the quiet zone. At 4 px/module that is 580 px for v30 and 740 px for v40.
+
+### Default selection
+
+Rule: among cells with success of at least 0.90 at blur 1, take the one with the smallest capacity loss, meaning the largest payload bytes per symbol. Screen needs 0.90. Print needs 0.97, and may use a higher ECC level.
+
+Within the specified grid, every cell qualifies for both uses, so the largest capacity wins: v30 L, 1732 bytes, at the smallest px/module in the grid (4).
+
+| Use | Version | ECC | Packet size (bytes) | Minimum px/module | Measured success at that minimum, blur 1 |
+|---|---|---|---|---|---|
+| Screen | 30 | L | 1732 | 4 | 1.000 (N = 200) |
+| Print | 30 | L | 1732 | 4 | 1.000 (N = 200) |
+
+Minimum px/module is 4 for blur sigma up to 1 px. It holds only while blur stays at or below a quarter of a module. The probe shows 3 px/module fails at blur 1.
+
+### Caveats
+
+- The saturated grid means these defaults come from the grid edge, not from a measured optimum. The probe shows v40 also works under this profile at 4 px/module, so the grid's upper limit of v30 decided the result.
+- The synthetic profile has no moiré (screen pixel grid against sensor), glare, motion blur, rolling shutter, or print defects (ink spread, paper texture). The harsh grid and a real-device test are the only checks on those. Do not read 1.000 as a guarantee on phones.
+- The result is set by what the spike measured. A larger version raises capacity per frame but needs more capture pixels for the symbol. A 720p camera frame with the symbol filling 70% of its short side gives 504 px, which holds v25 at 4 px/module. A 1080p frame gives 756 px, which holds v40.
