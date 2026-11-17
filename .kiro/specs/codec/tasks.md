@@ -254,7 +254,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 1.2, 1.8, 2.5, 5.12**
     - _Requirements: 1.2, 1.8, 2.5, 5.12_
 
-  - [ ] 5.5 P2: Gaussian cap and completion
+  - [x] 5.5 P2: Gaussian cap and completion
     - **Property 2** (design P2). numRuns 200. maxGaussianBlocks 0..10, K 20..60, shuffled loss-free sufficient set, blockSize 32.
     - Tag: `Feature: codec, Property 2: completion with any cap, ALREADY_COMPLETE leaves state deep-equal`.
     - **Validates: Requirements 5.8, 5.9, 5.15, 5.16, 5.17**
