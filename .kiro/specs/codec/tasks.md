@@ -216,7 +216,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Write results only to the git-ignored `perf/out/` directory. Add it to `.gitignore`.
     - _Requirements: 2.2, 2.7, 2.8, 4.7, 8.7, 10.4, 10.7_
 
-  - [ ] 4.5 Run the sweep and capture the table
+  - [x] 4.5 Run the sweep and capture the table
     - Run the sweep, save the full output under `perf/out/`, and keep the table for the report.
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs.
     - Do not freeze c, delta or D, do not generate `overhead-table.json`, do not commit golden vectors.
