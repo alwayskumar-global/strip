@@ -122,8 +122,8 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 1.9, 1.10_
 
   - [x] 3.2 `overhead.ts` and the provisional table
-    - Implement `fLatePermille`, `fColdPermille`, `lateCount`, `coldLimit` and `R` with integer linear interpolation (ceil) and clamping outside [10, 2000]. Keep it internal, not in the barrel.
-    - Commit `src/overhead-table.json` with `"provisional": true`, a `D` field (integer, 0 = none, provisional 4) alongside `c` and `delta`, and conservative placeholder values for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. These values are never used for claims.
+    - Implement `fLatePermille`, `fColdPermille`, `lateCount`, `coldLimit` and `R` with integer linear interpolation (ceil) and clamping outside [10, 16384]. Keep it internal, not in the barrel.
+    - Commit `src/overhead-table.json` with `"provisional": true`, a `D` field (integer, 0 = none, provisional 4) alongside `c` and `delta`, and provisional placeholder rows. These values are never used for claims.
     - Unit tests for interpolation examples, clamping, the table K values, integer outputs, and that the table records c, delta and D (R10.7).
     - _Requirements: 10.1, 10.2, 10.3, 10.7_
 
@@ -191,10 +191,10 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
   - [x] 4.1 `perf/calibrate.ts`
     - Seeded through `prng.ts`, using the real encoder and decoder with `sha256WebCrypto`. Payload bytes vary per trial. `packetSize` 62 (blockSize 32).
     - Simulate M1 (repair-only shuffle of seq K..5K-1, 4K cap), M2 (loss `next() < 1288490189`, 20K cap) and M3 (loss `next() < 214748365`).
-    - Take the 0.995 quantile, round factors up to permille, and floor R at 0.
+    - Take the per-row quantile (0.995 default), round factors up to permille, and floor R at 0.
     - If any quantile is Infinity, exit non-zero, print the failing K and write nothing.
     - Print the table with a Wilson lower bound per cell.
-    - Write the JSON only with `--write`, recording c, delta and D. Accept `--c`, `--delta`, `--D` (integer, 0 = none), `--K` as a list and `--samples`.
+    - Write the JSON only with `--write`, recording c, delta and D. Accept `--c`, `--delta`, `--D` (integer, 0 = none), `--K` as a list, `--quantile` (single value or K:value map), `--samples` (single value or K:value map) and `--merge`.
     - _Requirements: 10.4, 10.7, 2.7, 2.8, 4.7_
 
   - [x] 4.2 Calibration determinism test
@@ -235,7 +235,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.2, 10.7_
 
   - [x] 5.2 Calibrate and commit `overhead-table.json`
-    - Run `calibrate --write` with the frozen c, delta and D for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384} with the committed seeds. N per K: 1000 for K <= 100, 500 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; drop the K = 16384 row to N = 30 if it would take more than 15 minutes. Commit the table without the `provisional` flag, recording c, delta and D. Each committed row carries its N; the table has no top-level samples field. Report the wall-clock time of the calibration run.
+    - Run `calibrate --write` with the frozen c, delta and D for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384} with the committed seeds. N per K: 3000 for K <= 100, 1000 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; drop the K = 16384 row to N = 30 if it would take more than 15 minutes. Commit the table without the `provisional` flag, recording c, delta and D. Each committed row carries its N; the table has no top-level samples field. Report the wall-clock time of the calibration run.
     - Per-row quantile: rows carry N and the quantile (0.999 for K <= 500, 0.995 for K >= 1000); a later recalibration of K <= 500 used `--merge` and left the K >= 1000 rows untouched.
     - Add the unit test that a fresh calibration for K in {10, 25, 50} (using each row's N and the table's D) equals the committed rows.
     - Add a unit test that the table's recorded c, delta and D equal the frozen constants.

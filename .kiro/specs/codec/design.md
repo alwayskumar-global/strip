@@ -494,7 +494,7 @@ Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default str
 
 ### Risk 3: calibration stability and runtime
 
-The 0.995 calibration quantile against the 0.99 assertion leaves a margin, but a rare false stop is still possible. Calibration at K = 1000 and 2000 is slow (minutes), and at K = 2000 the 1024 cap may delay completion. The table records N_cal. Recommended default: keep the margin, run K >= 1000 calibration offline with `--write`, and verify only K in {10, 25, 50} in the default suite.
+The per-row calibration quantile against the 0.99 assertion leaves a margin (0.999 with N = 3000 or 1000 for K <= 500, 0.995 with N = 300 for K = 1000 and 2000, 0.995 with N = 100 for K >= 4000), but a rare false stop is still possible. Calibration at K = 1000 and 2000 is slow (minutes), and at K = 2000 the 1024 cap may delay completion. The K >= 4000 rows use N = 100 to bound runtime: at calibration time the K = 16384 row took 378 s and the whole 11-row calibration took 590 s. The table records N_cal for each row. Recommended default: keep the margin, run K >= 1000 calibration offline with `--write`, and verify only K in {10, 25, 50} in the default suite.
 
 ### Large files
 
