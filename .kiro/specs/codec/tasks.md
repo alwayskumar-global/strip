@@ -152,7 +152,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests: peeling-only completion (a spy confirms no GE call), the over-cap residual, and solved-block bookkeeping.
     - _Requirements: 5.7, 5.15, 5.16, 2.6_
 
-  - [ ] 3.6 `decoder.ts` (c): dense store and dense path
+  - [x] 3.6 `decoder.ts` (c): dense store and dense path
     - Implement the dense store with `maxDenseRows = maxGaussianBlocks + 64` slots and a free list. Per slot: `denseBits` (K-bit row), `densePayload` (stride bytes) and `denseFolded` (K-bit row of solved columns already XORed into the payload).
     - Build the K-bit row directly from the PRNG words, with the empty-set rule. Store each accepted Dense_Packet as a row plus payload, count it as distinct and record its seq in `seen`.
     - When the store is full, return `ignored` with DENSE_STORE_FULL, leave state unchanged, do not count the Packet in `distinctPackets` and do not record its seq as seen.

@@ -1,9 +1,9 @@
-import { DEFAULT_MAX_BLOCK_COUNT, DEFAULT_MAX_GAUSSIAN_BLOCKS, DEFAULT_MAX_PAYLOAD_BYTES } from "./constants.js";
+import { DEFAULT_MAX_BLOCK_COUNT, DEFAULT_MAX_GAUSSIAN_BLOCKS, DEFAULT_MAX_PAYLOAD_BYTES, maxDenseRows } from "./constants.js";
 import { CodecError, type ErrorCode, type IgnoreReason } from "./errors.js";
 import { DEFAULT_FORMAT, type FormatParams } from "./format.js";
 import { sha256WebCrypto, type HashFn } from "./hash.js";
 import type { Metadata } from "./metadata.js";
-import { Neighbors } from "./neighbors.js";
+import { Neighbors, rowWords } from "./neighbors.js";
 import { decodePacket, type Limits, type PacketFields } from "./packet.js";
 import { getSolitonTable } from "./soliton.js";
 import {
@@ -58,11 +58,25 @@ export interface DecoderDebug {
   readonly equationCapacity: number;
   readonly seen: number;
   readonly solved: readonly number[];
+  readonly denseStored: number;
+  readonly denseCapacity: number;
+}
+
+export interface DenseRowInfo {
+  /** Columns (Block indices) set in the row. */
+  readonly columns: readonly number[];
+  /** Columns whose solved Block has already been XORed into the payload. */
+  readonly folded: readonly number[];
+  readonly payload: Uint8Array;
 }
 
 export interface InternalDecoder extends Decoder {
   debug(): DecoderDebug;
   peekBlock(i: number): Uint8Array | undefined;
+  /** Fold every stored dense row against the Blocks solved so far. */
+  foldDense(): void;
+  /** Stored dense rows in slot order (copies). */
+  denseRows(): DenseRowInfo[];
 }
 
 type Phase = "idle" | "collecting" | "verifying" | "complete" | "failed";
@@ -110,6 +124,19 @@ class DecoderImpl implements InternalDecoder {
   // Solved Blocks whose equations have not been reduced yet (peeling work stack).
   private stack!: Uint32Array;
   private stackLen = 0;
+  private solvedBits!: Uint32Array;
+
+  // Dense store: K-bit rows plus payload, used only by Gaussian elimination.
+  private nw = 0;
+  private denseCap = 0;
+  private denseBits!: Uint32Array;
+  private denseFolded!: Uint32Array;
+  private densePayload!: BlockBuffer;
+  private denseLeft!: Uint32Array;
+  private denseUsed!: Uint8Array;
+  private readonly denseFreeSlots: number[] = [];
+  private denseCount = 0;
+  private rowScratch!: Uint32Array;
 
   // Adjacency: per Block a linked list of edges to the equations that contain it.
   private head!: Int32Array;
@@ -161,6 +188,8 @@ class DecoderImpl implements InternalDecoder {
       equationCapacity: this.eqCap,
       seen: this.seen.size,
       solved: this.solved ? Array.from(this.solved) : [],
+      denseStored: this.denseCount,
+      denseCapacity: this.denseCap,
     };
   }
 
@@ -188,10 +217,7 @@ class DecoderImpl implements InternalDecoder {
     else if (f.totalLength !== this.L || f.blockSize !== this.bs || f.blockCount !== this.K) return this.rejected("BAD_HEADER");
     if (this.seen.has(f.seq)) return this.ignored("DUPLICATE_PACKET");
 
-    if (f.seq >= this.K && this.neighbors.isDense(f.seq)) {
-      this.seen.add(f.seq); // dense path is implemented in task 3.6
-      return this.accepted();
-    }
+    if (f.seq >= this.K && this.neighbors.isDense(f.seq)) return this.acceptDense(f);
     this.seen.add(f.seq);
     this.acceptSparse(f);
     this.drain();
@@ -212,6 +238,19 @@ class DecoderImpl implements InternalDecoder {
     this.setBuf = new Uint32Array(K);
     this.unsolvedBuf = new Uint32Array(K);
     this.stack = new Uint32Array(K);
+    this.nw = rowWords(K);
+    this.solvedBits = new Uint32Array(this.nw);
+    this.rowScratch = new Uint32Array(this.nw);
+    if (this.format.D > 0) {
+      const cap = maxDenseRows(this.maxGauss);
+      this.denseCap = cap;
+      this.denseBits = new Uint32Array(cap * this.nw);
+      this.denseFolded = new Uint32Array(cap * this.nw);
+      this.densePayload = new BlockBuffer(cap, this.bs);
+      this.denseLeft = new Uint32Array(cap);
+      this.denseUsed = new Uint8Array(cap);
+      for (let i = cap - 1; i >= 0; i--) this.denseFreeSlots.push(i);
+    }
     this.eqCap = 2 * K + 64;
     this.eqState = new Uint8Array(this.eqCap);
     this.eqDegree = new Uint32Array(this.eqCap);
@@ -256,6 +295,87 @@ class DecoderImpl implements InternalDecoder {
     this.solved[b] = 1;
     this.solvedCount++;
     this.stack[this.stackLen++] = b;
+    this.solvedBits[b >>> 5] = (this.solvedBits[b >>> 5] as number) | (1 << (b & 31));
+    if (this.denseCount > 0) this.dropSolvedDense(b);
+  }
+
+  /**
+   * Dense Packets never touch adjacency or the ripple. A Dense_Row is stored as a K-bit row plus
+   * payload and is used only by Gaussian elimination.
+   */
+  private acceptDense(f: PacketFields): PushStatus {
+    if (this.denseCount >= this.denseCap) return this.ignored("DENSE_STORE_FULL");
+    this.seen.add(f.seq);
+    const { nw, rowScratch, solvedBits } = this;
+    this.neighbors.denseRow(this.sessionId, f.seq, rowScratch);
+    let left = 0;
+    for (let w = 0; w < nw; w++) left += popcount((rowScratch[w] as number) & ~(solvedBits[w] as number));
+    if (left === 0) return this.accepted(); // every column is already known: nothing to keep
+    const slot = this.denseFreeSlots.pop() as number;
+    this.denseBits.set(rowScratch, slot * nw);
+    this.denseFolded.fill(0, slot * nw, (slot + 1) * nw);
+    this.densePayload.clear(slot);
+    this.densePayload.block(slot).set(f.payload);
+    this.denseLeft[slot] = left;
+    this.denseUsed[slot] = 1;
+    this.denseCount++;
+    return this.accepted();
+  }
+
+  /** Block b was solved: rows with bit b lose a column; a row with no unsolved column is discarded. */
+  private dropSolvedDense(b: number): void {
+    const word = b >>> 5;
+    const mask = 1 << (b & 31);
+    for (let slot = 0; slot < this.denseCap; slot++) {
+      if (this.denseUsed[slot] !== 1) continue;
+      if (((this.denseBits[slot * this.nw + word] as number) & mask) === 0) continue;
+      const left = (this.denseLeft[slot] as number) - 1;
+      this.denseLeft[slot] = left;
+      if (left === 0) this.freeDense(slot);
+    }
+  }
+
+  private freeDense(slot: number): void {
+    this.denseUsed[slot] = 0;
+    this.denseFreeSlots.push(slot);
+    this.denseCount--;
+  }
+
+  /** XOR each newly solved Block of the row into its payload, once, and remember which columns are folded. */
+  private foldRow(slot: number): void {
+    const base = slot * this.nw;
+    for (let w = 0; w < this.nw; w++) {
+      const bits = this.denseBits[base + w] as number;
+      const known = bits & (this.solvedBits[w] as number);
+      let need = known & ~(this.denseFolded[base + w] as number);
+      while (need !== 0) {
+        const low = need & -need;
+        const c = (w << 5) + (31 - Math.clz32(low));
+        xorBlock(this.densePayload, slot, this.blocks, c);
+        need ^= low;
+      }
+      this.denseFolded[base + w] = known >>> 0;
+    }
+  }
+
+  foldDense(): void {
+    for (let slot = 0; slot < this.denseCap; slot++) if (this.denseUsed[slot] === 1) this.foldRow(slot);
+  }
+
+  denseRows(): DenseRowInfo[] {
+    const out: DenseRowInfo[] = [];
+    for (let slot = 0; slot < this.denseCap; slot++) {
+      if (this.denseUsed[slot] !== 1) continue;
+      const columns: number[] = [];
+      const folded: number[] = [];
+      for (let c = 0; c < this.K; c++) {
+        const w = slot * this.nw + (c >>> 5);
+        if (((this.denseBits[w] as number) >>> (c & 31)) & 1) columns.push(c);
+        if (((this.denseFolded[w] as number) >>> (c & 31)) & 1) folded.push(c);
+      }
+      out.push({ columns, folded, payload: this.densePayload.block(slot).slice() });
+    }
+    return out;
   }
 
   /**
@@ -337,6 +457,12 @@ class DecoderImpl implements InternalDecoder {
     this.edgeEq = eq;
     this.edgeNext = nx;
   }
+}
+
+function popcount(x: number): number {
+  let v = x - ((x >>> 1) & 0x55555555);
+  v = (v & 0x33333333) + ((v >>> 2) & 0x33333333);
+  return Math.imul((v + (v >>> 4)) & 0x0f0f0f0f, 0x01010101) >>> 24;
 }
 
 export function createDecoder(options?: DecoderOptions): Decoder {
