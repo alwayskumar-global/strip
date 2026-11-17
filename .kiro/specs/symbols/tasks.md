@@ -299,7 +299,7 @@ Tag legend, as in design.md "Test configs":
     - Test: both runtime dependencies are exact-pinned (no `^` or `~`) and the writer and full builds of `zxing-wasm` are not imported anywhere in `src` (R11.1, R11.2, R11.4) [unit].
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 4.6 Final verification and traceability
+  - [x] 4.6 Final verification and traceability
     - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:measured`, `pnpm perf` and `pnpm test:e2e` and report the outputs.
     - Summarise the measured results (P14, P25, informational grids, perf medians, wasm init, `.wasm` size).
     - Verify the traceability table at the end of this file: every requirement id R1.1..R15.5 is in at least one sub-task and every property P1..P26 is in exactly one test sub-task. Report any gap.

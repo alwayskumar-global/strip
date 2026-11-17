@@ -79,9 +79,13 @@ test("c: only same-origin requests, none to jsDelivr; the CSP header is on the p
     else if (url.endsWith(".html")) kinds.add("page");
   }
   expect([...kinds].sort()).toEqual(["page", "wasm", "worker"]);
-  const log = (await (await request.get(`${STRIP}/__requests`)).json()) as Array<{ url: string; host: string }>;
-  expect(log.length).toBeGreaterThan(2);
-  for (const e of log) expect(e.host).toBe("127.0.0.1:5180");
+  // The server log is shared with tests running in parallel (including the alternative-policy server on 5181),
+  // so only entries of the real-policy server are checked here. The page-side request list above is the exhaustive one.
+  const log = (await (await request.get(`${STRIP}/__requests`)).json()) as Array<{ server: string; url: string; host: string }>;
+  const mine = log.filter((e) => e.server === "strip");
+  expect(mine.length).toBeGreaterThan(2);
+  for (const e of mine) expect(e.host).toBe("127.0.0.1:5180");
+  expect(mine.some((e) => e.url === wasmUrl)).toBe(true);
   expect(await page.evaluate(() => (window as unknown as { __symbols: Api }).__symbols.violations)).toEqual([]);
   expect(w.consoleProblems).toEqual([]);
 });
