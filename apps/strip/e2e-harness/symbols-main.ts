@@ -71,7 +71,7 @@ const api = {
     await createFrameDecoder({ wasm: wasmSource, maxWidth: 64, maxHeight: 64 });
     return performance.now() - t0;
   },
-  async startWorker(maxWidth = 512, maxHeight = 512) {
+  async startWorker(maxWidth = 640, maxHeight = 640) {
     try {
       const worker = new Worker(new URL("../src/decode.worker.ts", import.meta.url), { type: "module" });
       client = createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth, maxHeight });
@@ -87,6 +87,9 @@ const api = {
     const frames: ImageData[] = [];
     for (let i = 0; i < count; i++) frames.push(render(payload(40 + i), 4));
     const stats = { found: 0, dropped: 0, notFound: 0, errors: 0, exact: 0 };
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+    await sleep(300); // let long tasks from rendering the frames be delivered before the baseline
+    const base = longTasks.length;
     const t0 = performance.now();
     for (let i = 0; i < count; i++) {
       const f = frames[i] as ImageData;
@@ -103,7 +106,9 @@ const api = {
       } else if (o.kind === "dropped") stats.dropped++;
       else stats.notFound++;
     }
-    return { ...stats, ms: performance.now() - t0, longTasks: [...longTasks] };
+    const ms = performance.now() - t0;
+    await sleep(300);
+    return { ...stats, ms, longTasks: longTasks.slice(base), observerSupported: PerformanceObserver.supportedEntryTypes.includes("longtask") };
   },
 };
 (window as unknown as { __symbols: typeof api }).__symbols = api;

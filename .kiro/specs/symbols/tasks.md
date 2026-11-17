@@ -205,7 +205,7 @@ Tag legend, as in design.md "Test configs":
     - Run `pnpm test:e2e` and report the output.
     - _Requirements: 8.5, 9.1, 9.2, 9.4, 9.7, 9.8, 9.9, 9.10, 11.8_
 
-  - [ ] 2.7 Playwright test d (worker decode, longtask) and wasm init and size measurement
+  - [x] 2.7 Playwright test d (worker decode, longtask) and wasm init and size measurement
     - Test d: the worker decodes a sequence of at least 30 rendered frames while a `PerformanceObserver({ type: "longtask" })` runs on the main thread; no entry is over 50 ms attributable to decoding, and all frames decode or drop without error (R7.9, P21) [Playwright]. Property P21: **Feature: symbols, Property 21: while the worker decodes a frame sequence, the main thread records no longtask over 50 ms attributable to decoding** [Playwright]. If the worker cannot start under the Strip_CSP or fails the criterion, STOP and report; the fallback (main-thread decode with a yield per frame) needs the user's confirmation.
     - Measurement script in the harness: wasm init time (compile plus instantiate, timed with the harness's own `performance.now`, which is allowed because it is outside `src` and `apps/strip/src`) in Chromium under the real CSP, repeated 5 times in fresh pages, reporting the median; built `.wasm` size in bytes from the production build. Assertions: init at most 500 ms and size at most 1,000,000 bytes (R7.7, R7.8) [Playwright]. The numbers are printed for the Group 2 checkpoint report.
     - _Requirements: 7.7, 7.8, 7.9_
