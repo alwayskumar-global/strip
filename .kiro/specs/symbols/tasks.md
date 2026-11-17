@@ -126,7 +126,7 @@ Tag legend, as in design.md "Test configs":
     - Property P8: **Feature: symbols, Property 8: for any matrix and options, the SVG string has no `<script`, `<style`, `style=`, `on\w+=`, `href`, `url(` or `data:`, has crispEdges and a module-unit viewBox, and has mm width and height iff mm is given** (R4.1 to R4.5) [property]. The Chromium rasterisation half of P8 is in task 3.5 as a Playwright test.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [ ] 1.10 `test/helpers/matrix-to-image.ts`
+  - [x] 1.10 `test/helpers/matrix-to-image.ts`
     - `matrixToImageData(matrix, ppm, quietZone): { width, height, data: Uint8ClampedArray }`, black on white, RGBA, alpha 255, the same pixels the canvas path draws. It lives in `test/helpers` and is NOT exported from the barrel.
     - Test: size equals `(size + 2 * quietZone) * ppm`, data length equals width x height x 4, every pixel is exactly black or white with alpha 255, the quiet zone is all white [unit].
     - Test: pixels equal the union of `fillRect` calls from the recording fake context of task 1.8 for a v1 and a v10 matrix (ties the Node helper to the renderer logic; the Chromium tie is task 3.5) [unit].

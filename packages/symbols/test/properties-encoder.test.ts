@@ -52,8 +52,10 @@ describe("encoder properties", () => {
     fc.assert(
       fc.property(eccArb, fc.boolean(), fc.integer({ min: 1, max: 40 }), fc.uint8Array({ minLength: 1, maxLength: 200 }), (ecc, useV, v, b) => {
         const opts = useV ? { ecc, version: v } : { ecc };
-        const a = encodeSymbol(b, opts);
-        const c = encodeSymbol(b, opts);
+        // The generator respects the capacity of an explicit version; overflow behaviour is covered by P4.
+        const input = useV ? b.subarray(0, isoCap(v, ecc)) : b;
+        const a = encodeSymbol(input, opts);
+        const c = encodeSymbol(input, opts);
         expect(c).toEqual(a);
         expect(c.mask).toBe(a.mask);
       }),
