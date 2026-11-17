@@ -279,7 +279,7 @@ Tag legend, as in design.md "Test configs":
     - Test: `measure.ts` reports the median of exactly 20 timed runs after 3 warm-ups (unit-tested with an injected clock) [unit].
     - _Requirements: 7.5, 7.6, 7.7_
 
-  - [ ] 4.3 `THIRD_PARTY_NOTICES`, P19 and Playwright g
+  - [x] 4.3 `THIRD_PARTY_NOTICES`, P19 and Playwright g
     - Static committed file `apps/strip/public/THIRD_PARTY_NOTICES` (never generated) with each shipped component's name, exact version, licence and full licence text: `qr` 0.7.2 (MIT), `zxing-wasm` 3.1.7 (MIT), zxing-cpp (Apache-2.0) and the zxing-wasm C++ glue (Apache-2.0), the last two contained in the reader `.wasm`; the full Apache-2.0 text. It does not mention zint.
     - Verify whether zxing-cpp has a `NOTICE` file upstream at the version embedded in the reader `.wasm`. If one exists, reproduce its contents in the file. Record the result of the verification in the task notes (R15.3).
     - Link the file from the app (a link in `apps/strip/index.html` or the about view, same origin).

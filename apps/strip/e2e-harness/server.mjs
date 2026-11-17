@@ -47,7 +47,7 @@ function listen(port, csp, label) {
     try {
       const body = await readFile(file);
       res.writeHead(200, {
-        "Content-Type": TYPES[extname(file)] ?? "application/octet-stream",
+        "Content-Type": file.endsWith("THIRD_PARTY_NOTICES") ? "text/plain; charset=utf-8" : (TYPES[extname(file)] ?? "application/octet-stream"),
         "Content-Security-Policy": csp,
         "Cache-Control": "no-store",
       });
