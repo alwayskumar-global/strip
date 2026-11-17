@@ -412,7 +412,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Document `pnpm exec playwright install chromium` as a step. If it prompts for anything or fails, STOP and report.
     - _Requirements: 1.11, 9.5_
 
-  - [ ] 6.4 Dependency log consistency test
+  - [x] 6.4 Dependency log consistency test
     - Add a test under `tools/` that every dependency in every `package.json` is exact-pinned and has a row in `docs/dependencies.md`, and that `packages/codec` has no `dependencies` key.
     - _Requirements: 9.6, 9.7_
 
