@@ -308,7 +308,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 4.1, 6.1**
     - _Requirements: 4.1, 6.1_
 
-  - [ ] 5.14 P9: progress monotonicity and hash gating
+  - [x] 5.14 P9: progress monotonicity and hash gating
     - **Property 9** (design P9). numRuns 200. Random push sequences with duplicates and foreign Packets, and a call-recording HashFn. An injected wrong-digest HashFn gives HASH_MISMATCH with `complete` false.
     - Tag: `Feature: codec, Property 9: progress is monotone and complete iff solved and hash verified`.
     - **Validates: Requirements 5.6, 5.10, 5.11**
