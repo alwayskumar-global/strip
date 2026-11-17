@@ -55,7 +55,7 @@ Tag legend, as in design.md "Test configs":
     - Test: quiet zone 3 without `allowShortQuietZone` throws INVALID_INPUT, with it passes (R2.3) [unit].
     - _Requirements: 2.3, 5.5, 8.1, 8.3_
 
-  - [ ] 1.3 `capacity.ts`, ISO fixture and table equality (P26)
+  - [x] 1.3 `capacity.ts`, ISO fixture and table equality (P26)
     - `QR_CAPACITY` (2953, 2331, 1663, 1273), `QR_CAPACITY_BY_VERSION` (40 versions x L, M, Q, H, defined in this package without runtime imports from `@strip/codec`), `QR_DEFAULTS` (screen and print, each v30, L, 1732, minimum 4 ppm), `smallestVersion(len, ecc)`.
     - `test/fixtures/iso-capacity.ts`: the ISO_Capacity_Table typed from ISO/IEC 18004 (byte mode, all 160 cells), data only, no import from `src`. The file header cites the source (the standard clause and table, and any secondary reference used). Cross-check the typed values against the widely published byte-mode capacity table. On any doubtful cell, STOP and report; do not pick a value.
     - Test (P26): `QR_CAPACITY_BY_VERSION` equals the ISO table in all 160 cells; `QR_CAPACITY` equals its version 40 row; the version 30 row is 1732, 1370, 982, 742 (R1.4, R14.1) [unit].
