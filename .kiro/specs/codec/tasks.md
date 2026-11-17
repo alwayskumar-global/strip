@@ -240,7 +240,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Add a unit test that the table's recorded c, delta and D equal the frozen constants.
     - _Requirements: 10.2, 10.4, 10.5, 10.7_
 
-  - [ ] 5.3 Golden vectors from an independent reference
+  - [x] 5.3 Golden vectors from an independent reference
     - Write a standalone Python 3 generator under `packages/codec/test/golden/reference/`, from design.md only. It uses `hashlib` SHA-256, `zlib` CRC-32, and its own SplitMix32, xoshiro128**, integer fixed-point soliton, and its own implementation of the dense rule (index rule, word/bit order, empty-set rule).
     - It outputs `vectors.json` with a fixed payload, name, MIME and options, sessionId, K, D, the hex of the first Packets (covering systematic, sparse and dense Packets), neighbor sets for several seq including dense ones, PRNG vectors and CRC vectors.
     - The four dense reference-vector rows from design.md must also be reproduced by the Python generator and match.
