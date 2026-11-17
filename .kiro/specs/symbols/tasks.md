@@ -194,7 +194,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the worker file contains no `?url` import and no `self`-free logic leaks into the Frame_Decoder (grep `frame-decoder.ts` for `postMessage` and `self`: zero) (R7.10, R10.4) [unit].
     - _Requirements: 7.9, 7.10, 7.11, 10.4_
 
-  - [ ] 2.6 Playwright tests a, b, c, i (CSP, wasm load, request log, production build)
+  - [x] 2.6 Playwright tests a, b, c, i (CSP, wasm load, request log, production build)
     - Extend `e2e-harness/index.html` and `main.ts`: encode, render to canvas, decode, and a round trip through the codec. Tests in `apps/strip/e2e/symbols-csp.spec.ts`.
     - Test a: the harness served with the real Strip_CSP header runs encode, canvas render, decode and the round trip with exact bytes; zero `securitypolicyviolation` events and zero console errors or warnings (R9.1, R9.8, P15) [Playwright].
     - Test b: the same page served with a CSP lacking `'wasm-unsafe-eval'` fails with SymbolError code UNSUPPORTED_ENVIRONMENT, which makes test a meaningful (R8.5, R9.4) [Playwright].
