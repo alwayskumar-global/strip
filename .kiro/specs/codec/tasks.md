@@ -177,7 +177,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit test that asserts the runtime export list and the type export list (R9.1).
     - _Requirements: 9.1, 9.6_
 
-  - [ ] 3.9 End-to-end unit tests
+  - [x] 3.9 End-to-end unit tests
     - Round trip with all systematic Packets, drop and duplicate Packets, a foreign session, a corrupted Packet, the empty payload, K = 1, and tiny blockSize (packetSize 46).
     - Round trip with a mix of systematic, sparse and dense Packets (including a stream where some systematic Packets are dropped and recovery depends on dense rows), and a dense-only repair set with all systematic Packets present.
     - _Requirements: 1.8, 2.5, 2.6, 5.3, 5.4, 5.10, 5.12, 5.23, 7.7_
