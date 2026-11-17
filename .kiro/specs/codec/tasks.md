@@ -436,7 +436,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Extend `test/decoder-complete.test.ts`: digest-mismatch path (encoder-embedded liar digest and decoder-side wrong digest) checks both prefixes against independently computed hex; length-mismatch path via the existing crafted-record test (`byteLength: 39` against 40 recovered bytes) checks `expected` from the record digest and `actual` from the digest of the 40 recovered bytes; a later push returns the same hashes; accepted, ignored and other rejected statuses have no `hashes`; a throwing hash function leaves the phase collecting and propagates in both paths; no status contains a full 64-character digest.
     - No change to packets, wire format, golden vectors, overhead table, c, delta, D or any calibrated constant. No new dependency.
     - _Requirements: 5.24, 5.25, 5.26, 5.27, 5.28, 5.29, 5.11_
-  - [ ] 7.2 P17 property test and README note
+  - [x] 7.2 P17 property test and README note
     - **Property 17** (design P17). numRuns 200. Tag: `Feature: codec, Property 17: HASH_MISMATCH carries 12-hex prefixes of stored and actual digests`. One test. Generators as P1 plus a wrong-digest HashFn arbitrary; checks the prefixes, repeat on later pushes, and absence on other codes, accepted and ignored.
     - **Validates: Requirements 5.24, 5.26, 5.27, 5.29**
     - Update `packages/codec/README.md` to document `hashes` on the rejected status, the 12-hex format, that it is a display aid and not a security claim, and the type-only `HashPrefixes` export.
