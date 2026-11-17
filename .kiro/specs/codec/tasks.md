@@ -248,7 +248,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Commit `vectors.json` and the golden test that fails on any count or byte difference.
     - _Requirements: 2.10, 2.11, 2.12, 2.13, 6.3, 6.4, 6.7_
 
-  - [ ] 5.4 P1: round trip of systematic Packets
+  - [x] 5.4 P1: round trip of systematic Packets
     - **Property 1** (design P1). numRuns 200. Length 0..70000 mixing `uint8Array` and lengths around multiples of blockSize, packetSize in 46..400 or default, name and MIME arbitraries.
     - Tag: `Feature: codec, Property 1: shuffled systematic Packets recover identical bytes and Metadata`.
     - **Validates: Requirements 1.2, 1.8, 2.5, 5.12**
