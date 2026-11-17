@@ -400,7 +400,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Report encode and decode for a 32 MiB payload with no assertion.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-  - [ ] 6.2 Dense Packet perf under `packages/codec/perf`
+  - [x] 6.2 Dense Packet perf under `packages/codec/perf`
     - Dense `next()` at K = 359 (1 MiB input, default packetSize): 3 discarded warm-ups, 20 timed runs, median < 20 ms. On a miss, fail, print the measured median and the budget, and STOP and report to the user without changing the budget.
     - Report the per-Dense_Packet cost at K = 11,500 (32 MiB payload) with no assertion.
     - Report the lazy dense folding cost at K = 11,500 with U <= 1024 and a full dense store, with no assertion.
