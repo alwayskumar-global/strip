@@ -303,9 +303,13 @@ export interface CliOutput {
  * Run calibration for CLI-style arguments. Writes through `writer` only with --write and only for the
  * full K list; fails (throws) without writing when any quantile is infinite.
  */
-export async function runCli(args: string, writer?: (json: string) => void): Promise<CliOutput> {
+export async function runCli(
+  args: string,
+  writer?: (json: string) => void,
+  run: (options: CalibrationOptions) => Promise<KResult[]> = calibrate,
+): Promise<CliOutput> {
   const a = parseArgs(args);
-  const results = await calibrate({ format: a.format, Ks: a.Ks, samples: a.samples, seed: a.seed });
+  const results = await run({ format: a.format, Ks: a.Ks, samples: a.samples, seed: a.seed });
   const bad = failingK(results);
   if (bad !== undefined) throw new Error(`calibration failed: an infinite quantile at K=${bad}; nothing written`);
   const table = toTableFile(a.format, results);

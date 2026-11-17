@@ -197,7 +197,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Write the JSON only with `--write`, recording c, delta and D. Accept `--c`, `--delta`, `--D` (integer, 0 = none), `--K` as a list and `--samples`.
     - _Requirements: 10.4, 10.7, 2.7, 2.8, 4.7_
 
-  - [ ] 4.2 Calibration determinism test
+  - [x] 4.2 Calibration determinism test
     - Unit test that two runs with identical arguments (small K list, sample count and D) produce identical output.
     - Unit test that the written JSON records the c, delta and D passed on the command line.
     - _Requirements: 10.4, 10.7_
