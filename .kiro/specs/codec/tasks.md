@@ -228,7 +228,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Then STOP and wait for the user's approval. Do not freeze c, delta or D, do not generate `overhead-table.json`, do not commit golden vectors, and do not start Group 5 until the user answers.
     - _Requirements: 2.2, 2.9, 8.7, 10.7_
 
-- [ ] 5. Group 5: Freeze, calibrate, golden vectors and all properties (only after approval)
+- [x] 5. Group 5: Freeze, calibrate, golden vectors and all properties (only after approval)
   - [x] 5.1 Freeze the approved c, delta and D
     - Set the approved values in `constants.ts` (`SOLITON_C`, `SOLITON_DELTA`, `DENSE_PERIOD`) and remove the PROVISIONAL marking from all three.
     - Unit test that the constants equal the approved values.
@@ -382,12 +382,12 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 4.7, 2.9, 10.6, 10.7**
     - _Requirements: 4.7, 2.9, 10.6, 10.7_
 
-  - [ ] 5.25 Full-suite checkpoint
+  - [x] 5.25 Full-suite checkpoint
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 2.9, 6.4, 10.5_
 
-  - [ ] 5.26 Runtime check of `test:measured`
+  - [x] 5.26 Runtime check of `test:measured`
     - Time `test:measured` and the default `pnpm test`. If the default `pnpm test` exceeds 60 s, stop and report the exception per the design.
     - _Requirements: 2.7, 2.8, 4.7_
 
