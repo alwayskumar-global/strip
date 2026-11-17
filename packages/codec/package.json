@@ -13,6 +13,7 @@
     "perf": "vitest run --config vitest.perf.config.ts",
     "perf:calibrate": "vitest run --config vitest.perf.config.ts perf/calibrate.perf.ts",
     "perf:dense-cost": "vitest run --config vitest.perf.config.ts perf/dense-cost.perf.ts",
-    "perf:sweep": "vitest run --config vitest.perf.config.ts perf/sweep.perf.ts"
+    "perf:sweep": "vitest run --config vitest.perf.config.ts perf/sweep.perf.ts",
+    "test:measured": "vitest run --config vitest.measured.config.ts"
   }
 }

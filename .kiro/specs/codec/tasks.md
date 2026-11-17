@@ -357,7 +357,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 6.7, 2.11, 2.12, 2.13**
     - _Requirements: 6.7, 2.11, 2.12, 2.13_
 
-  - [ ] 5.22 M1: late join
+  - [x] 5.22 M1: late join
     - **Property M1** (design M1). N = 1000 trials per K in {50, 100, 500}, fixed fast-check seed distinct from the calibration seed, payload varied per trial, blockSize 32, frozen D.
     - Pool is repair seq K..5K-1. Assert at the table value: subset size `ceil(f_late x K)` completes in >= 0.99 of trials. Report f_late, the observed rate and the Wilson lower bound per K.
     - Tag: `Feature: codec, Property M1: late-join repair-only subsets complete`.
