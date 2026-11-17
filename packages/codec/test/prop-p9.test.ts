@@ -42,7 +42,7 @@ describe("Property 9", () => {
             if (p.complete) {
               expect(p.solvedBlocks).toBe(p.totalBlocks);
               expect(calls.length).toBeGreaterThanOrEqual(1);
-              expect(calls[0]).toBeGreaterThan(0);
+              expect(calls[0]).toBe(c.bytes.length); // the payload is hashed, which may be empty
             }
             if (p.solvedBlocks === p.totalBlocks && p.totalBlocks > 0) expect(p.complete).toBe(!wrongDigest);
             if (wrongDigest) expect(p.complete).toBe(false);
