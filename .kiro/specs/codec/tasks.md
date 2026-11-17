@@ -430,7 +430,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.9, 6.5, 8.3, 8.7, 9.5_
 
 - [ ] 7. Group 7: HASH_MISMATCH digest detail (user-approved addendum)
-  - [ ] 7.1 Decoder change, barrel type export and unit tests
+  - [x] 7.1 Decoder change, barrel type export and unit tests
     - In the `packages/codec/src` decoder: add `hashes?: HashPrefixes` to the rejected `PushStatus`. In the completion step always compute `hash(payload bytes)`, then on a length mismatch or a digest mismatch return HASH_MISMATCH with `hashes = { expected, actual }` (12 lowercase hex chars each, first 6 bytes of the stored digest and of the computed digest). Store the status in the terminal state so later pushes return the same status and hashes. If the hash function throws in either path keep the existing behaviour (phase returns to collecting, error propagates).
     - Add the type-only export `HashPrefixes` to `src/index.ts`. The runtime export list is unchanged. Update the barrel test for the type-only list if it checks it.
     - Extend `test/decoder-complete.test.ts`: digest-mismatch path (encoder-embedded liar digest and decoder-side wrong digest) checks both prefixes against independently computed hex; length-mismatch path via the existing crafted-record test (`byteLength: 39` against 40 recovered bytes) checks `expected` from the record digest and `actual` from the digest of the 40 recovered bytes; a later push returns the same hashes; accepted, ignored and other rejected statuses have no `hashes`; a throwing hash function leaves the phase collecting and propagates in both paths; no status contains a full 64-character digest.

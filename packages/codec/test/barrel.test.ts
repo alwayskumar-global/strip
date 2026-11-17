@@ -3,14 +3,14 @@ import { describe, expect, it } from "vitest";
 import * as barrel from "../src/index.js";
 
 const RUNTIME = ["CodecError", "ERROR_CODES", "createDecoder", "decodePacket", "encode", "encodePacket", "parseMetadata", "serializeMetadata", "sha256WebCrypto"];
-const TYPES = ["Decoder", "DecoderOptions", "EncodeOptions", "Encoder", "ErrorCode", "HashFn", "IgnoreReason", "Limits", "Metadata", "PacketFields", "PayloadInput", "Progress", "PushStatus"];
+const TYPES = ["Decoder", "DecoderOptions", "EncodeOptions", "Encoder", "ErrorCode", "HashFn", "HashPrefixes", "IgnoreReason", "Limits", "Metadata", "PacketFields", "PayloadInput", "Progress", "PushStatus"];
 
 describe("barrel (R9.1)", () => {
   it("exports exactly the nine runtime symbols", () => {
     expect(Object.keys(barrel).sort()).toEqual([...RUNTIME].sort());
   });
 
-  it("exports exactly the thirteen type-only symbols and nothing else", () => {
+  it("exports exactly the fourteen type-only symbols and nothing else", () => {
     const root = process.cwd();
     const parsed = ts.getParsedCommandLineOfConfigFile(`${root}/tsconfig.json`, {}, {
       ...ts.sys,

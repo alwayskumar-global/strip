@@ -1,6 +1,6 @@
 // Public barrel for @strip/codec. Pure and deterministic; depends on nothing.
 export { createDecoder } from "./decoder.js";
-export type { Decoder, DecoderOptions, Progress, PushStatus } from "./decoder.js";
+export type { Decoder, DecoderOptions, HashPrefixes, Progress, PushStatus } from "./decoder.js";
 export { encode } from "./encoder.js";
 export type { EncodeOptions, Encoder, PayloadInput } from "./encoder.js";
 export { CodecError, ERROR_CODES } from "./errors.js";

@@ -32,10 +32,25 @@ export interface Progress {
   readonly complete: boolean;
 }
 
+/**
+ * The first 12 hex digits (lowercase, 6 bytes) of the stored SHA-256 and of the SHA-256 of the reassembled payload.
+ * A display aid for a HASH_MISMATCH rejection, not a security claim: the full digests are never exposed.
+ */
+export interface HashPrefixes {
+  readonly expected: string;
+  readonly actual: string;
+}
 export type PushStatus =
   | { readonly kind: "accepted"; readonly progress: Progress }
   | { readonly kind: "ignored"; readonly reason: IgnoreReason; readonly progress: Progress }
-  | { readonly kind: "rejected"; readonly code: ErrorCode; readonly progress: Progress };
+  | {
+      readonly kind: "rejected";
+      readonly code: ErrorCode;
+      readonly progress: Progress;
+      /** Present only for HASH_MISMATCH reached through the verification step (and on every later push to the terminal decoder). */
+      readonly hashes?: HashPrefixes;
+    };
+const hexPrefix = (d: Uint8Array): string => Array.from(d.subarray(0, 6), (b) => b.toString(16).padStart(2, "0")).join("");
 
 export interface DecodedFile {
   readonly payload: Uint8Array;
@@ -144,6 +159,7 @@ class DecoderImpl implements InternalDecoder {
 
   // Completion.
   private failure: ErrorCode = "HASH_MISMATCH";
+  private hashDetail: HashPrefixes | undefined;
   private decoded: DecodedFile | undefined;
 
   // Adjacency: per Block a linked list of edges to the equations that contain it.
@@ -211,6 +227,9 @@ class DecoderImpl implements InternalDecoder {
     return { kind: "ignored", reason, progress: this.progress() };
   }
   private rejected(code: ErrorCode): PushStatus {
+    if (code === "HASH_MISMATCH" && this.hashDetail !== undefined && this.phase === "failed") {
+      return { kind: "rejected", code, progress: this.progress(), hashes: this.hashDetail };
+    }
     return { kind: "rejected", code, progress: this.progress() };
   }
 
@@ -400,7 +419,6 @@ class DecoderImpl implements InternalDecoder {
       if (e instanceof CodecError) return this.fail(e.code);
       throw e;
     }
-    if (payload.length !== meta.byteLength) return this.fail("HASH_MISMATCH");
     let digest: Uint8Array;
     try {
       digest = await computeDigest(this.hash, payload);
@@ -408,8 +426,14 @@ class DecoderImpl implements InternalDecoder {
       this.phase = "collecting"; // a failing hash function is not a verdict on the data; a later push retries
       throw e;
     }
-    for (let i = 0; i < digest.length; i++) {
-      if (digest[i] !== meta.sha256[i]) return this.fail("HASH_MISMATCH");
+    // The digest is computed on both mismatch paths, so the rejection can carry both prefixes.
+    let same = payload.length === meta.byteLength;
+    for (let i = 0; same && i < digest.length; i++) {
+      if (digest[i] !== meta.sha256[i]) same = false;
+    }
+    if (!same) {
+      this.hashDetail = { expected: hexPrefix(meta.sha256), actual: hexPrefix(digest) };
+      return this.fail("HASH_MISMATCH");
     }
     this.decoded = { payload, metadata: meta };
     this.phase = "complete";
