@@ -16,7 +16,7 @@ import { matrixToImageData } from "./helpers/matrix-to-image.js";
 import { readerWasmBytes } from "./helpers/wasm-bytes.js";
 const wasm = { kind: "bytes", bytes: readerWasmBytes() } as const;
 beforeAll(() => resetBackend());
-const noop: DecoderBackend = { read: () => Promise.resolve(undefined) };
+const noop: DecoderBackend = { read: () => Promise.resolve(undefined), readMany: () => Promise.resolve([]) };
 
 describe("decode properties", () => {
   // Feature: symbols, Property 1: for any byte array of 1..QR_CAPACITY[ecc] bytes and each ecc, encode, rasterise at 4 ppm, decode with the zxing backend returns identical bytes

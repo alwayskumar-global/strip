@@ -2,6 +2,7 @@
 // Covered by `pnpm typecheck` (tsconfig.test.json includes test/).
 import type {
   Canvas2DLike,
+  FoundSymbol,
   DecodeOptions,
   DecodeOutcome,
   EccLevel,
@@ -23,3 +24,9 @@ assertType<Equal<SymbolErrorCode, "INVALID_INPUT" | "PACKET_TOO_LARGE" | "ENCODE
 assertType<Equal<Extract<DecodeOutcome, { kind: "not_found" }>, { kind: "not_found" }>>();
 assertType<Equal<Extract<WasmSource, { kind: "url" }>["url"], string>>();
 export type Used = [SymbolMatrix, EncodeOptions, RenderOptions, DecodeOptions, FrameDecoder, Canvas2DLike];
+
+// Multi-symbol decoding (R12.4, R16): FoundSymbol is type-only, DecodeOutcome has found_many, DecodeOptions has maxSymbols.
+assertType<Equal<Extract<DecodeOutcome, { kind: "found_many" }>["symbols"], FoundSymbol[]>>();
+assertType<Equal<Extract<DecodeOutcome, { kind: "found_many" }>["skipped"], number>>();
+assertType<Equal<DecodeOptions["maxSymbols"], number | undefined>>();
+export type UsedMulti = FoundSymbol;

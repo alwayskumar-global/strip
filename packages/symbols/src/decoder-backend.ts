@@ -10,7 +10,7 @@ export type ReaderOptions = {
   readonly tryRotate: boolean;
   readonly tryDownscale: boolean;
   readonly tryInvert: boolean;
-  readonly maxNumberOfSymbols: 1;
+  readonly maxNumberOfSymbols: number;
   readonly binarizer: "LocalAverage" | "GlobalHistogram";
 };
 
@@ -26,4 +26,6 @@ export type BackendResult = {
 export interface DecoderBackend {
   /** Resolves with the first symbol found, or undefined when there is none. */
   read(frame: ImageDataLike, options: ReaderOptions): Promise<BackendResult | undefined>;
+  /** Resolves with every valid symbol found, up to options.maxNumberOfSymbols, in the reader's order. */
+  readMany(frame: ImageDataLike, options: ReaderOptions): Promise<BackendResult[]>;
 }

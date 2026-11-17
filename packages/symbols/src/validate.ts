@@ -60,7 +60,8 @@ export function assertRenderOptions(v: unknown): asserts v is RenderOptions {
 
 export function assertDecodeOptions(v: unknown): asserts v is DecodeOptions {
   if (!isRecord(v)) return bad("decode options must be an object");
-  const { wasm, mode } = v;
+  const { wasm, mode, maxSymbols } = v;
+  if (maxSymbols !== undefined && (!isInt(maxSymbols) || maxSymbols < 1 || maxSymbols > 16)) bad("maxSymbols must be an integer in 1..16");
   if (mode !== undefined && mode !== "video" && mode !== "photo") bad("mode must be video or photo");
   if (wasm === undefined) return;
   if (!isRecord(wasm)) return bad("wasm source must be an object");

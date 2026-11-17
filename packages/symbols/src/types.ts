@@ -16,4 +16,4 @@ export type WasmSource =
   | { kind: "url"; url: string }
   | { kind: "bytes"; bytes: ArrayBuffer | Uint8Array };
 export type DecodeMode = "video" | "photo";
-export type DecodeOptions = { wasm?: WasmSource; mode?: DecodeMode };
+export type DecodeOptions = { wasm?: WasmSource; mode?: DecodeMode; maxSymbols?: number };

@@ -6,7 +6,7 @@ import * as runtime from "../src/wasm-runtime.js";
 import { ensureBackend, resetBackend } from "../src/wasm-runtime.js";
 import { readerWasmBytes } from "./helpers/wasm-bytes.js";
 const g = globalThis as unknown as { fetch?: unknown };
-const fakeBackend: DecoderBackend = { read: () => Promise.resolve(undefined) };
+const fakeBackend: DecoderBackend = { read: () => Promise.resolve(undefined), readMany: () => Promise.resolve([]) };
 async function codeOf(p: Promise<unknown>): Promise<string | undefined> {
   try {
     await p;
@@ -51,7 +51,7 @@ describe("wasm runtime (R5.7, R5.8, R8.5, R9.2)", () => {
   it("R8.5: corrupt bytes reject with UNSUPPORTED_ENVIRONMENT, and a later call with good bytes succeeds (real reader)", async () => {
     expect(await codeOf(ensureBackend({ kind: "bytes", bytes: new Uint8Array([1, 2, 3, 4]) }))).toBe("UNSUPPORTED_ENVIRONMENT");
     const backend = await ensureBackend({ kind: "bytes", bytes: readerWasmBytes() });
-    expect(Object.keys(backend)).toEqual(["read"]);
+    expect(Object.keys(backend).sort()).toEqual(["read", "readMany"]);
   });
   it("R9.2: initialising from bytes makes no network request", async () => {
     const saved = g.fetch;

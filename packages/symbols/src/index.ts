@@ -5,7 +5,7 @@ export type { CapacityRow, SymbolDefaults } from "./capacity.js";
 export { createFrameDecoder } from "./frame-decoder.js";
 export type { FrameDecoder, FrameDecoderOptions } from "./frame-decoder.js";
 export { decodeFrame } from "./decode.js";
-export type { DecodeOutcome } from "./decode.js";
+export type { DecodeOutcome, FoundSymbol } from "./decode.js";
 export type { Corners, Point } from "./decoder-backend.js";
 export { encodeSymbol } from "./encode-symbol.js";
 export { SYMBOL_ERROR_CODES, SymbolError } from "./errors.js";

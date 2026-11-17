@@ -66,11 +66,11 @@ describe("decodeFrame", () => {
   it("P24, R5.4: a payload longer than 2953 bytes gives not_strip_packet", async () => {
     // Feature: symbols, Property 24: for any payload longer than 2953 bytes in a decoded symbol, the outcome is not_strip_packet
     for (const len of [2954, 3000, 5000, 60000]) {
-      const backend: DecoderBackend = { read: () => Promise.resolve({ bytes: new Uint8Array(len) }) };
+      const backend: DecoderBackend = { read: () => Promise.resolve({ bytes: new Uint8Array(len) }), readMany: () => Promise.resolve([]) };
       const r = await decodeFrameWith(() => Promise.resolve(backend), { width: 1, height: 1, data: new Uint8ClampedArray(4) }, {});
       expect(r).toEqual({ kind: "not_strip_packet", length: len });
     }
-    const ok: DecoderBackend = { read: () => Promise.resolve({ bytes: new Uint8Array(2953) }) };
+    const ok: DecoderBackend = { read: () => Promise.resolve({ bytes: new Uint8Array(2953) }), readMany: () => Promise.resolve([]) };
     const r = await decodeFrameWith(() => Promise.resolve(ok), { width: 1, height: 1, data: new Uint8ClampedArray(4) }, {});
     expect(r.kind).toBe("found");
   });

@@ -75,7 +75,7 @@ describe("createFrameDecoder", () => {
   });
   it("busy is cleared when the backend rejects", async () => {
     const { dec } = await make();
-    const boom = createFrameDecoderWith(() => Promise.resolve({ read: () => Promise.reject(new Error("x")) }), { maxWidth: 2, maxHeight: 2 });
+    const boom = createFrameDecoderWith(() => Promise.resolve({ read: () => Promise.reject(new Error("x")), readMany: () => Promise.resolve([]) }), { maxWidth: 2, maxHeight: 2 });
     const d = await boom;
     await expect(d.submit(frame(1, 1))).rejects.toThrow("x");
     expect(d.busy).toBe(false);

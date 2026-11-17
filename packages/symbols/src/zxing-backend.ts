@@ -20,22 +20,29 @@ export async function loadZxingBackend(src: WasmSource): Promise<DecoderBackend>
       ? { locateFile: (path: string): string => (path.endsWith(".wasm") ? src.url : path) }
       : { wasmBinary: toArrayBuffer(src.bytes) };
   await prepareZXingModule({ overrides, fireImmediately: true });
+  type Result = Awaited<ReturnType<typeof readBarcodes>>[number];
+  const toResult = (r: Result): BackendResult => {
+    const out: { -readonly [K in keyof BackendResult]: BackendResult[K] } = { bytes: r.bytes.slice() };
+    const version = Number.parseInt(r.version, 10);
+    if (Number.isInteger(version) && version >= 1 && version <= 40) out.version = version;
+    if (r.ecLevel === "L" || r.ecLevel === "M" || r.ecLevel === "Q" || r.ecLevel === "H") out.ecc = r.ecLevel;
+    const p = r.position;
+    if (p) out.corners = [p.topLeft, p.topRight, p.bottomRight, p.bottomLeft];
+    return out;
+  };
+  const run = (frame: Parameters<DecoderBackend["read"]>[0], options: ReaderOptions): ReturnType<typeof readBarcodes> =>
+    readBarcodes(
+      // The library duck-types { width, height, data } (checked in zxing-wasm 3.1.7), so no ImageData is needed.
+      { width: frame.width, height: frame.height, data: frame.data } as unknown as Parameters<typeof readBarcodes>[0],
+      { ...options, formats: [...options.formats] },
+    );
   return {
-    async read(frame, options: ReaderOptions) {
-      const results = await readBarcodes(
-        // The library duck-types { width, height, data } (checked in zxing-wasm 3.1.7), so no ImageData is needed.
-        { width: frame.width, height: frame.height, data: frame.data } as unknown as Parameters<typeof readBarcodes>[0],
-        { ...options, formats: [...options.formats] },
-      );
-      const r = results.find((x) => x.isValid);
-      if (r === undefined) return undefined;
-      const out: { -readonly [K in keyof BackendResult]: BackendResult[K] } = { bytes: r.bytes.slice() };
-      const version = Number.parseInt(r.version, 10);
-      if (Number.isInteger(version) && version >= 1 && version <= 40) out.version = version;
-      if (r.ecLevel === "L" || r.ecLevel === "M" || r.ecLevel === "Q" || r.ecLevel === "H") out.ecc = r.ecLevel;
-      const p = r.position;
-      if (p) out.corners = [p.topLeft, p.topRight, p.bottomRight, p.bottomLeft];
-      return out;
+    async read(frame, options) {
+      const r = (await run(frame, options)).find((x) => x.isValid);
+      return r === undefined ? undefined : toResult(r);
+    },
+    async readMany(frame, options) {
+      return (await run(frame, options)).filter((x) => x.isValid).map(toResult);
     },
   };
 }
