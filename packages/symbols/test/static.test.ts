@@ -88,3 +88,20 @@ describe("static checks (symbols)", () => {
     }
   });
 });
+describe("import graph (R10.4, R12.3)", () => {
+  it("src/index.ts does not reach wasm-url.ts through relative imports", () => {
+    const seen = new Set<string>();
+    const visit = (file: string): void => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      for (const s of importSpecs(read(file)).filter((s) => s.startsWith("."))) {
+        const dir = file.slice(0, file.lastIndexOf("/"));
+        const target = `${dir}/${s.replace(/\.js$/, ".ts")}`.replace(/\/\.\//g, "/");
+        visit(target);
+      }
+    };
+    visit(`${root}/src/index.ts`);
+    expect([...seen].map(base)).not.toContain("wasm-url.ts");
+    expect(seen.size).toBeGreaterThan(5);
+  });
+});

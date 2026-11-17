@@ -176,7 +176,7 @@ Tag legend, as in design.md "Test configs":
     - Property P13: **Feature: symbols, Property 13: for any sequence of frames up to the maximum size, the staging buffer passed to the backend is the same ArrayBuffer every time, and mutating the caller's buffer after submit returns does not change the decode result** (R7.1) [property].
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.10, 7.11, 8.3_
 
-  - [ ] 2.4 Real `wasm-url.ts`, `apps/strip/src/csp.ts`, `symbols-wasm.ts`, headers and harness server
+  - [x] 2.4 Real `wasm-url.ts`, `apps/strip/src/csp.ts`, `symbols-wasm.ts`, headers and harness server
     - Replace the stub: `src/wasm-url.ts` with `import readerWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url"; export { readerWasmUrl };`. Nothing in `src` imports it.
     - `apps/strip/src/csp.ts`: the single source of the Strip_CSP string, exactly `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. `apps/strip/src/symbols-wasm.ts`: `wasmSource = { kind: "url", url: readerWasmUrl } as const` imported from `@strip/symbols/wasm-url`. `apps/strip/vite.config.ts`: `server.headers` and `preview.headers` set `Content-Security-Policy` from `csp.ts`.
     - `apps/strip/e2e-harness/server.ts`: static server for the built harness that sends the CSP header on EVERY response (page, worker JS, `.wasm`), sets `application/wasm` for `.wasm`, logs every request (URL, origin, headers), and can start with an alternative CSP (for the negative test).

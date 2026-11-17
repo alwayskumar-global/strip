@@ -101,3 +101,11 @@ describe("symbols import rules (R1.11, R10.4, R11.4, R11.5)", () => {
     );
   });
 });
+describe("app may import the documented symbols subpath only (R12.3)", () => {
+  const imp = (spec: string) => `import ${JSON.stringify(spec)};\n`;
+  it("@strip/symbols/wasm-url is allowed, other deep paths are not", async () => {
+    expect(await ruleIds(APP, imp("@strip/symbols/wasm-url"))).not.toContain(IMPORTS);
+    expect(await ruleIds(APP, imp("@strip/symbols/src/decode"))).toContain(IMPORTS);
+    expect(await ruleIds(APP, imp("@strip/codec/src/packet"))).toContain(IMPORTS);
+  });
+});

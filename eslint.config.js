@@ -65,7 +65,7 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.es2023 } },
   },
   {
-    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts"],
+    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts", "apps/strip/e2e-harness/*.mjs"],
     languageOptions: { globals: { ...globals.node } },
   },
   {
@@ -99,7 +99,18 @@ export default tseslint.config(
   },
   {
     files: ["apps/strip/src/**/*.ts"],
-    rules: boundary(["codec", "symbols"], "apps/strip may import only @strip/codec and @strip/symbols."),
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            // The one documented subpath of @strip/symbols is allowed (R12.3).
+            { ...internals, group: ["@strip/*/**", "!@strip/symbols/wasm-url", "**/packages/**", "**/apps/**"] },
+            { group: ["@strip/*", "!@strip/codec", "!@strip/symbols"], message: "apps/strip may import only @strip/codec and @strip/symbols." },
+          ],
+        },
+      ],
+    },
   },
   {
     files: ["apps/strip/src/clock/**/*.ts"],
