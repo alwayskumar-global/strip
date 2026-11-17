@@ -2,7 +2,7 @@
 // through window.__symbols. Only public entries are imported, as for any app. This file is outside src, so it may
 // read the clock for measurements.
 import { createDecoder, encode } from "@strip/codec";
-import { createFrameDecoder, decodeFrame, encodeSymbol, renderToCanvas, SymbolError } from "@strip/symbols";
+import { createFrameDecoder, decodeFrame, encodeSymbol, renderToCanvas, renderToSvg, SymbolError } from "@strip/symbols";
 import type { DecodeOutcome } from "@strip/symbols";
 import { createDecodeClient } from "../src/decode-client.ts";
 import type { DecodeClient, WorkerLike } from "../src/decode-client.ts";
@@ -64,6 +64,48 @@ const api = {
     } catch (err) {
       return errInfo(err);
     }
+  },
+  /** The first `size`-byte file's packets at packetSize 1732: the first K + 6 packets of the stream, as hex. */
+  async packets(size: number) {
+    const e = await encode({ bytes: payload(size), name: "t.bin", mime: "application/octet-stream" }, { packetSize: 1732 });
+    return Array.from({ length: e.K + 6 }, () => toHex(e.next()));
+  },
+  /** Feed received packets (hex) to the codec decoder and compare the file with the original. */
+  async complete(hexes: string[], size: number) {
+    const d = createDecoder();
+    for (const h of hexes) {
+      if (d.progress().complete) break;
+      await d.push(fromHex(h));
+    }
+    const res = d.progress().complete ? d.result() : undefined;
+    return { complete: d.progress().complete, same: res !== undefined && toHex(res.payload) === toHex(payload(size)) };
+  },
+  /** Packet -> qr -> canvas pixels -> wasm decoder. */
+  async viaCanvas(hex: string) {
+    const r = await decodeFrame(render(fromHex(hex)), { wasm: wasmSource });
+    return r.kind === "found" ? toHex(r.bytes) : `(${r.kind})`;
+  },
+  /** Packet -> qr -> inline SVG element in the page (innerHTML, CSP-safe), sized with width and height attributes. */
+  mountSvg(hex: string, ppm = 4) {
+    const box = document.getElementById("svgbox") as HTMLElement;
+    const m = encodeSymbol(fromHex(hex), { version: 30, ecc: "L" });
+    box.innerHTML = renderToSvg(m, { ppm });
+    const svg = box.querySelector("svg") as SVGSVGElement;
+    svg.setAttribute("width", String((m.size + 8) * ppm));
+    svg.setAttribute("height", String((m.size + 8) * ppm));
+    return (m.size + 8) * ppm;
+  },
+  /** PNG bytes (base64) of a rasterised symbol -> ImageBitmap (no image URL, so img-src is not involved) -> decoder. */
+  async decodePng(b64: string) {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+    const c2 = document.createElement("canvas");
+    c2.width = bmp.width;
+    c2.height = bmp.height;
+    const g = c2.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+    g.drawImage(bmp, 0, 0);
+    const r = await decodeFrame(g.getImageData(0, 0, bmp.width, bmp.height), { wasm: wasmSource });
+    return r.kind === "found" ? toHex(r.bytes) : `(${r.kind})`;
   },
   /** Time compile plus instantiate of the reader wasm (fresh page, same origin, no cache). */
   async measureInit() {

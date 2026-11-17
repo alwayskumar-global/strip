@@ -243,7 +243,7 @@ Tag legend, as in design.md "Test configs":
     - Test P17: **Feature: symbols, Property 17: the runtime export list of the barrel equals exactly the 11 names of R12.1 and does not include readerWasmUrl, package exports has exactly the entries . and ./wasm-url, and no export type or value comes from qr or zxing-wasm** [unit].
     - _Requirements: 11.7, 12.1, 12.2, 12.3_
 
-  - [ ] 3.4 Codec integration (P18) and Playwright h
+  - [x] 3.4 Codec integration (P18) and Playwright h
     - `test/codec-integration.test.ts` (outside `src`, may import runtime values from `@strip/codec`): encode a seeded file at `packetSize` 1732, convert each Packet through `encodeSymbol` and `matrixToImageData`, decode with `decodeFrame`, feed the bytes to the codec decoder, and require completion with identical file bytes.
     - Playwright h in `apps/strip/e2e/symbols-integration.spec.ts`: the same flow through `renderToCanvas` and through `renderToSvg` rasterised in Chromium.
     - Test P18 (Node): **Feature: symbols, Property 18: for any seeded file, each Packet through encodeSymbol, matrixToImageData, decodeFrame and the codec decoder completes with the identical file** (R13.1, R13.2, R1.10) [property]. Small N (a few KB per file, reduced run count stated in the test), fixed seed.
