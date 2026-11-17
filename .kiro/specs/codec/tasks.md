@@ -365,7 +365,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 2.7, 2.9, 10.6, 10.7**
     - _Requirements: 2.7, 2.9, 10.6, 10.7_
 
-  - [ ] 5.23 M2: cold start with 30% loss
+  - [x] 5.23 M2: cold start with 30% loss
     - **Property M2** (design M2). Same N, K values, seed policy and frozen D as M1.
     - Stream from seq 0 with loss 0.30. Assert received count <= `ceil(f_cold x K)` in >= 0.99 of trials. Report f_cold, the observed rate and the Wilson lower bound per K.
     - Tag: `Feature: codec, Property M2: cold start with 30% loss completes within f_cold x K`.
