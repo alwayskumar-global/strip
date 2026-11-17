@@ -229,7 +229,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.2, 2.9, 8.7, 10.7_
 
 - [ ] 5. Group 5: Freeze, calibrate, golden vectors and all properties (only after approval)
-  - [ ] 5.1 Freeze the approved c, delta and D
+  - [x] 5.1 Freeze the approved c, delta and D
     - Set the approved values in `constants.ts` (`SOLITON_C`, `SOLITON_DELTA`, `DENSE_PERIOD`) and remove the PROVISIONAL marking from all three.
     - Unit test that the constants equal the approved values.
     - _Requirements: 2.2, 10.7_

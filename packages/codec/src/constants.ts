@@ -29,18 +29,18 @@ export const SHA256_BYTES = 32;
 export const UINT32_MAX = 0xffff_ffff;
 
 /**
- * Robust soliton parameters as rationals [numerator, denominator].
- * PROVISIONAL until the sweep checkpoint (tasks 4.6 and 5.1). Changing them changes sampled
- * degrees, so golden vectors and the overhead table must be regenerated.
+ * Robust soliton parameters as rationals [numerator, denominator]. FROZEN for format version 1
+ * (see design.md, Decisions). Changing them changes sampled packets: regenerate the golden vectors
+ * and the overhead table, and bump the format version after a release.
  */
 export const SOLITON_C: readonly [number, number] = [1, 10];
 export const SOLITON_DELTA: readonly [number, number] = [1, 2];
 
 /**
  * Dense period D: repair packet with j = seq - K is dense iff D > 0 and j mod D == D - 1.
- * 0 means no dense packets. PROVISIONAL until the sweep checkpoint (tasks 4.6 and 5.1).
+ * 0 means no dense packets. FROZEN at 3 for format version 1 (see design.md, Decisions).
  */
-export const DENSE_PERIOD = 4;
+export const DENSE_PERIOD = 3;
 
 /** Dense rows the decoder may store: maxGaussianBlocks + 64. Derived, not a constant. */
 export function maxDenseRows(maxGaussianBlocks: number): number {

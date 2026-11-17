@@ -12,7 +12,7 @@ Requirement ids are written R2.7 and so on. Success is stated as three measured 
 
 | File | Responsibility | Depends on |
 |---|---|---|
-| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024), `SOLITON_C`, `SOLITON_DELTA`, `DENSE_PERIOD` (D; provisional initial 4, 0 means none, frozen at the sweep checkpoint from {3, 4, 8, none}). `maxDenseRows = maxGaussianBlocks + 64` is derived, not a constant | none |
+| `constants.ts` | `MAGIC=0x5354`, `FORMAT_VERSION=1`, `HEADER_SIZE=26`, `CRC_SIZE=4`, defaults (packetSize 2953, maxPayloadBytes 33554432, maxBlockCount 16384, maxGaussianBlocks 1024), `SOLITON_C`, `SOLITON_DELTA`, `DENSE_PERIOD` (D = 3, 0 means none; frozen, see Risks and open decisions, Decisions). `maxDenseRows = maxGaussianBlocks + 64` is derived, not a constant | none |
 | `errors.ts` | `ERROR_CODES` const tuple, `ErrorCode` union, `IgnoreReason` (`DUPLICATE_PACKET | SESSION_MISMATCH | ALREADY_COMPLETE | DENSE_STORE_FULL`), `CodecError extends Error` with `readonly code` | none |
 | `validate.ts` | Hand-written validators; plain functions that throw `CodecError` (`INVALID_INPUT`) | errors, constants |
 | `crc32.ts` | Table-driven CRC-32 | none |
@@ -146,7 +146,7 @@ Rejection sampling is unbiased and takes fewer than 2 draws on average.
 
 ### Robust soliton table (`soliton.ts`)
 
-Parameters are c = 1/10 and delta = 1/2, recorded in the overhead table. They are provisional until the c/delta sweep checkpoint (Risk 1). Changing them changes sampled degrees, so golden vectors and the overhead table must be regenerated before release and a format version bump is needed after release.
+Parameters are c = 1/10 and delta = 1/2, recorded in the overhead table. They are frozen, see Decisions. Changing them changes sampled degrees, so golden vectors and the overhead table must be regenerated, and a format version bump is needed after release. The overhead table is calibrated in task 5.2.
 The table is a pure function of K, built once per K and cached. It uses BigInt fixed point with F = 2^48. BigInt arithmetic is exact, and it runs only at table build, never per packet.
 
 ```
@@ -451,7 +451,7 @@ R8.2 fixtures: (a) the K Systematic_Packets of the 1 MiB input, and (b) `ceil(f_
 
 ### Risk 1: attainability cost of M2 and M3, and dense rows
 
-The user approved dense repair rows. The (c, delta) x D sweep decides D, and D = none remains a candidate. Gaussian elimination now also depends on dense rows, so it is limited by `maxGaussianBlocks` = 1024. The figures below are the pre-implementation estimate and are kept for reference.
+The user approved dense repair rows. The (c, delta) x D sweep decided D (frozen, see Decisions). Gaussian elimination now also depends on dense rows, so it is limited by `maxGaussianBlocks` = 1024. The figures below are the pre-implementation estimate and are kept for reference.
 
 A throwaway estimate (scratch script, `Math.random`, float soliton, unlimited Gaussian elimination, which equals the decoder for K <= 1024; N = 1000 trials for K = 50 and 100, N = 300 for K = 500) gave the observed 0.99 quantile of each claim:
 
@@ -482,7 +482,7 @@ Remedy, now adopted (see Dense repair rule): mix a fraction q of dense repair ro
 | 0.25 | 100 | 1.08 | 1.27 | 37 |
 | 0.25 | 500 | 1.02 | 1.17 | 101 |
 
-Dense rows rely on Gaussian elimination, so they are limited by `maxGaussianBlocks` = 1024 and the cost in the Decoder section. Report the sweep table at the checkpoint and freeze D there.
+Dense rows rely on Gaussian elimination, so they are limited by `maxGaussianBlocks` = 1024 and the cost in the Decoder section. The sweep table is recorded in Decisions.
 
 ### Risk 2: Gaussian elimination cost at the 1024 cap and the R8.2 fixture (b) budget
 
@@ -491,6 +491,14 @@ Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default str
 ### Risk 3: calibration stability and runtime
 
 The 0.995 calibration quantile against the 0.99 assertion leaves a margin, but a rare false stop is still possible. Calibration at K = 1000 and 2000 is slow (minutes), and at K = 2000 the 1024 cap may delay completion. The table records N_cal. Recommended default: keep the margin, run K >= 1000 calibration offline with `--write`, and verify only K in {10, 25, 50} in the default suite.
+
+### Decisions
+
+- **Frozen format constants:** c = 1/10, delta = 1/2, D = 3 (every third repair packet is dense, 33%).
+- **Decision basis:** the (c, delta, D) sweep ran on the real implementation with fixed seed 0x5ca11b00, N = 1000 trials for K = 50 and 100 and N = 300 for K = 500, whole sweep 69 s wall-clock. The sweep table is at `packages/codec/perf/out/sweep.txt` (git-ignored, regenerate with `pnpm --filter @strip/codec perf:sweep`). Run date: date of the commit that introduces this note.
+- **Why:** dense rows cut R at 5% loss from 109 to 30 at K = 100 and from 471 to 86 at K = 500 versus none. D = 3 beat D = 4 on f_cold and R at every K at about +10% decode cost. c = 1/10 and 3/100 are within noise at D = 3 (summed f_cold 3.868 vs 3.850), so the default 1/10 was kept.
+- **Conditional check, D = 2 vs D = 3 (c = 1/10, delta = 1/2):** summed f_cold 3.592 vs 3.868 (-7.1%, not more than 10%), R at K = 500 72 vs 86 (-16%), 1 MiB repair-only decode 31 ms vs 28 ms (under 100 ms). The rule required more than 10% on both summed f_cold and R at K = 500, so D = 3 was kept.
+- **Consequence:** changing any of the three now changes sampled packets. Regenerate golden vectors and the overhead table, and bump the format version after a release.
 
 ## Architecture
 

@@ -1,3 +1,4 @@
+import { DENSE_PERIOD } from "../src/constants.js";
 import { describe, expect, it } from "vitest";
 import { parseArgs, parseRational, runCli, TABLE_KS, wilsonLower, type CalibrationOptions, type KResult } from "../perf/calibrate.js";
 
@@ -88,7 +89,7 @@ describe("argument parsing", () => {
   it("supports a per-K sample map, defaults and rejects junk", () => {
     const a = parseArgs("--K 50,100,500 --samples 50:1000,100:1000,500:300");
     expect(a.samples).toEqual({ 50: 1000, 100: 1000, 500: 300 });
-    expect(a.format.D).toBe(4);
+    expect(a.format.D).toBe(DENSE_PERIOD);
     expect(parseArgs("").Ks).toEqual([...TABLE_KS]);
     expect(() => parseArgs("--K 1")).toThrow();
     expect(() => parseArgs("--D -1")).toThrow();
