@@ -234,7 +234,7 @@ Tag legend, as in design.md "Test configs":
     - If a recipe or image that must decode does not decode, STOP and report.
     - _Requirements: 6.2, 6.3_
 
-  - [ ] 3.3 Barrel export exactness (P17)
+  - [x] 3.3 Barrel export exactness (P17)
     - `src/index.ts` exports exactly the 11 runtime names: `encodeSymbol`, `renderToCanvas`, `renderToSvg`, `fitScale`, `decodeFrame`, `createFrameDecoder`, `SymbolError`, `SYMBOL_ERROR_CODES`, `QR_CAPACITY`, `QR_CAPACITY_BY_VERSION`, `QR_DEFAULTS`, plus the type-only exports `SymbolMatrix`, `EccLevel`, encode options, render options, decode options (including `WasmSource`), `DecodeOutcome` (including `not_found`), `FrameDecoder` and `SymbolErrorCode`. It does not export `readerWasmUrl`, and no signature mentions a `qr` or `zxing-wasm` type.
     - Test: the runtime export list of the barrel equals the 11 names exactly (R12.1) [unit].
     - Test: the type-only export list contains the types of R12.2, checked with a compile-time test file under `test/types/` (R12.2) [unit].
