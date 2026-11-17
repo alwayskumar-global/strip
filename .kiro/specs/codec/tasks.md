@@ -290,7 +290,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 1.3**
     - _Requirements: 1.3_
 
-  - [ ] 5.11 P7b: invalid names rejected
+  - [x] 5.11 P7b: invalid names rejected
     - **Property 7b** (design P7b). numRuns 500. Class-specific generators: empty, 256+ bytes, `/`, `\`, NUL, control characters, `.`, `..`.
     - Tag: `Feature: codec, Property 7b: invalid names throw BAD_METADATA`.
     - **Validates: Requirements 1.4**
