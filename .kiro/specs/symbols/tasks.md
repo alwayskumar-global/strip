@@ -137,7 +137,7 @@ Tag legend, as in design.md "Test configs":
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 1.14, 10.1, 11.3_
 
-- [ ] 2. Group 2: Wasm loading, frame decoder, decode worker, CSP proof (STOP at the end for the user)
+- [x] 2. Group 2: Wasm loading, frame decoder, decode worker, CSP proof (STOP at the end for the user)
   - [x] 2.1 Add `zxing-wasm` 3.1.7, `decoder-backend.ts`, `zxing-backend.ts`, `wasm-runtime.ts`
     - Add `zxing-wasm` 3.1.7 to `packages/symbols/package.json` (exact pin) and its row to `docs/dependencies.md` (name, exact version, license, reason) in the same commit. Re-check that the package `exports` include `./reader/zxing_reader.wasm` and `./reader`. If either is absent, STOP and report.
     - `decoder-backend.ts`: internal `DecoderBackend` interface. `zxing-backend.ts`: the only file importing `zxing-wasm/reader`; takes `result.bytes` and copies it out, never reads `result.text`; converts to local types so no zxing type leaks. `wasm-runtime.ts`: `WasmSource` (`url` or `bytes`), `ensureRuntime` memoised per source, `prepareZXingModule` with `locateFile` (url) or `wasmBinary` (bytes), INVALID_INPUT when no source (nothing fetched), UNSUPPORTED_ENVIRONMENT on any load or instantiate failure (memo entry dropped so retry works), a second different source after init rejected with INVALID_INPUT. No CDN default.
@@ -210,7 +210,7 @@ Tag legend, as in design.md "Test configs":
     - Measurement script in the harness: wasm init time (compile plus instantiate, timed with the harness's own `performance.now`, which is allowed because it is outside `src` and `apps/strip/src`) in Chromium under the real CSP, repeated 5 times in fresh pages, reporting the median; built `.wasm` size in bytes from the production build. Assertions: init at most 500 ms and size at most 1,000,000 bytes (R7.7, R7.8) [Playwright]. The numbers are printed for the Group 2 checkpoint report.
     - _Requirements: 7.7, 7.8, 7.9_
 
-  - [ ] 2.8 Group 2 checkpoint (STOP for the user)
+  - [x] 2.8 Group 2 checkpoint (STOP for the user)
     - Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm test:e2e` and report the outputs and test counts.
     - Report the measured wasm init time (Chromium, real CSP), the built `.wasm` size, and which `?url` path was taken (subpath or contingency).
     - STOP. Group 3 does not start until the user approves.
