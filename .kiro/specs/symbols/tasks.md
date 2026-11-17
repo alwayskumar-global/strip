@@ -47,7 +47,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the purity scan of `packages/symbols/src` reports zero uses of `Math.random`, `Date.now`, `performance.now`, `fetch`, `document` and `window` (R10.1) [unit].
     - _Requirements: 1.11, 10.1, 10.4, 11.4, 11.5, 11.8, 12.3_
 
-  - [ ] 1.2 `errors.ts` and `validate.ts`
+  - [x] 1.2 `errors.ts` and `validate.ts`
     - `SYMBOL_ERROR_CODES` as the closed tuple INVALID_INPUT, PACKET_TOO_LARGE, ENCODE_FAILED, UNSUPPORTED_ENVIRONMENT; `SymbolErrorCode`; `SymbolError extends Error` with `readonly code` and a non-empty message.
     - Hand-written validators that throw INVALID_INPUT, with no Zod: `assertBytes`, `assertImageDataLike` (integer positive width and height, `Uint8ClampedArray` data, length equal to width x height x 4), `assertEncodeOptions` (ecc in L, M, Q, H; version an integer in 1..40; shape only), `assertRenderOptions` (integer `ppm` >= 1, quiet zone, colour strings, `mm`; a quiet zone below 4 without `allowShortQuietZone` throws), `assertDecodeOptions`. Capacity-dependent checks stay in `encode-symbol.ts` (task 1.5), so `validate.ts` imports only `errors`.
     - Test: exactly four codes, `instanceof SymbolError` and `Error`, non-empty message, `code` in `SYMBOL_ERROR_CODES` (R8.1) [unit].
