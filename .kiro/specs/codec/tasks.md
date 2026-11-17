@@ -406,7 +406,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Report the lazy dense folding cost at K = 11,500 with U <= 1024 and a full dense store, with no assertion.
     - _Requirements: 8.4, 8.7_
 
-  - [ ] 6.3 Playwright Chromium check
+  - [x] 6.3 Playwright Chromium check
     - Create a tiny Vite-served harness page in `apps/strip/e2e-harness` that imports the codec through its barrel.
     - Add a test in `apps/strip/e2e` that compares Default_Hash parity with Node (including empty input) and golden-vector Packet bytes (systematic, sparse and dense) against `vectors.json`, plus a Payload round trip.
     - Document `pnpm exec playwright install chromium` as a step. If it prompts for anything or fails, STOP and report.
