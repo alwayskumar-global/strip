@@ -5,3 +5,6 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .DS_Store
+
+# Calibration and sweep outputs
+packages/codec/perf/out/

@@ -208,7 +208,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Export the measurement functions so the sweep can call them.
     - _Requirements: 8.7_
 
-  - [ ] 4.4 `perf/sweep.ts`
+  - [x] 4.4 `perf/sweep.ts`
     - Run (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}, 8 combinations, on the real implementation for K in {50, 100, 500}.
     - Print per combination f_late, f_cold and R (loss 0.05) for each K, plus the dense `next()` cost at K = 359 (median of 20 after 3 warm-ups) and at K = 11,500 (informational), using `dense-cost.ts`.
     - State the trial counts in the output: N = 1000 for K = 50 and 100, N = 500 for K = 500.
