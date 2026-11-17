@@ -339,7 +339,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 9.2, 9.3**
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 5.19 P14: dense-or-sparse rule
+  - [x] 5.19 P14: dense-or-sparse rule
     - **Property 14** (design P14). numRuns 1000. K in 1..20000, seq biased to include seq >= 2^32 - 50 and the wrap, D in {0, 3, 4, 8}. The kind of seq equals the index rule: systematic if seq < K, dense iff D > 0 and (seq - K) mod D == D - 1, else sparse.
     - Tag: `Feature: codec, Property 14: packet kind follows the index rule`.
     - **Validates: Requirements 2.2, 2.10**
