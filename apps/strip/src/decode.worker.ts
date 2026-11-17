@@ -1,6 +1,7 @@
 // Dedicated module worker that owns the Frame_Decoder. It has no asset-URL import: the .wasm URL arrives in `init`.
 import { createFrameDecoder, SymbolError } from "@strip/symbols";
 import type { FrameDecoder, ImageDataLike } from "@strip/symbols";
+import { transferListOf } from "./transfer-list.ts";
 import type { FromWorker, ToWorker } from "./decode-protocol.ts";
 
 type Scope = {
@@ -31,7 +32,7 @@ scope.onmessage = async (e) => {
   const msg = e.data as ToWorker;
   if (msg.type === "init") {
     try {
-      decoder = await createFrameDecoder({ wasm: { kind: "url", url: msg.wasmUrl }, maxWidth: msg.maxWidth, maxHeight: msg.maxHeight, mode: msg.mode });
+      decoder = await createFrameDecoder({ wasm: { kind: "url", url: msg.wasmUrl }, maxWidth: msg.maxWidth, maxHeight: msg.maxHeight, mode: msg.mode, ...(msg.maxSymbols === undefined ? {} : { maxSymbols: msg.maxSymbols }) });
       post({ type: "ready" });
     } catch (err) {
       post({ type: "init-error", code: codeOf(err), message: err instanceof Error ? err.message : String(err) });
@@ -44,7 +45,7 @@ scope.onmessage = async (e) => {
     const frame: ImageDataLike =
       msg.type === "frame" ? { width: msg.width, height: msg.height, data: new Uint8ClampedArray(msg.buffer) } : await frameFromBitmap(msg.bitmap);
     const outcome = await decoder.submit(frame);
-    post({ type: "outcome", id, outcome }, outcome.kind === "found" ? [outcome.bytes.buffer] : []);
+    post({ type: "outcome", id, outcome }, transferListOf(outcome));
   } catch (err) {
     post({ type: "error", id, code: codeOf(err), message: err instanceof Error ? err.message : String(err) });
   }

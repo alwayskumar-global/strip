@@ -1,5 +1,6 @@
 import fc from "fast-check";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createFrameDecoderWith } from "../src/frame-decoder.js";
 import { VIDEO_OPTIONS, PHOTO_OPTIONS, PHOTO_RETRY_OPTIONS, decodeFrame, decodeFrameWith } from "../src/decode.js";
 import type { DecodeOutcome } from "../src/decode.js";
 import type { DecoderBackend } from "../src/decoder-backend.js";
@@ -214,5 +215,19 @@ describe("multi-symbol properties", () => {
       }),
       { numRuns: 100 },
     );
+  });
+  it("P30 (createFrameDecoder half): invalid maxSymbols rejects creation with no backend request; 1..16 are accepted", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.anything().filter((v) => !(Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 16) && v !== undefined), async (bad) => {
+        let inits = 0;
+        await expect(createFrameDecoderWith(() => (inits++, Promise.resolve(fakeBackend().backend)), { maxWidth: 2, maxHeight: 2, maxSymbols: bad as never })).rejects.toMatchObject({ code: "INVALID_INPUT" });
+        expect(inits).toBe(0);
+      }),
+      { numRuns: 100 },
+    );
+    for (let n = 1; n <= 16; n++) {
+      const d = await createFrameDecoderWith(() => Promise.resolve(fakeBackend().backend), { maxWidth: 2, maxHeight: 2, maxSymbols: n });
+      expect(d.busy).toBe(false);
+    }
   });
 });

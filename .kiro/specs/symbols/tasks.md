@@ -339,7 +339,7 @@ Tag legend, as in design.md "Test configs":
     - On any counterexample, or if the reader returns a symbol that is not in the placed set, STOP and report.
     - _Requirements: 5.1, 5.4, 12.1, 12.4, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 16.10_
 
-  - [ ] 5.2 Frame decoder `maxSymbols` and the app worker and client protocol
+  - [x] 5.2 Frame decoder `maxSymbols` and the app worker and client protocol
     - `createFrameDecoder` accepts `maxSymbols` in `FrameDecoderOptions`, validates it at creation before the wasm init, applies it to every frame, and returns the outcomes of 5.1. One decode in flight and drop while busy are unchanged.
     - `apps/strip/src/decode-protocol.ts`: `init` gains `maxSymbols?: number`; the outcome message carries the extended `DecodeOutcome`. `apps/strip/src/decode.worker.ts`: passes `maxSymbols` to `createFrameDecoder`; a pure `transferListOf(outcome)` returns the `bytes.buffer` of `found` and of every symbol of `found_many`, each exactly once. `apps/strip/src/decode-client.ts`: sends `maxSymbols` in `init`, returns the outcome unchanged. Still one worker, one decode in flight, a frame offered while busy is dropped without a copy.
     - Test: `createFrameDecoder({ maxSymbols: 9, ... })` with the fake backend passes `maxNumberOfSymbols` 9 on every frame in video and photo mode, and returns `found_many`; without `maxSymbols` it behaves as in 2.3 (R16.3, R16.11) [unit].

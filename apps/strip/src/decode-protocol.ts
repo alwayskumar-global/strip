@@ -2,7 +2,7 @@
 import type { DecodeMode, DecodeOutcome, SymbolErrorCode } from "@strip/symbols";
 
 export type ToWorker =
-  | { type: "init"; wasmUrl: string; maxWidth: number; maxHeight: number; mode: DecodeMode }
+  | { type: "init"; wasmUrl: string; maxWidth: number; maxHeight: number; mode: DecodeMode; maxSymbols?: number }
   | { type: "frame"; id: number; width: number; height: number; buffer: ArrayBuffer }
   | { type: "bitmap"; id: number; bitmap: ImageBitmap };
 

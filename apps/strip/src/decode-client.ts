@@ -8,7 +8,7 @@ export interface WorkerLike {
   onmessage: ((e: { data: unknown }) => void) | null;
   terminate(): void;
 }
-export type DecodeClientInit = { wasmUrl: string; maxWidth: number; maxHeight: number; mode?: DecodeMode };
+export type DecodeClientInit = { wasmUrl: string; maxWidth: number; maxHeight: number; mode?: DecodeMode; maxSymbols?: number };
 export class DecodeClientError extends Error {
   readonly code: SymbolErrorCode;
   constructor(code: SymbolErrorCode, message: string) {
@@ -52,7 +52,7 @@ export function createDecodeClient(worker: WorkerLike, init: DecodeClientInit): 
       else p?.reject(new DecodeClientError(m.code, m.message));
     }
   };
-  const initMsg: ToWorker = { type: "init", wasmUrl: init.wasmUrl, maxWidth: init.maxWidth, maxHeight: init.maxHeight, mode: init.mode ?? "video" };
+  const initMsg: ToWorker = { type: "init", wasmUrl: init.wasmUrl, maxWidth: init.maxWidth, maxHeight: init.maxHeight, mode: init.mode ?? "video", ...(init.maxSymbols === undefined ? {} : { maxSymbols: init.maxSymbols }) };
   worker.postMessage(initMsg);
   const send = (build: (id: number) => ToWorker, transfer: Transferable[]): Promise<DecodeOutcome> => {
     if (!idle) return Promise.resolve({ kind: "dropped" });

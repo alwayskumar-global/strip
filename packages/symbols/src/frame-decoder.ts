@@ -29,6 +29,7 @@ export async function createFrameDecoderWith(provider: BackendProvider, options:
   const mw = maxWidth as number;
   const mh = maxHeight as number;
   const mode = options.mode ?? "video";
+  const maxSymbols = options.maxSymbols ?? 1;
   const backend = await provider(options.wasm);
   const staging = new Uint8ClampedArray(mw * mh * 4);
   let busy = false;
@@ -46,7 +47,7 @@ export async function createFrameDecoderWith(provider: BackendProvider, options:
       try {
         staging.set(frame.data);
         const view: ImageDataLike = { width: frame.width, height: frame.height, data: staging.subarray(0, frame.data.length) };
-        return await readFrame(backend, view, mode);
+        return await readFrame(backend, view, mode, maxSymbols);
       } finally {
         busy = false;
       }
