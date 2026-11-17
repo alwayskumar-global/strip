@@ -314,7 +314,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 5.6, 5.10, 5.11**
     - _Requirements: 5.6, 5.10, 5.11_
 
-  - [ ] 5.15 P10: neighbor selection
+  - [x] 5.15 P10: neighbor selection
     - **Property 10** (design P10). numRuns 500. Random (sessionId, seq, K) triples: pure, d distinct values in [0, K) with d in [1, K], and a systematic seq i gives {i}.
     - Tag: `Feature: codec, Property 10: neighbors are pure, distinct and in range`.
     - **Validates: Requirements 2.3, 2.4, 6.2**
