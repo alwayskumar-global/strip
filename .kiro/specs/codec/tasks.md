@@ -278,7 +278,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 3.9**
     - _Requirements: 3.9_
 
-  - [ ] 5.9 P6: Packet round trip
+  - [x] 5.9 P6: Packet round trip
     - **Property 6** (design P6). numRuns 500. Valid header and payload field ranges.
     - Tag: `Feature: codec, Property 6: decodePacket(encodePacket(p)) equals p`.
     - **Validates: Requirements 3.1, 3.15**
