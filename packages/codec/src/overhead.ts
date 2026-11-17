@@ -1,0 +1,66 @@
+// Overhead factors per K, read from the committed overhead-table.json (internal, not in the barrel).
+// All arithmetic is integer: permille values, integer linear interpolation in K with ceil, clamped at both ends.
+// The committed table is PROVISIONAL (conservative placeholders) until Group 5 calibrates it.
+import { ceilDiv } from "./header.js";
+import table from "./overhead-table.json";
+import { assertInteger } from "./validate.js";
+
+export interface OverheadRow {
+  readonly K: number;
+  readonly fLatePermille: number;
+  readonly fColdPermille: number;
+  readonly R: number;
+}
+
+export interface OverheadTable {
+  readonly formatVersion: number;
+  readonly provisional?: boolean;
+  readonly c: readonly [number, number];
+  readonly delta: readonly [number, number];
+  readonly D: number;
+  readonly samples: number;
+  readonly quantile: string;
+  readonly rows: readonly OverheadRow[];
+}
+
+export const overheadTable: OverheadTable = table as unknown as OverheadTable;
+
+type Field = "fLatePermille" | "fColdPermille" | "R";
+
+/** Interpolate one field of `rows` at K. Integer arithmetic only. */
+export function interpolate(rows: readonly OverheadRow[], K: number, field: Field): number {
+  assertInteger("K", K, 1, 0xffffffff);
+  const first = rows[0] as OverheadRow;
+  const last = rows[rows.length - 1] as OverheadRow;
+  if (K <= first.K) return first[field];
+  if (K >= last.K) return last[field];
+  let i = 0;
+  while ((rows[i + 1] as OverheadRow).K < K) i++;
+  const lo = rows[i] as OverheadRow;
+  const hi = rows[i + 1] as OverheadRow;
+  if (K === lo.K) return lo[field];
+  return ceilDiv(lo[field] * (hi.K - K) + hi[field] * (K - lo.K), hi.K - lo.K);
+}
+
+export function fLatePermille(K: number): number {
+  return interpolate(overheadTable.rows, K, "fLatePermille");
+}
+
+export function fColdPermille(K: number): number {
+  return interpolate(overheadTable.rows, K, "fColdPermille");
+}
+
+/** Default page() repair count for K Blocks. Integer >= 0. */
+export function R(K: number): number {
+  return interpolate(overheadTable.rows, K, "R");
+}
+
+/** ceil(f_late(K) x K): size of the random repair-packet subset claimed by M1. */
+export function lateCount(K: number): number {
+  return ceilDiv(fLatePermille(K) * K, 1000);
+}
+
+/** ceil(f_cold(K) x K): received-packet limit claimed by M2. */
+export function coldLimit(K: number): number {
+  return ceilDiv(fColdPermille(K) * K, 1000);
+}

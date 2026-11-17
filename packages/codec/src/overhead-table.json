@@ -1,0 +1,19 @@
+{
+  "formatVersion": 1,
+  "provisional": true,
+  "c": [1, 10],
+  "delta": [1, 2],
+  "D": 4,
+  "samples": 0,
+  "quantile": "0.995",
+  "rows": [
+    { "K": 10, "fLatePermille": 2000, "fColdPermille": 2500, "R": 10 },
+    { "K": 25, "fLatePermille": 2000, "fColdPermille": 2500, "R": 25 },
+    { "K": 50, "fLatePermille": 2000, "fColdPermille": 2500, "R": 50 },
+    { "K": 100, "fLatePermille": 2000, "fColdPermille": 2500, "R": 100 },
+    { "K": 250, "fLatePermille": 2000, "fColdPermille": 2500, "R": 250 },
+    { "K": 500, "fLatePermille": 2000, "fColdPermille": 2500, "R": 500 },
+    { "K": 1000, "fLatePermille": 2000, "fColdPermille": 2500, "R": 1000 },
+    { "K": 2000, "fLatePermille": 2000, "fColdPermille": 2500, "R": 2000 }
+  ]
+}

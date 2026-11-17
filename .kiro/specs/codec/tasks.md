@@ -121,7 +121,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests: a 32-byte digest, known SHA-256 vectors including empty input, and both a sync and an async `HashFn` accepted.
     - _Requirements: 1.9, 1.10_
 
-  - [ ] 3.2 `overhead.ts` and the provisional table
+  - [x] 3.2 `overhead.ts` and the provisional table
     - Implement `fLatePermille`, `fColdPermille`, `lateCount`, `coldLimit` and `R` with integer linear interpolation (ceil) and clamping outside [10, 2000]. Keep it internal, not in the barrel.
     - Commit `src/overhead-table.json` with `"provisional": true`, a `D` field (integer, 0 = none, provisional 4) alongside `c` and `delta`, and conservative placeholder values for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. These values are never used for claims.
     - Unit tests for interpolation examples, clamping, the table K values, integer outputs, and that the table records c, delta and D (R10.7).
