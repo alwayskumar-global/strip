@@ -34,4 +34,18 @@ describe("documentation (R14.6, R9.6, R6.7, R7.12)", () => {
     expect(d).toMatch(/5 decodes per second/);
     expect(d).toMatch(/mid-range/);
   });
+  it("R16.14, R6.12: documents maxSymbols, found_many, skipped, and the N and method of the page-photo claim", () => {
+    for (const s of ["maxSymbols", "found_many", "skipped", "FoundSymbol", "100 pages", "900/900", "Wilson lower bound 0.963", "docs/spikes/symbols-multi.md", "dependency D2"]) {
+      expect(readme, s).toContain(s);
+    }
+    expect(readme).toMatch(/not_strip_packet.*only with `maxSymbols` 1/s);
+  });
+  it("R12.4: the barrel statement still lists the 11 runtime names and names FoundSymbol as type-only", () => {
+    const names = ["encodeSymbol", "renderToCanvas", "renderToSvg", "fitScale", "decodeFrame", "createFrameDecoder", "SymbolError", "SYMBOL_ERROR_CODES", "QR_CAPACITY", "QR_CAPACITY_BY_VERSION", "QR_DEFAULTS"];
+    const line = readme.split("\n").find((l) => l.startsWith("Public runtime exports:")) ?? "";
+    for (const n of names) expect(line).toContain(`\`${n}\``);
+    const listed = (line.split(". ")[0] ?? "").match(/`[A-Za-z_]+`/g) ?? [];
+    expect(listed.length).toBe(11);
+    expect(readme).toMatch(/`FoundSymbol` is a type-only export/);
+  });
 });

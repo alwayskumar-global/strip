@@ -388,7 +388,7 @@ Tag legend, as in design.md "Test configs":
     - Run `pnpm test`, `pnpm test:e2e` and `pnpm lint` and report the outputs.
     - _Requirements: 8.5, 9.3, 9.4, 9.5, 9.6, 9.7, 9.11_
 
-  - [ ] 5.6 README update
+  - [x] 5.6 README update
     - `packages/symbols/README.md`: document `maxSymbols` (1..16, default 1, example with 9 for the board grid), the `found_many` outcome and `FoundSymbol`, the `skipped` count and the zero-usable rule, that the order is the reader's order and duplicates are not removed, and that `not_strip_packet` appears only with `maxSymbols` 1. State the measured claim with N and method: 12 MP synthetic page photos, 3 x 3 grid of v30 L, N = 100, at least 8 of 9 symbols, Wilson lower bound, symbols-read rate and decode median from the task 5.3 run, the gate of 0.90, the spike result as the cross-check, and the limits (synthetic images, photo mode not gated, 1080p camera not measured, desktop CPU). Add the cross-reference to the app spec dependency D2.
     - Test: the README mentions `maxSymbols`, `found_many`, `skipped`, and the N and method of the measured claim (R16.14, R6.12) [unit].
     - Test: the README's barrel export statement still lists exactly the 11 runtime names and names `FoundSymbol` as type-only (R12.4) [unit].
