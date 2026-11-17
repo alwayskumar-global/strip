@@ -263,7 +263,7 @@ Tag legend, as in design.md "Test configs":
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.2, 12.1, 13.1_
 
-- [ ] 4. Group 4: Measured gates, perf, notices, README, final verification
+- [x] 4. Group 4: Measured gates, perf, notices, README, final verification
   - [x] 4.1 Measured suite (P14, P25) and informational grids
     - `perf/measured/*.measured.ts`, run by `pnpm test:measured`, printing the observed rate, N and the Wilson lower bound for every cell. Fixed seeds distinct from the fixture seeds. No `Math.random`.
     - Test P14: **Feature: symbols, Property 14: Default_Cell (v30 L, 1732 bytes, 4 ppm, blur 1) under the Typical_Profile, N = 200 fresh seeds, has a Wilson lower bound of at least 0.90 for screen and at least 0.97 for print** (R6.8, R6.9) [measured]. Payloads are 1732 bytes. If a bound is missed, or the rates differ from the spike's beyond the Wilson interval, STOP and report (Global rule 9).
@@ -306,7 +306,7 @@ Tag legend, as in design.md "Test configs":
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.8, 6.9, 7.5, 7.6, 7.7, 9.8, 12.1_
 
-  - [ ] 4.7 Group 4 checkpoint
+  - [x] 4.7 Group 4 checkpoint
     - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:measured`, `pnpm perf` and `pnpm test:e2e` and report the outputs.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.1, 7.5, 15.5_
