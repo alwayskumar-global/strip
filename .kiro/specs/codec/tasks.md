@@ -74,7 +74,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 6.5, 9.4_
 
 - [ ] 2. Group 2: Generation (sparse and dense, parameterised, no golden vector JSON committed)
-  - [ ] 2.1 `soliton.ts`
+  - [x] 2.1 `soliton.ts`
     - Implement BigInt fixed point (F = 2^48) with `isqrt`, `lnQ` and the table build, parameterised by (c, delta) as rational numbers. The table is cached by K.
     - Put `SOLITON_C = 1/10` and `SOLITON_DELTA = 1/2` in `constants.ts` as provisional defaults, marked PROVISIONAL until Group 5.
     - Unit tests (the tests may use `Math.log`): `lnQ` matches `Math.log` within 2^-40.

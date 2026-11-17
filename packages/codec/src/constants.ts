@@ -27,3 +27,11 @@ export const MAX_MIME_BYTES = 127;
 export const SHA256_BYTES = 32;
 
 export const UINT32_MAX = 0xffff_ffff;
+
+/**
+ * Robust soliton parameters as rationals [numerator, denominator].
+ * PROVISIONAL until the sweep checkpoint (tasks 4.6 and 5.1). Changing them changes sampled
+ * degrees, so golden vectors and the overhead table must be regenerated.
+ */
+export const SOLITON_C: readonly [number, number] = [1, 10];
+export const SOLITON_DELTA: readonly [number, number] = [1, 2];
