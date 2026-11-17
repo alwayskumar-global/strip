@@ -188,7 +188,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 6.5, 9.4_
 
 - [ ] 4. Group 4: Calibration tooling and (c, delta, D) sweep
-  - [ ] 4.1 `perf/calibrate.ts`
+  - [x] 4.1 `perf/calibrate.ts`
     - Seeded through `prng.ts`, using the real encoder and decoder with `sha256WebCrypto`. Payload bytes vary per trial. `packetSize` 62 (blockSize 32).
     - Simulate M1 (repair-only shuffle of seq K..5K-1, 4K cap), M2 (loss `next() < 1288490189`, 20K cap) and M3 (loss `next() < 214748365`).
     - Take the 0.995 quantile, round factors up to permille, and floor R at 0.
