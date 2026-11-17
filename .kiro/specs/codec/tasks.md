@@ -302,7 +302,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 1.6**
     - _Requirements: 1.6_
 
-  - [ ] 5.13 P8: determinism of encoding
+  - [x] 5.13 P8: determinism of encoding
     - **Property 8** (design P8). numRuns 100. Same generators as P1. Two independent `encode` calls give identical bytes for the first 3K Packets and identical `page()`.
     - Tag: `Feature: codec, Property 8: identical input gives identical Packet bytes`.
     - **Validates: Requirements 4.1, 6.1**
