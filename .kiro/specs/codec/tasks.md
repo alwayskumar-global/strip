@@ -296,7 +296,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 1.4**
     - _Requirements: 1.4_
 
-  - [ ] 5.12 P7c: mutated records rejected
+  - [x] 5.12 P7c: mutated records rejected
     - **Property 7c** (design P7c). numRuns 500. Truncation, appended bytes and corrupted length fields.
     - Tag: `Feature: codec, Property 7c: mutated records throw BAD_METADATA`.
     - **Validates: Requirements 1.6**
