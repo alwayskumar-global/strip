@@ -138,7 +138,7 @@ Tag legend, as in design.md "Test configs":
     - _Requirements: 1.14, 10.1, 11.3_
 
 - [ ] 2. Group 2: Wasm loading, frame decoder, decode worker, CSP proof (STOP at the end for the user)
-  - [ ] 2.1 Add `zxing-wasm` 3.1.7, `decoder-backend.ts`, `zxing-backend.ts`, `wasm-runtime.ts`
+  - [x] 2.1 Add `zxing-wasm` 3.1.7, `decoder-backend.ts`, `zxing-backend.ts`, `wasm-runtime.ts`
     - Add `zxing-wasm` 3.1.7 to `packages/symbols/package.json` (exact pin) and its row to `docs/dependencies.md` (name, exact version, license, reason) in the same commit. Re-check that the package `exports` include `./reader/zxing_reader.wasm` and `./reader`. If either is absent, STOP and report.
     - `decoder-backend.ts`: internal `DecoderBackend` interface. `zxing-backend.ts`: the only file importing `zxing-wasm/reader`; takes `result.bytes` and copies it out, never reads `result.text`; converts to local types so no zxing type leaks. `wasm-runtime.ts`: `WasmSource` (`url` or `bytes`), `ensureRuntime` memoised per source, `prepareZXingModule` with `locateFile` (url) or `wasmBinary` (bytes), INVALID_INPUT when no source (nothing fetched), UNSUPPORTED_ENVIRONMENT on any load or instantiate failure (memo entry dropped so retry works), a second different source after init rejected with INVALID_INPUT. No CDN default.
     - Tests read the `.wasm` bytes from disk in the TEST (fs through the ambient shim) and pass them as `{ kind: "bytes" }`.
