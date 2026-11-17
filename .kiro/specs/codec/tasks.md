@@ -172,7 +172,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests: GE trigger counting sparse plus dense, completion from systematic plus dense Packets only, rank-deficient retry, cap 0 and cap 1024 behaviour, HASH_MISMATCH with an injected wrong-digest HashFn, `result()` before completion, and concurrent pushes.
     - _Requirements: 5.8, 5.9, 5.10, 5.11, 5.12, 5.13, 5.18, 5.23, 1.12_
 
-  - [ ] 3.8 `index.ts` barrel
+  - [x] 3.8 `index.ts` barrel
     - Export exactly the nine runtime symbols and the thirteen type-only exports listed in design.md.
     - Unit test that asserts the runtime export list and the type export list (R9.1).
     - _Requirements: 9.1, 9.6_
