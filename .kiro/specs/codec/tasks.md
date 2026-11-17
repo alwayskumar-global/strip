@@ -345,7 +345,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 2.2, 2.10**
     - _Requirements: 2.2, 2.10_
 
-  - [ ] 5.20 P15: hash-gated dense safety
+  - [x] 5.20 P15: hash-gated dense safety
     - **Property 15** (design P15). numRuns 200. Decoder fed only dense and systematic Packets (random subsets, some dense payloads corrupted with a recomputed valid CRC), blockSize 32. The Decoder either never completes or completes with bytes equal to the original, and never exposes bytes when the hash fails.
     - Tag: `Feature: codec, Property 15: dense and systematic input never yields wrong bytes`.
     - **Validates: Requirements 5.18, 5.19, 5.20, 5.21, 5.22, 5.23, 5.10, 5.11**
