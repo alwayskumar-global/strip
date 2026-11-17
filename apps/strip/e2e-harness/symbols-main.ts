@@ -126,11 +126,15 @@ const api = {
     const m = encodeSymbol(fromHex(hex), { version, ecc });
     return { version: m.version, mask: m.mask, size: m.size, modules: m.modules.map((x) => (x ? "1" : "0")).join("") };
   },
-  /** Time compile plus instantiate of the reader wasm (fresh page, same origin, no cache). */
+  /** Time init (fetch, compile, instantiate) and the first decode after it. The frame is rendered before the clock starts. */
   async measureInit() {
+    const frame = render(payload(40));
     const t0 = performance.now();
-    await createFrameDecoder({ wasm: wasmSource, maxWidth: 64, maxHeight: 64 });
-    return performance.now() - t0;
+    const dec = await createFrameDecoder({ wasm: wasmSource, maxWidth: 640, maxHeight: 640 });
+    const t1 = performance.now();
+    const r = await dec.submit(frame);
+    const t2 = performance.now();
+    return { initMs: t1 - t0, firstDecodeMs: t2 - t1, found: r.kind === "found" };
   },
   async startWorker(maxWidth = 640, maxHeight = 640) {
     try {

@@ -271,7 +271,7 @@ Tag legend, as in design.md "Test configs":
     - Informational (no assertion): Harsh_Profile for the Default_Cell at 4 and 6 ppm and blur 0, 1 and 1.5 (R6.10); 3 ppm at blur 1 printed as a documented limit, expected 0.26 to 0.45 (R6.11); each Degradation_Family as a measured claim with N, rate and Wilson bound per cell (R6.2, R6.3, R6.4, R6.5); a statement in the output that only the Default_Cell cells under the Typical_Profile are asserted (R6.6).
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.8, 6.9, 6.10, 6.11_
 
-  - [ ] 4.2 Perf scripts
+  - [x] 4.2 Perf scripts
     - `perf/encode.perf.ts`, `perf/decode.perf.ts`, `perf/wasm-init.perf.ts`, `perf/measure.ts` using the Perf_Method (median of 20 runs after 3 warm-ups, `process.hrtime.bigint`), printing frame content, version, ecc and the Reference_Machine note.
     - Test: decode median at most 20 ms for a 1280x720 frame and at most 40 ms for a 1920x1080 frame (R7.5) [perf].
     - Test: encode median at most 5 ms for 1732 bytes at v30 L (R7.6) [perf].
