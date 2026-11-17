@@ -6,6 +6,8 @@
 
 The library pair is decided (see Resolved questions): `qr` (paulmillr) 0.7.2 encodes, and `zxing-wasm` 3.1.7 (reader build only) decodes. Both are exact-pinned and approved by the user (Resolved questions 7). Requirements are still written against internal Encoder and Decoder_Backend interfaces, so that a backend can be replaced without changing the public API. Measured numeric claims (capture conditions, timing) are stated as measurements with a sample size and method, never as guarantees. The measurements come from the committed spike report `docs/spikes/symbols-decoder.md`. Packet production, loss recovery and framing belong to the codec spec and are not restated here.
 
+Two user-approved amendments were added after the first three groups (Resolved questions 8 and 9). Amendment 1 adds multi-symbol decoding, decided after the spike `docs/spikes/symbols-multi.md`: an optional `maxSymbols` on the decode options returns every symbol of a page photo (Requirement 16, R6.12, R6.13, R7.13, R12.4). Amendment 2 changes the Strip_CSP to add `worker-src 'self'` (R9.3, R9.5, R9.11). The default behaviour (`maxSymbols` 1) is unchanged, so every earlier criterion stays valid.
+
 Each acceptance criterion ends with a tag naming how it is verified: [unit] (fast example or table test in `pnpm test`), [property] (fast-check property in `pnpm test`), [measured] (seeded statistical or batch run in `pnpm test:measured`, outside the fast suite for cost), [perf] (Perf_Method script), [Playwright] (Chromium harness test) and [manual] (recorded human check).
 
 ## Glossary
@@ -34,6 +36,12 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 - **Harness_Page**: The localhost page served for Playwright tests. The harness serves the Strip_CSP as an HTTP header.
 - **Reference_Machine**: Apple M2 Pro running Node 25.9, the machine on which the spike measured timing and on which budgets are stated.
 - **Perf_Method**: Median of 20 runs after 3 warm-ups, timed with `process.hrtime.bigint` in perf scripts outside src, on the Reference_Machine.
+- **maxSymbols**: The optional integer decode option in 1..16 (default 1) that sets how many symbols one image may return. It exists on DecodeOptions and FrameDecoderOptions.
+- **Found_Symbol**: The object `{ bytes, version?, ecc?, corners? }` with the same fields as the `found` outcome, one per symbol in a `found_many` outcome. It is a type-only export named `FoundSymbol`.
+- **Multi_Symbol_Outcome**: The decode outcome `{ kind: 'found_many', symbols: FoundSymbol[], skipped: number }`, returned only when `maxSymbols` is greater than 1 and at least one valid symbol was read.
+- **Skipped_Count**: The `skipped` field of a Multi_Symbol_Outcome: the number of valid symbols whose payload is longer than 2953 bytes (not Strip packets).
+- **Page_Photo**: A synthetic 3000 x 4000 pixel (12 MP) photo of an A4 portrait page that carries a 3 x 3 grid of version 30, ECC_Level L symbols with 1732-byte payloads, produced by the seeded test helper `page-photo.ts`.
+- **Page_Photo_Gate**: The measured gate of R6.12: N = 100 Page_Photo images, at least 8 of 9 symbols read per page, judged by the Wilson_Lower_Bound of the fraction of such pages.
 - **THIRD_PARTY_NOTICES**: The file, named exactly `THIRD_PARTY_NOTICES`, that the app ships and that lists each shipped third-party component with its licence text.
 
 ## Requirements
@@ -105,7 +113,7 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 1. WHEN `decodeFrame` receives an ImageData_Like that contains a QR symbol, THE Symbols_Package SHALL return a result with the exact Packet bytes as a Uint8Array. [unit]
 2. WHERE the Decoder_Backend reports them, THE Symbols_Package SHALL include the symbol version, the ECC_Level and the corner points in the result. [unit]
 3. IF the ImageData_Like contains no symbol, THEN THE Symbols_Package SHALL return a Not_Found outcome and SHALL NOT throw. [property]
-4. IF the decoded payload is longer than 2953 bytes, THEN THE Symbols_Package SHALL return a typed outcome stating that the symbol is not a Strip packet. [unit]
+4. IF the decoded payload is longer than 2953 bytes and `maxSymbols` is 1, THEN THE Symbols_Package SHALL return a typed outcome stating that the symbol is not a Strip packet (the rule for `maxSymbols` greater than 1 is in Requirement 16, criterion 7). [unit]
 5. IF the input has non-integer or non-positive width or height, a data field that is not a Uint8ClampedArray, or a data length different from width x height x 4, THEN THE Symbols_Package SHALL throw a SymbolError with code INVALID_INPUT, validated by hand-written code before any other processing. [property]
 6. THE Symbols_Package SHALL return Packet bytes that are binary safe for every byte value 0x00 to 0xFF, taken from the raw byte output of the Decoder_Backend (zxing-wasm `result.bytes`) with no text decoding. [unit]
 7. WHEN the Decoder_Backend is first needed (by `decodeFrame` or by `createFrameDecoder`), THE Symbols_Package SHALL compile and instantiate the reader .wasm from the source given by the Wasm_Loader, once per page, and SHALL complete decoding asynchronously. THE `createFrameDecoder` function SHALL return a Promise that resolves after that initialisation (see Requirement 7, criterion 1). [unit]
@@ -122,12 +130,14 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 3. THE measurement SHALL use N seeded trials per cell (a cell is one Degradation_Family parameter value at one version class), a seeded PRNG and fast-check seeds only, with no Math.random. [property]
 4. THE measurement output SHALL report, for each cell, the observed rate, N and the Wilson_Lower_Bound. [property]
 5. THE Degradation_Family parameters SHALL be: rotation 0..359 degrees; perspective skew up to a stated angle; Gaussian blur of a stated sigma in module units; brightness scaled to stated fractions plus noise; occlusion of a stated fraction of modules as a solid block or scattered; inverted polarity. [property]
-6. THE test suite SHALL assert fresh-seed rates only for the Default_Cell under the Typical_Profile (criteria 8 and 9) and SHALL report every other cell, including every Harsh_Profile cell, as informational output with no assertion. [property]
+6. THE test suite SHALL assert fresh-seed rates only for the Default_Cell under the Typical_Profile (criteria 8 and 9) and the Page_Photo_Gate (criterion 12), and SHALL report every other cell, including every Harsh_Profile cell, as informational output with no assertion. [property]
 7. THE real-device validation on printed strips and phone screens SHALL be recorded as a manual check with device, distance and result. [manual]
 8. WHEN the Default_Cell is rendered at 4 pixels per module and degraded by the Typical_Profile at blur sigma 1 pixel for screen use, with N = 200 seeded trials and payloads of 1732 bytes, THE Symbols_Package SHALL decode the exact bytes with a Wilson_Lower_Bound of at least 0.90 (90%). [measured]
 9. WHEN the Default_Cell is rendered at 4 pixels per module and degraded by the Typical_Profile at blur sigma 1 pixel for print use, with N = 200 seeded trials and payloads of 1732 bytes, THE Symbols_Package SHALL decode the exact bytes with a Wilson_Lower_Bound of at least 0.97 (97%). [measured]
 10. THE measurement SHALL report the Harsh_Profile rates for the Default_Cell at 4 and 6 pixels per module and at blur sigma 0, 1 and 1.5 pixels, without a pass bar. [property]
 11. THE minimum 4 pixels per module SHALL hold only while the capture blur sigma is at most 1 pixel (a quarter of a module), and THE test suite SHALL report the success rate at 3 pixels per module at blur sigma 1 pixel as a documented limit (measured 0.26 to 0.45 at N = 100), without a pass bar. [property]
+12. WHEN N = 100 seeded Page_Photo images (a 3 x 3 grid of version 30 ECC_Level L symbols with 1732-byte payloads, a 3000 x 4000 photo, the page filling 92% of the photo height (about 5 pixels per module), the Typical_Profile with rotation up to ±10 degrees, perspective up to ±4% and blur sigma 1 pixel) are decoded with `maxSymbols` 9, THE Symbols_Package SHALL read at least 8 of the 9 symbols in a fraction of the pages whose Wilson_Lower_Bound is at least 0.90, where a symbol counts as read only when its bytes equal one of the nine payloads of that page, and THE measurement SHALL report the symbols-read rate, the pages-with-9-of-9 count and the decode time (median and p95). The spike measured 899 of 900 symbols, 100 of 100 pages with at least 8 of 9 (Wilson_Lower_Bound 0.963) and a median of 78 ms; the gate at 0.90 leaves room for the TypeScript port of the page generator. IF the port does not reproduce the spike within the Wilson interval, THEN the task SHALL stop and report instead of retuning. [measured]
+13. THE measurement SHALL report, without a pass bar, the same Page_Photo measurement with the page filling 75% of the photo height (about 4 pixels per module), with its symbols-read rate, N, Wilson_Lower_Bound and decode time (the spike measured 468 of 468 symbols at N = 52). [measured]
 
 ### Requirement 7: Camera loop use and budgets
 
@@ -137,7 +147,7 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 
 1. WHEN `createFrameDecoder` receives a maximum frame size, THE Symbols_Package SHALL return a Promise that resolves with a Frame_Decoder after the reader .wasm initialisation, with working memory preallocated for that size and reused for each frame, and IF the initialisation fails, THEN THE Promise SHALL reject with a SymbolError with code UNSUPPORTED_ENVIRONMENT. [unit]
 2. WHERE a `mode` option ('video' or 'photo') is given, THE Frame_Decoder SHALL apply it to each frame, and SHALL use 'video' when no `mode` is given. [unit]
-3. THE Frame_Decoder SHALL use, in 'video' mode, exactly the reader options measured in the spike (QRCode format only, tryHarder, tryRotate, tryDownscale, one symbol, LocalAverage binarizer, no inversion), and, WHERE 'photo' mode is selected, THE Frame_Decoder SHALL add inverted-polarity detection and one retry with the GlobalHistogram binarizer on a miss. [unit]
+3. THE Frame_Decoder SHALL use, in 'video' mode, exactly the reader options measured in the spike (QRCode format only, tryHarder, tryRotate, tryDownscale, one symbol unless `maxSymbols` is given (Requirement 16, criterion 3), LocalAverage binarizer, no inversion), and, WHERE 'photo' mode is selected, THE Frame_Decoder SHALL add inverted-polarity detection and one retry with the GlobalHistogram binarizer on a miss. [unit]
 4. IF a frame is larger than the maximum frame size given at creation, THEN THE Frame_Decoder SHALL throw a SymbolError with code INVALID_INPUT. [unit]
 5. THE perf script SHALL report the decode time by the Perf_Method with the frame content, version and ECC_Level stated, and the median SHALL be at most 20 ms for a 1280x720 frame and at most 40 ms for a 1920x1080 frame (measured 4.4 ms and 8.9 ms, about 4.5 times headroom). [perf]
 6. THE perf script SHALL report the encode time of a 1732-byte Packet at version 30, ECC_Level L by the Perf_Method, and the median SHALL be at most 5 ms (measured 0.40 ms). [perf]
@@ -147,6 +157,7 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 10. THE Frame_Decoder SHALL run at most one decode in flight at a time. [unit]
 11. WHILE a decode is in flight, THE Frame_Decoder SHALL drop each newly submitted frame and SHALL hold no pending frame. [unit]
 12. THE camera loop SHALL sustain at least 5 decodes per second on mid-range hardware, which is at most 200 ms per decode; the slowdown of mid-range hardware against the Reference_Machine (assumed 5 to 10 times) is an assumption, not a measurement. [manual]
+13. THE perf script SHALL report the decode time of a 12 MP Page_Photo with `maxSymbols` 9 by the Perf_Method, with the page content, symbol count, version and ECC_Level stated, and the median SHALL be at most 250 ms on the Reference_Machine (measured 78 ms in the spike, about 3 times headroom). [perf]
 
 ### Requirement 8: Errors
 
@@ -169,14 +180,16 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 
 1. THE Symbols_Package SHALL work without eval, without `new Function` and without inline script or style. [Playwright]
 2. THE app build SHALL bundle the reader .wasm and serve it from the same origin, never from a CDN, and THE Symbols_Package SHALL load it only through the Wasm_Loader source supplied by the app, overriding the zxing-wasm default jsDelivr location through the zxing-wasm module overrides (`locateFile` or `wasmBinary`). [Playwright]
-3. THE app SHALL deliver the Strip_CSP as the HTTP response header `Content-Security-Policy` with exactly this single value: `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. [unit]
+3. THE app SHALL deliver the Strip_CSP as the HTTP response header `Content-Security-Policy` with exactly this single value: `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'` (user-approved amendment: `worker-src 'self'` is added after `script-src`; the app CSP of the app spec is this same string). [unit]
 4. THE Strip_CSP SHALL contain neither 'unsafe-eval' nor 'unsafe-inline'. The keyword 'wasm-unsafe-eval' permits compiling and instantiating WebAssembly only, and does not permit eval() or new Function(). [unit]
-5. THE Strip_CSP SHALL leave img-src, worker-src and style-src unset, so that each falls back to 'self'. Any need for blob: or data: images or for a blob: worker SHALL be handled by a separate requirement change, not by this requirement. [unit]
+5. THE Strip_CSP SHALL leave img-src and style-src unset, so that each falls back to 'self', and SHALL set worker-src explicitly to 'self', because the decode worker script and the reader .wasm are same-origin files and no blob: worker is used. Any need for blob: or data: images or for a blob: worker SHALL be handled by a separate requirement change, not by this requirement. [unit]
 6. THE app documentation SHALL state that frame-ancestors is ignored in a meta element and is therefore header-only, and that the host SHALL deliver the whole Strip_CSP as an HTTP header (the other directives would work in a meta element, but one header is the single source). [manual]
 7. THE app SHALL keep the Strip_CSP string in one committed source, used by the Harness_Page server and by the documented host configuration, and a test SHALL assert that the served header equals the string in criterion 3 character for character. [unit]
 8. WHEN the Harness_Page is served with the Strip_CSP header, THE Playwright wasm-load test SHALL run under exactly that policy and SHALL run encode, render, decode and a round trip, and observe zero securitypolicyviolation events and zero console errors. [Playwright]
 9. WHEN the Harness_Page runs the round trip, THE test SHALL record every network request and assert that each request goes to the Harness_Page origin, that none goes to any other origin (including jsDelivr), that no script is loaded or dynamically imported from another origin, and that the .wasm is requested from the same origin. [Playwright]
 10. WHEN the production Vite build of the app is served by the Harness_Page, THE Playwright build-and-load test SHALL assert that the URL imported from `@strip/symbols/wasm-url` resolves to a same-origin hashed .wasm asset that is not a `data:` URL, that the decoder loads it and decodes a symbol, and that `apps/strip/package.json` has no dependency on `zxing-wasm`. [Playwright]
+
+11. WHEN the Harness_Page starts the decode worker under the Strip_CSP, THE Playwright test SHALL assert that the worker script is requested from the Harness_Page origin as a file (not a `blob:` or `data:` URL), that the worker response carries the Strip_CSP header, and that the worker loads the .wasm and decodes a symbol with zero securitypolicyviolation events. [Playwright]
 
 ### Requirement 10: Determinism and purity
 
@@ -213,6 +226,7 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 1. THE Symbols_Package SHALL export from src/index.ts, as runtime symbols, exactly: encodeSymbol, renderToCanvas, renderToSvg, fitScale, decodeFrame, createFrameDecoder, SymbolError, SYMBOL_ERROR_CODES, QR_CAPACITY, QR_CAPACITY_BY_VERSION and QR_DEFAULTS. [unit]
 2. THE Symbols_Package SHALL export from src/index.ts, as type-only symbols, the types Symbol_Matrix, ECC_Level, encode options, render options, decode options (including the Wasm_Loader source), decode result (including Not_Found), Frame_Decoder and SymbolErrorCode. [unit]
 3. THE Symbols_Package SHALL expose the barrel through the package `exports` field entry `.`, and SHALL expose exactly one other entry, the subpath `./wasm-url` (importable as `@strip/symbols/wasm-url`), which exports the single value `readerWasmUrl` (a string). A test SHALL assert that the runtime export list of the barrel matches criterion 1 exactly, that `exports` has exactly these two entries, and that the barrel does not export `readerWasmUrl`. [unit]
+4. THE Symbols_Package SHALL export from src/index.ts, as type-only symbols in addition to criterion 2, the type FoundSymbol and the extended types DecodeOutcome (with the `found_many` member), DecodeOptions and FrameDecoderOptions (each with `maxSymbols`), and THE runtime export list of criterion 1 SHALL stay exactly the 11 names, with no new function. [unit]
 
 ### Requirement 13: Integration with the codec
 
@@ -249,6 +263,27 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 4. THE THIRD_PARTY_NOTICES file SHALL NOT list the BSD-3 zint code, because zint is only in the writer and full builds, which are not shipped (see Requirement 11, criterion 4). [unit]
 5. THE app SHALL serve THIRD_PARTY_NOTICES from the same origin and SHALL link to it from the app. [Playwright]
 
+### Requirement 16: Multi-symbol decoding
+
+**User Story:** As the receiver, I want to read every symbol of a photo or scan of a printed page in one decode, so that one image of a page adds all of its Packets.
+
+#### Acceptance Criteria
+
+1. IF `maxSymbols` is given and is not an integer in 1..16, THEN THE Symbols_Package SHALL throw a SymbolError with code INVALID_INPUT from `decodeFrame` and from `createFrameDecoder`, validated by hand-written code before the Decoder_Backend is called. [property]
+2. WHERE `maxSymbols` is absent or equal to 1, THE Symbols_Package SHALL behave exactly as before this requirement: the reader is called with `maxNumberOfSymbols` 1, the outcome kinds are `found`, `not_found`, `not_strip_packet` and `dropped`, and every earlier criterion stays valid. [unit]
+3. WHERE `maxSymbols` is greater than 1, THE Symbols_Package SHALL call the reader with `maxNumberOfSymbols` equal to `maxSymbols` and with every other reader option unchanged from the selected mode. [unit]
+4. WHERE `maxSymbols` is greater than 1 and at least one valid symbol with a payload of at most 2953 bytes is read, THE Symbols_Package SHALL return `{ kind: 'found_many', symbols, skipped }`, where each element of `symbols` is a Found_Symbol with the same fields as the `found` outcome (`bytes`, and `version`, `ecc` and `corners` when the Decoder_Backend reports them). [unit]
+5. FOR ALL images that carry between 1 and `maxSymbols` valid symbols with payloads of at most 2953 bytes, THE `symbols` list SHALL contain exactly those payloads as a set, so that every distinct payload appears at least once and no other payload appears. [property]
+6. THE Skipped_Count SHALL equal the number of valid symbols read whose payload is longer than 2953 bytes, and such a symbol SHALL NOT appear in `symbols`. [property]
+7. WHERE `maxSymbols` is greater than 1: IF no valid symbol is read, THEN THE Symbols_Package SHALL return `{ kind: 'not_found' }`, and IF only symbols with a payload longer than 2953 bytes are read, THEN THE Symbols_Package SHALL return `{ kind: 'found_many', symbols: [], skipped }` with `skipped` of at least 1. THE outcome `not_strip_packet` SHALL be returned only when `maxSymbols` is 1. [unit]
+8. THE `bytes` of each Found_Symbol SHALL be a fresh Uint8Array that owns its own ArrayBuffer, taken from the raw `result.bytes` of the Decoder_Backend, so that changing or transferring one does not change any other symbol or any reader buffer. [property]
+9. THE Symbols_Package SHALL leave the order of `symbols` unspecified (the order of the reader), SHALL identify symbols by their content and not by their place, and SHALL NOT remove duplicate payloads, so that two photos of overlapping pages and a page with a repeated symbol are handled by the codec, which ignores duplicate Packets. [property]
+10. WHERE `maxSymbols` is greater than 1 and the mode is 'photo', THE Frame_Decoder and `decodeFrame` SHALL run the one retry with the GlobalHistogram binarizer only when the first read returned no result at all (neither a valid symbol nor a symbol over 2953 bytes), exactly as for a miss with `maxSymbols` 1. [unit]
+11. WHERE `maxSymbols` is given to `createFrameDecoder`, THE Frame_Decoder SHALL apply it to every submitted frame, return the outcomes of criteria 4 and 7, keep at most one decode in flight, and drop each frame submitted while busy with the outcome `dropped`. [unit]
+12. THE app decode worker SHALL accept `maxSymbols` in the `init` message, SHALL send an `outcome` message carrying a `found_many` outcome with the `bytes` buffer of every Found_Symbol in the transfer list, and SHALL remain a single worker with one decode in flight that drops each frame submitted while busy. [unit]
+13. WHEN a page of several symbols is rendered on a canvas in Chromium under the Strip_CSP and decoded through the decode worker with `maxSymbols` greater than 1, THE worker SHALL return every payload of the page. [Playwright]
+14. THE `maxSymbols` and `found_many` addition SHALL satisfy the criteria of the app spec that cite dependency D2 (the app spec's Requirement 12, criteria 11 and 21, and Requirement 21, criteria 1 and 2): the option name is `maxSymbols`, the outcome is `found_many`, and the app pushes every `bytes` of `symbols` into its Scan_Session. [manual]
+
 ## Correctness properties to be numbered in design
 
 - Round trip of any byte array of 1..Capacity bytes for each ECC_Level: the encoded bytes round-trip through the pinned zxing-wasm decoder (encode, render, decode equals input).
@@ -265,14 +300,25 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 - Symbol width in modules equals 17 + 4 x version + 8 for every version 1..40.
 - Default_Cell success under the Typical_Profile at blur sigma 1 pixel has a Wilson_Lower_Bound of at least 0.90 for screen and at least 0.97 for print (N = 200).
 - The Frame_Decoder never has more than one decode in flight and never holds more than one pending frame.
-- The app CSP header equals the exact string in Requirement 9, criterion 3.
+- The app CSP header equals the exact string in Requirement 9, criterion 3 (with `worker-src 'self'`).
+- Any set of 1..6 distinct payloads placed in a clean grid is returned as exactly that set, in any placement order (Requirement 16, criteria 5 and 9).
+- The default `maxSymbols` 1 leaves the behaviour and the outcome shape unchanged (Requirement 16, criterion 2).
+- `maxSymbols` outside 1..16 or not an integer throws INVALID_INPUT before the backend is called (Requirement 16, criterion 1).
+- For any list of reader payloads, `symbols` holds those of at most 2953 bytes, `skipped` counts the others, and the outcome kind follows the zero-usable rule (Requirement 16, criteria 6 and 7).
+- Found_Symbol bytes are fresh, independent copies (Requirement 16, criterion 8).
+- The Frame_Decoder with `maxSymbols` keeps one decode in flight and passes `maxSymbols` to the reader (Requirement 16, criteria 3 and 11).
+- The worker transfers every symbol buffer of a `found_many` outcome exactly once (Requirement 16, criterion 12).
+- The seeded Page_Photo generator is deterministic per seed.
+- Page_Photo gate: at least 8 of 9 symbols in a fraction of N = 100 pages with a Wilson_Lower_Bound of at least 0.90.
+- A composite page of several symbols decodes through the worker under the Strip_CSP and returns all payloads.
 - No network request is made other than the same-origin load of the reader .wasm.
 
 ## Out of scope
 
 - Camera access and getUserMedia (the app).
 - UI.
-- Print layout and multi-symbol sheets.
+- Print layout and multi-symbol sheets (reading several symbols from one image is in scope, Requirement 16; laying them out is the app's).
+- Tiling of an image into windows (the spike showed it is not needed).
 - Animation timing.
 - Micro QR, rMQR and other symbologies.
 - Kanji, numeric, alphanumeric and mixed-mode segments.
@@ -284,7 +330,7 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
 - Encryption.
 - The `qr` decoder, and the zxing-wasm writer and full builds.
 - Any CDN or remote load of the .wasm.
-- img-src, worker-src or style-src exceptions such as blob: or data:.
+- img-src or style-src exceptions such as blob: or data:, and a blob: worker.
 - A pass bar on the Harsh_Profile.
 - Raising the default version to 40 (resolved, Resolved questions 6; the real-device check may move it).
 - Golden matrix files and any Python or other non-JavaScript reference implementation.
@@ -345,6 +391,18 @@ Each acceptance criterion ends with a tag naming how it is verified: [unit] (fas
    - D. The `?url` import of the reader .wasm lives in the Wasm_URL_Module inside the Symbols_Package, exposed as the only subpath export `@strip/symbols/wasm-url` (Requirement 12, criterion 3). The app has no direct `zxing-wasm` dependency, proved by a build-and-load test (Requirement 9, criterion 10). Only if that test fails does the app get a direct dependency with the identical exact pin, recorded in the task.
    - E. THIRD_PARTY_NOTICES is a static committed file with a unit test (Requirement 15, criteria 1 and 2).
    - F. Five requirement changes applied: Requirement 7 criterion 11 (no pending frame); Requirement 7 criterion 1 and Requirement 5 criterion 7 (`createFrameDecoder` returns a Promise); Requirement 7 criteria 2 and 3 (`mode` option); Requirement 6 criteria 1, 8 and 9 tagged [measured]; Requirement 9 criterion 1 and criterion 9 (remote dynamic import folded into the request-log assertion).
+
+8. **Amendment 1: multi-symbol decoding (user-approved).**
+   - Decision: a new option `maxSymbols` (integer 1..16, default 1) on DecodeOptions and FrameDecoderOptions. With the default, behaviour and the DecodeOutcome shape are unchanged. With `maxSymbols` greater than 1 the reader gets `maxNumberOfSymbols` equal to `maxSymbols` and the outcome is `found_many` (Requirement 16). `not_strip_packet` is returned only when `maxSymbols` is 1; with `maxSymbols` greater than 1 and only over-long symbols, the outcome is `found_many` with an empty list and `skipped` of at least 1. The barrel runtime export list stays the 11 names; `FoundSymbol` is a new type-only export (R12.4). Tiling is not used.
+   - Evidence (`docs/spikes/symbols-multi.md`, 100 synthetic 12 MP page photos, 3 x 3 grid of v30 L, 1732-byte payloads, about 5 px per module, rotation up to 10 degrees, perspective up to 4%, blur 1 px): `maxNumberOfSymbols` 9 read 899 of 900 symbols, at least 8 of 9 in 100 of 100 pages (Wilson lower bound 0.963), median 78 ms (p95 113 ms). With 16, 900 of 900, median 87 ms. With 1 (today), 100 of 900. Tiling read 140 and 339 of 900. The decision rule (at least 8 of 9 in at least 0.95 of pages) holds. At about 4 px per module (page 75%), 468 of 468 symbols (N = 52, lower bound 0.931). No result contained a payload outside the nine.
+   - Gate: Requirement 6, criterion 12 asserts a Wilson lower bound of at least 0.90 at N = 100 (below the spike's 0.963, to leave room for the port of the generator); if the TypeScript generator does not reproduce the spike within the Wilson interval the task stops and reports. Perf: Requirement 7, criterion 13 (at most 250 ms, measured 78 ms).
+   - Cross-reference to the app spec (`.kiro/specs/app/requirements.md`): this amendment is dependency D2. It satisfies the App criteria that cite D2: Requirement 12, criterion 11 (Image_Intake with a page of {PER_PAGE} symbols), Requirement 12, criterion 21 (Frame_Loop with a page), and Requirement 21, criteria 1 and 2 (paper round trip), and it defines the Multi_Symbol_Read of the App glossary as `maxSymbols` greater than 1 with the `found_many` outcome. Requirement 12, criterion 10 of the App spec (photo mode, 4096 x 4096) uses the same option. Edits to the app spec are not part of this amendment.
+   - Limits: synthetic images only. The photo-mode path with `maxSymbols` greater than 1 is not gated (the spike used the video-mode reader options); the live camera at 1080p gives fewer pixels per module than a 12 MP still and is not measured.
+
+9. **Amendment 2: app CSP (user-approved).**
+   - Decision: the Strip_CSP becomes `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'` (R9.3). R9.5 now leaves only img-src and style-src unset and sets worker-src explicitly. R9.11 asserts a same-origin worker file, not a blob: worker. This is dependency D3 of the app spec, and it makes the Strip_CSP equal to the App_CSP of the app spec. Resolved question 5 above describes the first policy and is superseded on this one point.
+   - Rationale: an explicit `worker-src 'self'` states the worker rule in the policy and no longer relies on the fallback chain from `script-src`. The worker script and the .wasm are same-origin files.
+   - Files changed by the task: `apps/strip/src/csp.ts` and its test, the Playwright expected strings, the harness server alternative policy (the same string without 'wasm-unsafe-eval'), and `packages/symbols/README.md`.
 
 ## Open questions
 

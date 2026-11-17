@@ -8,6 +8,8 @@ The library pair is fixed and approved (requirements, Resolved questions 1 and 7
 
 Default_Cell: version 30, ECC L, 1732-byte packet, 4 px/module (R14.1). It comes from a saturated synthetic grid (Risk 1).
 
+Two user-approved amendments extend the design after Group 4. Amendment 1 adds multi-symbol decoding through one option, `maxSymbols`, with the outcome `found_many` (section "Multi-symbol decoding"; requirements R16, R6.12, R6.13, R7.13, R12.4). Amendment 2 adds `worker-src 'self'` to the Strip_CSP (section "CSP effects"; R9.3, R9.5, R9.11). With `maxSymbols` 1, the default, nothing else in this document changes.
+
 Requirement ids are written R2.7 and so on. Evidence for numbers is `docs/spikes/symbols-decoder.md` ("the spike").
 
 ## Module layout
@@ -28,11 +30,11 @@ Requirement ids are written R2.7 and so on. Evidence for numbers is `docs/spikes
 | `render-canvas.ts` | `renderToCanvas`, structural `Canvas2DLike` type (R3.1, R3.2) | matrix, fit-scale, validate, errors |
 | `render-svg.ts` | `renderToSvg` (R4) | matrix, validate |
 | `fit-scale.ts` | `fitScale` (R3.5, R3.6, R14.5) | matrix, validate |
-| `decoder-backend.ts` | Internal `DecoderBackend` interface (R11.6) | none |
+| `decoder-backend.ts` | Internal `DecoderBackend` interface (R11.6). Amendment 1 adds one method `readMany` that returns a list (section "Multi-symbol decoding") | none |
 | `zxing-backend.ts` | `createZxingBackend(runtime): DecoderBackend`. The only file importing `zxing-wasm` | decoder-backend, **`zxing-wasm/reader`** |
 | `wasm-url.ts` | The Wasm_URL_Module: `import readerWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url"; export { readerWasmUrl }`. Vite-only construct. Exposed as the subpath `@strip/symbols/wasm-url`. Not imported by `index.ts` or by any other src file, so the Node test graph never loads it (R10.4, R12.3) | none (a `?url` import) |
 | `wasm-runtime.ts` | Once-per-page init, memoised by source (R5.7, R5.8, R8.5) | zxing-backend, errors |
-| `decode.ts` | `decodeFrame` (R5) | wasm-runtime, validate, capacity |
+| `decode.ts` | `decodeFrame` (R5, R16): single-symbol path through `read`, multi-symbol path through `readMany` | wasm-runtime, validate, capacity |
 | `frame-decoder.ts` | `createFrameDecoder` (R7) | decode internals, wasm-runtime, validate |
 
 ```mermaid
@@ -71,12 +73,14 @@ Dependency direction is codec <- symbols <- app. The zxing types never leak thro
 | `test/*.test.ts` | unit and property tests, one file per area (`capacity`, `capacity-table`, `bytes`, `matrix`, `canvas`, `svg`, `fit-scale`, `decode`, `frame-decoder`, `errors`, `barrel`, `codec-integration`, `notices`, `csp`) |
 | `test/helpers/matrix-to-image.ts` | `matrixToImageData(matrix, ppm, quietZone): ImageDataLike` (see section 4) |
 | `test/helpers/degrade.ts` | Seeded degrader (section 8) |
-| `test/helpers/fake-backend.ts` | Controllable `DecoderBackend` for P12, P13 |
+| `test/helpers/fake-backend.ts` | Controllable `DecoderBackend` for P12, P13; gains a scriptable `readMany` for P31 to P33 (its `read` behaviour is unchanged, so earlier tests stay valid) |
+| `test/helpers/composite.ts` | `compositeImage(matrices, layout)`: a clean grid of symbol tiles on white built with `matrixToImageData` (Amendment 1, P27, P28) |
+| `test/helpers/page-photo.ts` | Seeded TypeScript port of the spike page-photo generator (section "Multi-symbol decoding", P35, P36) |
 | `test/helpers/wilson.ts`, `test/helpers/prng.ts` | Wilson bound, seeded PRNG (mulberry32 in test code) |
 | `test/fixtures/iso-capacity.ts` | The ISO_Capacity_Table: 40 versions x L, M, Q, H byte-mode capacities, typed from ISO/IEC 18004 (data only, R1.14) |
 | `test/fixtures/degraded/recipes.json`, `test/fixtures/degraded/*.pgm.gz` | Section 8 |
-| `perf/encode.perf.ts`, `perf/decode.perf.ts`, `perf/wasm-init.perf.ts`, `perf/measure.ts` | Perf_Method scripts (R7.5 to R7.7) |
-| `perf/measured/*.measured.ts` | N=200 Wilson runs and informational grids (R6) |
+| `perf/encode.perf.ts`, `perf/decode.perf.ts`, `perf/wasm-init.perf.ts`, `perf/measure.ts` | Perf_Method scripts (R7.5 to R7.7); `perf/page-photo.perf.ts` (R7.13) |
+| `perf/measured/*.measured.ts` | N=200 Wilson runs and informational grids (R6); `page-photo.measured.ts` (R6.12, R6.13) |
 | `README.md` | API, QR_DEFAULTS documentation (R14.6), real-device check template link |
 
 ### apps/strip (app side)
@@ -285,16 +289,18 @@ export function ensureRuntime(src: WasmSource | undefined): Promise<ZxingModule>
 Strip_CSP (R9.3), owned by `apps/strip/src/csp.ts` (R9.7):
 
 ```
-default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 ```
+
+Amendment 2 added `worker-src 'self'` after `script-src`. The string is also the App_CSP of the app spec (dependency D3). The harness server's alternative policy for the negative test (Playwright b) is the same string without `'wasm-unsafe-eval'`.
 
 | Directive | Why it is enough |
 |---|---|
 | `'wasm-unsafe-eval'` in `script-src` | allows WebAssembly compile and instantiate only |
 | no `'unsafe-eval'` | the spike's grep of the shipped glue found no `new Function` or `eval(`; the only `Function(` matches were `destructorFunction` |
 | `connect-src 'self'` | covers the same-origin `fetch` of the `.wasm` |
-| `worker-src` unset | falls back to `script-src 'self'` (R9.5); the worker is a same-origin file emitted by Vite, not a `blob:` |
-| `img-src`, `style-src` unset | fall back to `default-src 'self'` |
+| `worker-src 'self'` | explicit (R9.5, R9.11); the worker script and the `.wasm` are same-origin files emitted by Vite, no `blob:` worker. The policy no longer relies on the fallback chain from `script-src` |
+| `img-src`, `style-src` unset | fall back to `default-src 'self'` (R9.5) |
 | `frame-ancestors` | ignored in a `<meta>`, so the header is the only delivery (R9.6) |
 
 A dedicated worker script is governed by the CSP in the HTTP response of the worker script itself, not by the page's policy. The host must send the Strip_CSP header on every response, including the worker JS and the `.wasm`. The harness server does so for all paths, and a test asserts it for the three resource types (P15).
@@ -309,13 +315,18 @@ export type ImageDataLike = { width: number; height: number; data: Uint8ClampedA
 export type DecodeOptions = {
   wasm?: WasmSource;                 // required in practice; absent -> INVALID_INPUT (R5.8)
   mode?: "video" | "photo";          // default "video"
+  maxSymbols?: number;               // integer 1..16, default 1 (Amendment 1, R16.1)
 };
+
+export type FoundSymbol = { bytes: Uint8Array; version?: number; ecc?: EccLevel;
+  corners?: readonly [Point, Point, Point, Point] };   // same fields as `found` (R16.4)
 
 export type DecodeOutcome =
   | { kind: "found"; bytes: Uint8Array; version?: number; ecc?: EccLevel;
       corners?: readonly [Point, Point, Point, Point] }
+  | { kind: "found_many"; symbols: FoundSymbol[]; skipped: number }   // only when maxSymbols > 1 (R16.4)
   | { kind: "not_found" }
-  | { kind: "not_strip_packet"; length: number }   // payload > 2953 bytes (R5.4)
+  | { kind: "not_strip_packet"; length: number }   // payload > 2953 bytes, only when maxSymbols is 1 (R5.4, R16.7)
   | { kind: "dropped" };                           // only from FrameDecoder.submit
 
 export type FrameDecoderOptions = DecodeOptions & {
@@ -332,7 +343,7 @@ export function decodeFrame(frame: ImageDataLike, options: DecodeOptions): Promi
 export function createFrameDecoder(options: FrameDecoderOptions): Promise<FrameDecoder>;
 ```
 
-`decodeFrame` never returns `dropped`. `bytes` is a fresh copy of `result.bytes`. `version`, `ecc` and `corners` are filled when zxing reports them (R5.2). Validation (`assertImageDataLike`) runs first and throws INVALID_INPUT (R5.5).
+`decodeFrame` never returns `dropped`. With `maxSymbols` 1 (the default) the outcome is never `found_many`, so every earlier consumer stays valid. `bytes` is a fresh copy of `result.bytes`. `version`, `ecc` and `corners` are filled when zxing reports them (R5.2). Validation (`assertImageDataLike`) runs first and throws INVALID_INPUT (R5.5).
 
 `createFrameDecoder` is async because it awaits the wasm init, so an init failure rejects with `SymbolError` UNSUPPORTED_ENVIRONMENT. This is stated in R7.1 and R5.7: init is async, so a synchronous factory could not report it. After creation, `submit` never waits for init.
 
@@ -354,7 +365,7 @@ Reader options (zxing `readBarcodes`):
 | `video` (default) | `{ formats: ["QRCode"], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: 1, binarizer: "LocalAverage", tryInvert: false }`. These are exactly the options the spike measured, and every budget was measured with them |
 | `photo` | the same plus `tryInvert: true`, and on a miss one retry with `binarizer: "GlobalHistogram"`. The benefit of the retry is measured in the implementation task and not gated (R7.3) |
 
-`mode` is the only effort knob (R7.2, R7.3).
+`mode` is the only effort knob (R7.2, R7.3). `maxSymbols` is not an effort knob: it changes only `maxNumberOfSymbols` in the table above (the next section).
 
 Known cost: `zxing-wasm` copies each frame into wasm memory per call. That allocation is outside our control, and our staging buffer removes only the JS-side allocation per frame. Results copy `result.bytes` out because the wasm heap view is not stable.
 
@@ -375,15 +386,72 @@ Message protocol:
 
 | Direction | Message | Notes |
 |---|---|---|
-| main -> worker | `{ type: "init", wasmUrl, maxWidth, maxHeight, mode }` | worker creates the Frame_Decoder |
+| main -> worker | `{ type: "init", wasmUrl, maxWidth, maxHeight, mode, maxSymbols? }` | worker creates the Frame_Decoder; `maxSymbols` is optional and defaults to 1 (R16.12) |
 | worker -> main | `{ type: "ready" }` or `{ type: "init-error", code, message }` | code from `SYMBOL_ERROR_CODES` |
 | main -> worker | `{ type: "frame", id, width, height, buffer: ArrayBuffer }` (transferred) or `{ type: "bitmap", id, bitmap: ImageBitmap }` (transferred; the worker draws it to an `OffscreenCanvas` to get RGBA) | only sent when the worker is idle |
-| worker -> main | `{ type: "outcome", id, outcome }` (`bytes` transferred) and then the client marks idle | |
+| worker -> main | `{ type: "outcome", id, outcome }` (`bytes` transferred; for `found_many` the `bytes.buffer` of every symbol is in the transfer list, each exactly once) and then the client marks idle | each Found_Symbol owns its own buffer (R16.8), so the transfer list has no duplicates |
 | worker -> main | `{ type: "error", id, code, message }` | frame rejected, loop continues |
 
 The main thread sends a new frame only when the worker has reported idle, so frames are dropped on the main-thread side without copying. The worker's own Frame_Decoder still enforces one in flight, as a second line. Camera capture to a transferable `ImageBitmap` or `ArrayBuffer` is the app's job.
 
 R7.9 test: in Chromium, observe `PerformanceObserver({ type: "longtask" })` on the main thread while the worker decodes a sequence of frames, and assert no entry longer than 50 ms attributable to the decode (P21). If the worker cannot start under the Strip_CSP or fails the criterion, the recorded fallback is a main-thread decode with a yield per frame (Open question (c)).
+
+## Multi-symbol decoding (Amendment 1)
+
+Decision source: `docs/spikes/symbols-multi.md` (requirements, Resolved question 8). The reader's own multi-symbol read (`maxNumberOfSymbols`) reads a page of nine symbols. Tiling is not used.
+
+### Option and outcome
+
+| Rule | Design | Req |
+|---|---|---|
+| Option | `maxSymbols?: number` on `DecodeOptions` and `FrameDecoderOptions`; integer 1..16; default 1 | R16.1 |
+| Validation | `assertDecodeOptions` rejects a non-integer, NaN, below 1 or above 16 with INVALID_INPUT, before the backend is called. `createFrameDecoder` validates at creation, before the wasm init, so a bad option never starts a load | R16.1 |
+| Default | `maxSymbols` absent or 1 takes the existing path unchanged: `backend.read` with `maxNumberOfSymbols: 1`, outcomes `found`, `not_found`, `not_strip_packet`. No existing test changes | R16.2 |
+| Reader options | `maxSymbols` greater than 1: the mode table of "Frame-decoder API" with `maxNumberOfSymbols: maxSymbols` and nothing else changed | R16.3 |
+| Outcome | `{ kind: "found_many", symbols: FoundSymbol[], skipped: number }` | R16.4 |
+
+### Rule for the outcome (maxSymbols greater than 1)
+
+Let `R` be the list of valid symbols the reader returns, `U` the ones with a payload of at most 2953 bytes, and `skipped = |R| - |U|`.
+
+| `R` | `U` | Outcome |
+|---|---|---|
+| empty | empty | `{ kind: "not_found" }` |
+| not empty | empty | `{ kind: "found_many", symbols: [], skipped }` (`skipped` at least 1) |
+| not empty | not empty | `{ kind: "found_many", symbols: U, skipped }` |
+
+`not_strip_packet` exists only for `maxSymbols` 1. Rationale: with several symbols in view, one over-long symbol must not hide the others, and a single outcome kind with a count is easier for a caller than a mix of kinds. An empty `symbols` list with `skipped` above zero lets the app show the "not a Strip packet" notice without a new outcome kind. This is the recommended rule, stated here as the decision.
+
+- **Fresh copies.** Each `FoundSymbol.bytes` is `new Uint8Array(result.bytes)` copied out of the wasm view in the backend, so each owns its buffer (R16.8).
+- **Order and duplicates.** The list order is the reader's order and is unspecified. The package does not sort and does not remove duplicate payloads. The codec ignores duplicate Packets (R16.9).
+- **Photo mode.** The GlobalHistogram retry runs when the first read returned no result at all (`R` is empty), as for a miss today. A first read that returned only over-long symbols is a result, so there is no retry (R16.10).
+
+### Backend seam
+
+`DecoderBackend` keeps `read(frame, options)` unchanged and gains `readMany(frame, options): Promise<BackendResult[]>`, where `options` is the same reader-options object plus `maxNumberOfSymbols`. Choice and reason: adding a method rather than changing the return type of `read` leaves every fake-backend test and the single-symbol code path byte-for-byte as it is, which is what R16.2 requires. `zxing-backend.ts` implements both on one call to the reader (`read` takes the first result). The `BackendResult` type is internal and carries `bytes`, `version?`, `ecc?`, `corners?`. `decode.ts` and `frame-decoder.ts` choose the method by `maxSymbols`: 1 gives `read`, greater than 1 gives `readMany` and the rule above. The fake backend of the tests gains a scriptable `readMany`.
+
+### App side
+
+- `decode-protocol.ts`: `init` gains `maxSymbols?: number`; the `outcome` message type carries the extended `DecodeOutcome`.
+- `decode.worker.ts`: passes `maxSymbols` to `createFrameDecoder`; for `found_many` the transfer list holds every `symbols[i].bytes.buffer` (a pure function `transferListOf(outcome)` that tests exercise directly, P34).
+- `decode-client.ts`: carries `maxSymbols` in `init` and exposes the outcome unchanged. Still one worker, one decode in flight, a frame offered while busy is dropped without a copy.
+
+### Test support: composite images and the page-photo generator
+
+- `test/helpers/composite.ts`: places 2..6 matrices in a clean grid on white, each tile `matrixToImageData(matrix, 4, 4)`, one tile per grid cell, no overlap. Used by the unit and property tests (P27 to P29) and by the Playwright test (P37), where the same layout is drawn on a canvas.
+- `test/helpers/page-photo.ts`: the seeded TypeScript port of the spike generator `page.mjs` (not in the repository; the spike report gives the method). Parameters: page A4 portrait white; 3 x 3 grid of version 30 L symbols, 145 modules wide with the 4-module quiet zone, module 0.4048 mm, grid origin 28 mm from the top; photo 3000 x 4000, dark surround, the page filling a stated fraction of the photo height (0.92 and 0.75); inverse homography per output pixel with 2 x 2 supersampling; rotation up to ±10 degrees and perspective up to ±4% random per page; blur sigma 1 px; 70% contrast; 4% noise; mild brightness gradient. The seed is hashed from the page index. It takes the photo size as a parameter, so determinism tests run at a small size. A payload counts as read only when its bytes equal one of the page's nine payloads.
+- **Fidelity rule.** The port must reproduce the spike within the Wilson interval (99 of 100 pages with 9 of 9, 899 of 900 symbols; the gate lower bound is 0.90). If it does not, the task stops and reports; it does not retune the generator.
+- **Memory.** One 12 MP RGBA image is 48 MB. The measured test generates, decodes and drops one page at a time.
+
+### Gates and budgets
+
+| Item | Value | Req |
+|---|---|---|
+| Gate | N = 100 pages, at least 8 of 9 symbols, Wilson lower bound at least 0.90; reports symbols-read rate, 9-of-9 pages, decode median and p95 | R6.12 |
+| Informational | page 75% (about 4 px per module), reported without assertion | R6.13 |
+| Perf | 12 MP Page_Photo, `maxSymbols` 9, median at most 250 ms (spike 78 ms, about 3 times headroom) | R7.13 |
+
+The gate uses the video-mode reader options, as the spike did.
 
 ## Correctness properties
 
@@ -407,9 +475,9 @@ PBT fits the pure logic (encode, matrix, fitScale, validators, SVG text, frame-d
 | P12 | For any sequence of `submit` calls with a controllable fake backend: at most one backend call is in flight, a call made while one is in flight resolves `dropped` and never reaches the backend, and after the in-flight decode resolves the next `submit` runs | R7.10, R7.11 | PBT (model-based) |
 | P13 | For any sequence of frames up to the max size, the staging buffer object passed to the backend is the same `ArrayBuffer` every time, and mutating the caller's buffer after `submit` returns does not change the decode result | R7.1 | PBT |
 | P14 | Default_Cell (v30 L, 1732 bytes, 4 ppm, blur 1) under the Typical_Profile, N = 200 fresh seeds: Wilson lower bound >= 0.90 (screen) and >= 0.97 (print) | R6.8, R6.9 | measured |
-| P15 | The served `Content-Security-Policy` header equals the R9.3 string exactly on the page, the worker script and the `.wasm`; the page loads under it with zero `securitypolicyviolation` events and zero console errors; the `.wasm` response has `Content-Type: application/wasm` | R9.3 to R9.8 | PW + unit |
+| P15 | The served `Content-Security-Policy` header equals the R9.3 string exactly (including `worker-src 'self'`) on the page, the worker script and the `.wasm`; the worker script is a same-origin file, not a `blob:`; the page loads under it with zero `securitypolicyviolation` events and zero console errors; the `.wasm` response has `Content-Type: application/wasm` | R9.3 to R9.8, R9.11 | PW + unit |
 | P16 | Every request recorded during the round trip goes to the harness origin; none to another origin (jsDelivr included); the `.wasm` is requested from the same origin | R9.1, R9.2, R9.9 (including no script loaded or dynamically imported from another origin) | PW |
-| P17 | The runtime export list of the barrel equals exactly the 11 names of R12.1, and does not include `readerWasmUrl`; package `exports` has exactly the entries `.` and `./wasm-url`; no export type or value comes from `qr` or `zxing-wasm` | R12.1 to R12.3, R11.7 | unit |
+| P17 | The runtime export list of the barrel equals exactly the 11 names of R12.1, and does not include `readerWasmUrl`; package `exports` has exactly the entries `.` and `./wasm-url`; no export type or value comes from `qr` or `zxing-wasm`. After Amendment 1 the list is still exactly the 11 names, and the type exports include `FoundSymbol` (R12.4) | R12.1 to R12.4, R11.7 | unit |
 | P18 | For any file (seeded) encoded by the codec at `packetSize` 1732: each Packet through `encodeSymbol`, `matrixToImageData`, `decodeFrame` and the codec decoder completes with the identical file. Same through canvas and SVG in Chromium | R13.1, R13.2, R1.10 | PBT (small N) + PW |
 | P19 | The static committed `THIRD_PARTY_NOTICES` names `qr` 0.7.2 (MIT), `zxing-wasm` 3.1.7 (MIT), zxing-cpp (Apache-2.0) and the zxing-wasm C++ glue (Apache-2.0), each with version and licence, contains the Apache-2.0 text, does not mention zint; the served file is same origin and linked | R15.1, R15.2, R15.4, R15.5 | unit + PW |
 | P20 | For any bytes in 0..255 repeated or mixed, `bytesToLatin1` then `latin1TextEncoder.encode` returns the input; each char code equals the byte | R1.13 | PBT |
@@ -420,6 +488,22 @@ PBT fits the pure logic (encode, matrix, fitScale, validators, SVG text, frame-d
 | P25 | Clean fixtures: every version 1..40 at each ecc, 4 and 8 ppm (320 fixtures) decode to the input | R6.1 | measured |
 | P26 | `QR_CAPACITY_BY_VERSION` equals the committed ISO_Capacity_Table in all 160 cells, and `QR_CAPACITY` equals its version 40 row (2953, 2331, 1663, 1273; v30: 1732, 1370, 982, 742); the codec default stays 2953; for each ecc and each codec packetSize in 46..65565 up to capacity, the size is accepted | R1.4, R1.10, R14.1 to R14.3, R1.14 | unit |
 
+Amendment 1 properties (numbered after P26, no existing number changes):
+
+| # | Property (for all ...) | Covers | Kind |
+|---|---|---|---|
+| P27 | For any set of 1..6 distinct payloads (versions 3..10, any ecc) placed in a clean grid on white (4 ppm, 4-module quiet zone), `decodeFrame` with `maxSymbols` equal to 6 returns `found_many` whose `symbols` payloads, as a set, equal exactly that set, with `skipped` 0. For one payload the outcome is `found_many` with one symbol. A repeated payload still yields that payload at least once and nothing else | R16.4, R16.5, R16.9 | PBT (reduced runs, decodes in the loop) |
+| P28 | For any set of 1..6 payloads and any permutation of their grid positions, the set of returned payloads is the same (order independence; symbols are identified by content) | R16.5, R16.9 | PBT (reduced runs) |
+| P29 | Default unchanged: for any composite with several symbols and `maxSymbols` absent or 1, `decodeFrame` returns a single `found` whose bytes equal one of the payloads; with a fake backend, the reader receives `maxNumberOfSymbols` 1, `read` is called and `readMany` is not | R16.2, R5.1 | PBT + unit |
+| P30 | For any value that is not an integer in 1..16 (floats, NaN, 0, negatives, 17 and above, strings, null), `decodeFrame` and `createFrameDecoder` throw SymbolError INVALID_INPUT with the fake backend call count 0; for every integer in 1..16 the option is accepted and the reader receives `maxNumberOfSymbols` equal to it (for 2..16 through `readMany`) | R16.1, R16.3 | PBT |
+| P31 | For any list of reader payload lengths (0 to 4000 bytes, any mix, 0 to 16 entries) from a fake backend, with `maxSymbols` greater than 1: `symbols` holds exactly the payloads of at most 2953 bytes in reader order, `skipped` equals the count of the others, and the outcome kind follows the zero-usable table (`not_found`, `found_many` with empty `symbols`, `found_many`); `not_strip_packet` is never returned | R16.4, R16.6, R16.7 | PBT |
+| P32 | For any reader result list, each `FoundSymbol.bytes` is a Uint8Array with its own ArrayBuffer; mutating or transferring one symbol's buffer changes no other symbol and no backend-owned buffer | R16.8 | PBT |
+| P33 | For any `maxSymbols` in 1..16 and any sequence of `submit` calls with a controllable fake backend: the reader gets `maxNumberOfSymbols` equal to `maxSymbols`, at most one backend call is in flight, and a call made while one is in flight resolves `dropped` and never reaches the backend. In photo mode with `maxSymbols` above 1, the GlobalHistogram retry happens only when the first read is empty | R16.3, R16.10, R16.11 | PBT (model-based) |
+| P34 | For any `found_many` outcome (0 to 16 symbols), `transferListOf(outcome)` contains the `bytes.buffer` of every symbol exactly once, with no duplicates and no other buffer; and the client posts `init` with the given `maxSymbols` and drops a frame while busy | R16.12 | PBT + unit |
+| P35 | For any seed, the page-photo generator returns byte-identical images on two calls and different images for different seeds; the nine payloads are distinct and 1732 bytes long. Run at a reduced photo size | R6.12 (generator fidelity) | PBT (small size) |
+| P36 | Page_Photo_Gate: N = 100 pages (12 MP, 3 x 3 v30 L, page 92% of the height, Typical_Profile with rotation up to 10 degrees, perspective up to 4%, blur 1 px), `maxSymbols` 9: pages with at least 8 of 9 symbols have a Wilson lower bound of at least 0.90; the run reports the symbols-read rate and the decode time | R6.12, R6.13 | measured |
+| P37 | A page of several symbols drawn on a canvas in Chromium under the Strip_CSP and decoded through the worker with `maxSymbols` above 1 returns every payload of the page | R16.13, R9.11 | PW |
+
 P18's run count is small because each case encodes and decodes a whole file; each iteration uses a few KB of file.
 
 ## Test strategy
@@ -428,9 +512,9 @@ P18's run count is small because each case encodes and decodes a whole file; eac
 
 | Command | Config | Runs |
 |---|---|---|
-| `pnpm test` | `vitest.config.ts` | unit and property tests incl. the ISO_Capacity_Table checks, P1 with reduced runs, P2 to P13, P17, P19 (static part), P20 to P22, P24 to P26, the fixture-size budget. Fast (target under 60 s) |
-| `pnpm test:measured` | `vitest.measured.config.ts` | N = 200 Wilson runs (P14, tagged [measured] for R6.8 and R6.9), clean 320 fixtures (P25, R6.1 tagged [measured]), informational grids (Harsh_Profile, 3 ppm at blur 1, all Degradation_Families). Prints rate, N and Wilson bound per cell (R6.2 to R6.5, R6.10, R6.11) |
-| `pnpm perf` | `vitest.perf.config.ts` | `perf/*.perf.ts`, Perf_Method (R7.5 to R7.7) |
+| `pnpm test` | `vitest.config.ts` | unit and property tests incl. the ISO_Capacity_Table checks, P1 with reduced runs, P2 to P13, P17, P19 (static part), P20 to P22, P24 to P26, P27 to P35 (P27 and P28 with reduced runs, small composite images, fixed seeds), the fixture-size budget. Fast (target under 60 s) |
+| `pnpm test:measured` | `vitest.measured.config.ts` | N = 200 Wilson runs (P14, tagged [measured] for R6.8 and R6.9), clean 320 fixtures (P25, R6.1 tagged [measured]), the Page_Photo_Gate (P36, R6.12) and its informational 75% batch (R6.13), informational grids (Harsh_Profile, 3 ppm at blur 1, all Degradation_Families). Prints rate, N and Wilson bound per cell (R6.2 to R6.5, R6.10, R6.11) |
+| `pnpm perf` | `vitest.perf.config.ts` | `perf/*.perf.ts`, Perf_Method (R7.5 to R7.7, R7.13) |
 | `pnpm --filter @strip/app e2e` | Playwright | Section "Playwright" below |
 
 ### Unit and property tests
@@ -479,6 +563,7 @@ If the TypeScript degrader gives a rate that differs from the spike's script num
 | g | `THIRD_PARTY_NOTICES` served same origin and linked from the app | R15.5 |
 | i | Build-and-load: against the production Vite build, the URL from `@strip/symbols/wasm-url` is a hashed same-origin `.wasm` (not `data:`), the decoder loads it and decodes a symbol, and `apps/strip/package.json` has no `zxing-wasm`. Contingency only on failure: add the direct app dependency with the identical pin (see Wasm loading) | R9.10, R11.8 |
 | h | Codec integration through canvas and SVG | R13.1 |
+| j | Multi-symbol (P37): a composite page of several symbols drawn on a canvas decodes through the worker with `maxSymbols` above 1 under the real Strip_CSP and returns all payloads; the worker script is a same-origin file | R16.13, R9.11 |
 
 ### Perf scripts (R7.5 to R7.7)
 
@@ -497,6 +582,7 @@ If the TypeScript degrader gives a rate that differs from the spike's script num
 | Encode v30 L, 1732 B | 0.40 ms | 5 ms | 12x |
 | Wasm init (compile plus instantiate) | about 23 ms | 500 ms | 20x |
 | Reader `.wasm` | 946,598 bytes | 1,000,000 bytes | 5.3% |
+| Decode 12 MP page photo, `maxSymbols` 9 (spike, same machine, under 4-way parallel load) | 78 ms median (p95 113 ms) | 250 ms | about 3x |
 | Camera loop | not measured on mid-range hardware | 5 decodes per second (200 ms each) | assumes a 5 to 10x slower phone: 50 to 110 ms |
 
 The JS side allocates nothing per frame beyond the returned bytes: the staging buffer is reused, and the options object is built once. The wasm side copies each frame. The worker keeps the decode cost off the main thread, which makes the main-thread budget independent of the decode time; the 5-per-second target is then a worker throughput question.
@@ -508,10 +594,12 @@ The `.wasm` is a precache candidate for the service worker (about 1 MB, see Risk
 1. **Defaults rest on synthetic images and a saturated grid.** The grid's upper limit was v30, all 90 cells scored 200/200, so the grid does not locate an optimum. The probe showed v40 also passes at 4 px/module. Moiré, glare, motion blur, rolling shutter and print defects are not modelled. Mitigation: `QR_DEFAULTS` is one object in `capacity.ts`; version and ECC are overrides (R14.2); the manual device test runs before release and can move the default. The decision to keep v30 is in Resolved questions 6.
 2. **Wasm delivery chain.** The chain has several links that must all hold: MIME type `application/wasm`, the CSP header on every response including the worker and the `.wasm`, Vite asset handling (no inlining, hashed name), the roughly 1 MB service-worker precache, and Emscripten console noise on an instantiateStreaming fallback. Mitigation: the Playwright tests (a) to (e) and (i), the size and `data:` assertions, and the negative CSP test (b).
 3. **Dependence on zxing-wasm behaviour we do not control.** Per-call copy into wasm memory, module-global state, the shallow overrides equality check, and version upgrades that change accuracy or size. Mitigation: the exact pin, the internal `DecoderBackend` interface (R11.6), the pinned real-image fixtures, and the budgets in the perf and measured suites.
+4. **Multi-symbol evidence is synthetic and partly unmeasured.** The page photos are generated; no real photo of a printed page has been decoded. The gate (0.90) depends on the TypeScript port of the generator reproducing the spike. The photo-mode path with several symbols (inverted-polarity detection and the retry) is not gated; the live camera at 1080p gives fewer pixels per module than a 12 MP still. Mitigation: the stop-and-report rule on the port, the informational 75% batch, and the device check (`docs/device-test.md`).
+5. **The 16-symbol ceiling and cost.** `maxSymbols` 16 read the same symbols as 9 in the spike at a similar median (87 ms against 78 ms in the main batch, 138 ms against 84 ms in the 75% batch). The app should pass the smallest value that covers its layout (9 for the board grid). Mitigation: the perf criterion R7.13 is measured with 9.
 
 ## Review amendments applied
 
-The user's decisions A to F (Resolved questions 6 and 7 in requirements.md) are applied to both documents: default cell kept at v30; dependencies approved with their docs rows added in the task that adds each package; no golden matrices (ISO_Capacity_Table and the zxing-wasm round trip are the oracle); `@strip/symbols/wasm-url` subpath; static THIRD_PARTY_NOTICES; and the five requirement changes (R7.11, R7.1 with R5.7, R7.2 and R7.3, R6.1 R6.8 R6.9 tags, R9.1 with R9.9).
+Amendments 1 (multi-symbol decoding) and 2 (app CSP) were approved by the user after Group 4 and are described in "Multi-symbol decoding" and "CSP effects". The user's decisions A to F (Resolved questions 6 and 7 in requirements.md) are applied to both documents: default cell kept at v30; dependencies approved with their docs rows added in the task that adds each package; no golden matrices (ISO_Capacity_Table and the zxing-wasm round trip are the oracle); `@strip/symbols/wasm-url` subpath; static THIRD_PARTY_NOTICES; and the five requirement changes (R7.11, R7.1 with R5.7, R7.2 and R7.3, R6.1 R6.8 R6.9 tags, R9.1 with R9.9).
 
 ## Architecture
 
@@ -531,4 +619,4 @@ See `errors.ts` in Module layout, the `PACKET_TOO_LARGE` and `ENCODE_FAILED` map
 
 ## Testing Strategy
 
-See Correctness properties and Test strategy. PBT applies to the pure logic. Each property is one fast-check test with at least 100 runs.
+See Correctness properties and Test strategy. PBT applies to the pure logic. Each property is one fast-check test with at least 100 runs (P1, P18, P27 and P28 use the reduced counts stated in their tasks, because each case decodes an image).

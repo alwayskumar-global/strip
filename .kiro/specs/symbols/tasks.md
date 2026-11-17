@@ -2,7 +2,7 @@
 
 ## Overview
 
-Four groups, built bottom-up: (1) encoder, Latin-1 mapping, capacity table, canvas and SVG renderers, fitScale and package tooling; (2) wasm loading, frame decoder, decode worker, and the Playwright proof that the wasm loads and decodes under the exact Strip_CSP with a request log; (3) degrader, fixtures, barrel exactness, codec integration and the remaining Playwright tests; (4) measured gates, perf scripts, third-party notices, README, device-check template, final dependency verification and traceability. Source goes in `packages/symbols/src`. Tests go in `packages/symbols/test`. Perf and measured scripts go in `packages/symbols/perf`. App-side files go in `apps/strip`. Property ids (P1..P26) and requirement ids (R1.1..R15.5) are the ones in design.md "Correctness properties" and requirements.md.
+Four groups, built bottom-up: (1) encoder, Latin-1 mapping, capacity table, canvas and SVG renderers, fitScale and package tooling; (2) wasm loading, frame decoder, decode worker, and the Playwright proof that the wasm loads and decodes under the exact Strip_CSP with a request log; (3) degrader, fixtures, barrel exactness, codec integration and the remaining Playwright tests; (4) measured gates, perf scripts, third-party notices, README, device-check template, final dependency verification and traceability. Source goes in `packages/symbols/src`. Tests go in `packages/symbols/test`. Perf and measured scripts go in `packages/symbols/perf`. App-side files go in `apps/strip`. Property ids (P1..P26, and P27..P37 added by Group 5) and requirement ids (R1.1..R15.5, and R16.1..R16.14 with R5.4, R6.12, R6.13, R7.3, R7.13, R9.11 and R12.4 amended or added by Group 5) are the ones in design.md "Correctness properties" and requirements.md. A fifth group (Group 5, a user-approved amendment) adds multi-symbol decoding (`maxSymbols`, `found_many`) and the `worker-src 'self'` CSP change; it does not renumber anything.
 
 Tag legend, as in design.md "Test configs":
 
@@ -29,6 +29,8 @@ Tag legend, as in design.md "Test configs":
 10. **Tag legend.** Test bullets use the tags in the legend above. The command that runs each tag is the one in the legend.
 11. **Default_Cell.** v30 / ECC L / 1732 bytes / 4 ppm stays as `QR_DEFAULTS` and stays overridable (R1.12). Changing it needs the user.
 12. **Wasm cost report.** The Group 2 checkpoint reports the measured wasm init time and the built `.wasm` size under the real CSP.
+13. **Group 5 (amendment).** Group 5 adds no dependency and starts only when the user says so. Global rules 1 to 12 apply to it unchanged, with a cap of 60 credits. Tasks 1.1 to 4.7 stay as ticked; Group 5 only adds. Existing tests must pass untouched in 5.1 and 5.2 (the default `maxSymbols` 1 is backward compatible); if one must change, STOP and report.
+14. **Page-photo fidelity.** If the TypeScript page-photo generator does not reproduce the spike (899 of 900 symbols, 100 of 100 pages with at least 8 of 9) within the Wilson interval, or the gate of 0.90 is missed, STOP and report. Do not retune the generator, the option set or the gate.
 
 ## Tasks
 
@@ -311,6 +313,94 @@ Tag legend, as in design.md "Test configs":
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.1, 7.5, 15.5_
 
+- [ ] 5. Group 5: Multi-symbol decoding and the app CSP (user-approved amendment)
+  - [ ] 5.1 Backend and `decodeFrame` multi-symbol support
+    - `maxSymbols?: number` on `DecodeOptions` (integer 1..16, default 1); `assertDecodeOptions` rejects anything else with INVALID_INPUT before the backend is called. The `DecodeOutcome` type gains `{ kind: "found_many"; symbols: FoundSymbol[]; skipped: number }` and the new `FoundSymbol` type (`bytes`, `version?`, `ecc?`, `corners?`).
+    - `DecoderBackend` keeps `read` unchanged and gains `readMany(frame, options): Promise<BackendResult[]>`; `zxing-backend.ts` implements it on the same reader call and copies each `result.bytes` into its own `Uint8Array` (never `result.text`). `decodeFrame` with `maxSymbols` 1 or absent takes the existing `read` path unchanged; with `maxSymbols` above 1 it calls `readMany` with `maxNumberOfSymbols` equal to `maxSymbols`, every other option of the mode unchanged, and applies the rule of design "Multi-symbol decoding": symbols of at most 2953 bytes go to `symbols`, longer ones are counted in `skipped`, no valid symbol gives `not_found`, only longer ones give `found_many` with an empty list, `not_strip_packet` only for `maxSymbols` 1. Photo mode retries with GlobalHistogram only when the first read is empty.
+    - Barrel: `src/index.ts` adds only type exports (`FoundSymbol`, and the extended `DecodeOutcome` and `DecodeOptions`); the runtime export list stays exactly the 11 names.
+    - Test helpers: `test/helpers/composite.ts` (`compositeImage`, clean grid of `matrixToImageData` tiles at 4 ppm and a 4-module quiet zone) and a scriptable `readMany` in `test/helpers/fake-backend.ts` (its `read` behaviour unchanged; all earlier tests must pass untouched).
+    - Test: a composite of 2, 3, 4 and 6 symbols (versions 3..10) on white with `maxSymbols` 6 returns `found_many` whose payload set equals the placed set and `skipped` 0 (R16.4, R16.5) [unit].
+    - Test: a composite with exactly one symbol and `maxSymbols` 4 returns `found_many` with one symbol (R16.4) [unit].
+    - Test: a composite with the same payload placed twice returns that payload at least once and no other payload (R16.9) [unit].
+    - Test: fake backend returning payloads of 100, 2953, 2954 and 4000 bytes: `symbols` holds the first two, `skipped` is 2, order is the reader's order (R16.6) [unit].
+    - Test: fake backend returning only 2954-byte and 4000-byte payloads gives `{ found_many, symbols: [], skipped: 2 }`; returning nothing gives `not_found`; with `maxSymbols` 1 and one 2954-byte payload the outcome is `not_strip_packet` (R16.7, R5.4) [unit].
+    - Test: default behaviour unchanged: a composite of several symbols with `maxSymbols` absent and with 1 returns a single `found` (not `found_many`); the fake backend sees `read` called once with `maxNumberOfSymbols` 1 and `readMany` never called (R16.2, R5.1) [unit].
+    - Test: `maxSymbols` 2..16 reach the fake backend as `maxNumberOfSymbols` with every other video-mode option exactly as before (R16.3) [unit].
+    - Test: `maxSymbols` of 0, 17, 1.5, NaN, "4", null and -1 throw INVALID_INPUT with the fake backend call count 0 (R16.1) [unit].
+    - Test: photo mode with `maxSymbols` 4: an empty first read triggers one GlobalHistogram retry; a first read with only over-long symbols does not (R16.10) [unit].
+    - Test: mutating the `bytes` of one symbol does not change another symbol or the next decode; each `bytes.buffer` is distinct (R16.8) [unit].
+    - Test: the barrel runtime export list is still exactly the 11 names, and a compile-time file in `test/types/` imports `FoundSymbol`, `DecodeOutcome` with the `found_many` member and `maxSymbols` on `DecodeOptions` (R12.4, R12.1) [unit].
+    - Property P27: **Feature: symbols, Property 27: for any set of 1..6 distinct payloads placed in a clean grid, decodeFrame with maxSymbols 6 returns exactly that set** (R16.4, R16.5, R16.9) [property]. Reduced runs (stated in the test), fixed seed, versions 3..10.
+    - Property P28: **Feature: symbols, Property 28: for any set of 1..6 payloads and any permutation of their grid positions, the returned set of payloads is the same** (R16.5, R16.9) [property]. Reduced runs, fixed seed.
+    - Property P29: **Feature: symbols, Property 29: for any composite and maxSymbols absent or 1, decodeFrame returns a single found whose bytes equal one of the placed payloads, and the reader gets maxNumberOfSymbols 1 through read** (R16.2, R5.1) [property]. Reduced runs, fixed seed.
+    - Property P30 (decodeFrame half): **Feature: symbols, Property 30: for any value that is not an integer in 1..16, decodeFrame and createFrameDecoder throw SymbolError INVALID_INPUT with the backend call count 0, and every integer in 1..16 is accepted and reaches the reader as maxNumberOfSymbols** (R16.1, R16.3) [property]. The `createFrameDecoder` half is asserted in 5.2 in the same property test file.
+    - Property P31: **Feature: symbols, Property 31: for any list of reader payload lengths with maxSymbols above 1, symbols holds the payloads of at most 2953 bytes in reader order, skipped counts the others, and the outcome kind follows the zero-usable rule with no not_strip_packet** (R16.4, R16.6, R16.7) [property].
+    - Property P32: **Feature: symbols, Property 32: for any reader result list, each FoundSymbol.bytes owns its own ArrayBuffer and changing or transferring one changes no other symbol** (R16.8) [property].
+    - On any counterexample, or if the reader returns a symbol that is not in the placed set, STOP and report.
+    - _Requirements: 5.1, 5.4, 12.1, 12.4, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 16.10_
+
+  - [ ] 5.2 Frame decoder `maxSymbols` and the app worker and client protocol
+    - `createFrameDecoder` accepts `maxSymbols` in `FrameDecoderOptions`, validates it at creation before the wasm init, applies it to every frame, and returns the outcomes of 5.1. One decode in flight and drop while busy are unchanged.
+    - `apps/strip/src/decode-protocol.ts`: `init` gains `maxSymbols?: number`; the outcome message carries the extended `DecodeOutcome`. `apps/strip/src/decode.worker.ts`: passes `maxSymbols` to `createFrameDecoder`; a pure `transferListOf(outcome)` returns the `bytes.buffer` of `found` and of every symbol of `found_many`, each exactly once. `apps/strip/src/decode-client.ts`: sends `maxSymbols` in `init`, returns the outcome unchanged. Still one worker, one decode in flight, a frame offered while busy is dropped without a copy.
+    - Test: `createFrameDecoder({ maxSymbols: 9, ... })` with the fake backend passes `maxNumberOfSymbols` 9 on every frame in video and photo mode, and returns `found_many`; without `maxSymbols` it behaves as in 2.3 (R16.3, R16.11) [unit].
+    - Test: a bad `maxSymbols` rejects `createFrameDecoder` with INVALID_INPUT and no wasm init is started (R16.1) [unit].
+    - Test: `submit` while busy with `maxSymbols` 9 resolves `dropped`, the backend call count stays 1, and the next `submit` after the in-flight call runs (R16.11, R7.10, R7.11) [unit].
+    - Test (client against a fake `Worker`): `init` posted with `maxSymbols`; a `found_many` outcome message is passed to the caller unchanged; a frame submitted while busy is dropped and nothing is posted; `outcome` and `error` mark idle again (R16.12) [unit].
+    - Test: `transferListOf` on a `found_many` outcome with 3 symbols returns exactly the 3 buffers; on `found` returns 1; on `not_found` and `found_many` with no symbols returns 0 (R16.12) [unit].
+    - Test: `frame-decoder.ts` still contains no `postMessage` and no `self`; the worker file still has no `?url` import (R7.10, R10.4) [unit].
+    - Property P33: **Feature: symbols, Property 33: for any maxSymbols in 1..16 and any sequence of submit calls with a controllable fake backend, the reader gets maxNumberOfSymbols equal to maxSymbols, at most one call is in flight, and a call made while one is in flight resolves dropped; in photo mode with maxSymbols above 1 the GlobalHistogram retry happens only when the first read is empty** (R16.3, R16.10, R16.11) [property]. Model-based.
+    - Property P34: **Feature: symbols, Property 34: for any found_many outcome of 0 to 16 symbols, transferListOf contains the bytes.buffer of every symbol exactly once and no other buffer, and the client posts init with the given maxSymbols and drops a frame while busy** (R16.12) [property].
+    - Property P30 (`createFrameDecoder` half) is added to the P30 test file from 5.1.
+    - _Requirements: 7.3, 7.10, 7.11, 16.1, 16.3, 16.10, 16.11, 16.12_
+
+  - [ ] 5.3 Page-photo test helper, measured gate and perf script
+    - `test/helpers/page-photo.ts`: the seeded TypeScript port of the spike page-photo generator (design "Test support"): A4 portrait white page, 3 x 3 grid of version 30 L symbols with 1732-byte payloads (145 modules wide with the quiet zone, module 0.4048 mm, grid origin 28 mm from the top), 3000 x 4000 photo with a dark surround, page filling a stated fraction of the photo height, inverse homography with 2 x 2 supersampling, rotation up to ±10 degrees and perspective up to ±4% per page, blur sigma 1 px, 70% contrast, 4% noise, mild brightness gradient. The photo size is a parameter. Seeds are hashed from the page index; no `Math.random`. It reuses `prng.ts`, `degrade.ts` pieces and `matrixToImageData` where they apply.
+    - `perf/measured/page-photo.measured.ts` (run by `pnpm test:measured`): N = 100 pages at page 92% of the height, `maxSymbols` 9, video-mode options as in the spike. A symbol counts as read only when its bytes equal one of the nine payloads of that page. One page is generated, decoded and released at a time (12 MP RGBA is 48 MB). Prints symbols read of 900, pages with at least 8 of 9, pages with 9 of 9, the Wilson lower bound, and decode median and p95. Informational batch: page at 75% of the height (about 4 px per module), N = 52, printed without assertion (R6.13).
+    - `perf/page-photo.perf.ts` (run by `pnpm perf`): one Page_Photo generated outside the timing, decode with `maxSymbols` 9 by the Perf_Method (median of 20 runs after 3 warm-ups), printing page content, symbol count, version and ecc.
+    - Test: for a small photo size, the same seed gives byte-identical output and different seeds differ; the output length equals width x height x 4; values in 0..255; the nine payloads of a page are distinct and 1732 bytes long; the page fraction parameter changes the module size in pixels as computed (R6.12) [unit].
+    - Test: at the small photo size the generator's symbol positions, mapped through its own homography, stay inside the photo for the 92% case (R6.12) [unit].
+    - Test: the measured gate asserts that the fraction of pages with at least 8 of 9 symbols read has a Wilson lower bound of at least 0.90 at N = 100, and reports the symbols-read rate and decode time (R6.12) [measured].
+    - Test: the perf script asserts a median of at most 250 ms for the 12 MP decode with `maxSymbols` 9 (R7.13) [perf].
+    - Property P35: **Feature: symbols, Property 35: for any seed, the page-photo generator returns byte-identical images on two calls and different images for different seeds, at a reduced photo size** (R6.12) [property].
+    - Property P36: **Feature: symbols, Property 36: Page_Photo_Gate, N = 100 pages, at least 8 of 9 symbols in a fraction of pages with a Wilson lower bound of at least 0.90, maxSymbols 9** (R6.12, R6.13) [measured].
+    - Fidelity rule: the TypeScript generator must reproduce the spike within the Wilson interval (spike: 899 of 900 symbols, 100 of 100 pages with at least 8 of 9, 99 with 9 of 9). If it does not, or if the gate is missed, STOP and report; do not retune the generator (Global rule 14).
+    - Run `pnpm test:measured` and `pnpm perf` and report the symbols-read rate, N, Wilson lower bound and decode times.
+    - _Requirements: 6.12, 6.13, 7.13_
+
+  - [ ] 5.4 Playwright test for multi-symbol under the real CSP (through the worker)
+    - Extend the existing harness (`apps/strip/e2e-harness`) with a composite-page page: several symbols (at least 6, mixed versions) drawn with `renderToCanvas` on one canvas in a grid, the canvas converted to an `ImageBitmap` or RGBA buffer, and decoded through the app decode worker and client with `maxSymbols` 9. The harness runs under the CSP string read from `apps/strip/src/csp.ts` (the policy of the moment, not a copy). Test file `apps/strip/e2e/symbols-multi.spec.ts`.
+    - Test j: the worker returns a `found_many` outcome whose payload set equals every payload drawn; zero `securitypolicyviolation` events and zero console errors; the request log has only same-origin requests (R16.13, R9.8, R9.9) [Playwright].
+    - Test j (default): the same canvas decoded through the worker with `maxSymbols` absent returns a single `found` (R16.2) [Playwright].
+    - Test j (busy): a second frame offered while the first decode is in flight is dropped by the client (R16.12) [Playwright].
+    - Property P37: **Feature: symbols, Property 37: a page of several symbols drawn on a canvas and decoded through the worker with maxSymbols above 1 under the Strip_CSP returns every payload of the page** (R16.13) [Playwright].
+    - Run `pnpm test:e2e` and report the output.
+    - _Requirements: 9.8, 9.9, 16.2, 16.12, 16.13_
+
+  - [ ] 5.5 CSP amendment (`worker-src 'self'`)
+    - `apps/strip/src/csp.ts`: the new exact string `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`. Update `apps/strip/src/csp.test.ts` (exact string, no `'unsafe-eval'`, no `'unsafe-inline'`, `'wasm-unsafe-eval'` once, `worker-src 'self'` present, `img-src` and `style-src` absent).
+    - Update every pinned copy of the policy: the Playwright expected strings in `apps/strip/e2e/symbols-csp.spec.ts`, `symbols-server.spec.ts`, `symbols-worker.spec.ts` and `symbols-notices.spec.ts`, `apps/strip/playwright.config.ts`, the harness server alternative policy in `apps/strip/e2e-harness/server.mjs` (the same string without `'wasm-unsafe-eval'`, so test b still fails the wasm load for the right reason), `packages/symbols/test/readme.test.ts` and the CSP statement in `packages/symbols/README.md`. Search the repository (excluding `node_modules`, `dist` and the spec and spike documents) for `wasm-unsafe-eval` and for `tools/*.test.ts` pins; edit a tools test only if it pins the string. The design and requirement text is already amended in the docs commit, so no spec file is edited.
+    - Test: the string in `csp.ts` equals the R9.3 string character for character (R9.3, R9.7) [unit].
+    - Test: no `'unsafe-eval'`, no `'unsafe-inline'`, `'wasm-unsafe-eval'` once, `worker-src 'self'` present, `img-src` and `style-src` absent (R9.4, R9.5) [unit].
+    - Test: the header the harness server sends on a page, a `.js`, the worker script and a `.wasm` equals the `csp.ts` string; `vite.config.ts` `server.headers` and `preview.headers` equal it (R9.7) [unit].
+    - Test: the README states the new policy string and the header-only statement for `frame-ancestors` (R9.3, R9.6) [unit].
+    - Test (Playwright): the decode worker is requested as a same-origin file (not `blob:` or `data:`), its response carries the new CSP header, it loads the `.wasm` and decodes a symbol with zero `securitypolicyviolation` events (R9.11) [Playwright]. The earlier tests a, b, c and d pass under the new policy; test b, with the alternative policy, still fails with UNSUPPORTED_ENVIRONMENT (R8.5, R9.4).
+    - Property P15 is re-verified by the updated tests: **Feature: symbols, Property 15: the served Content-Security-Policy header equals the R9.3 string exactly (including worker-src 'self') on the page, the worker script and the .wasm, with zero violations and zero console errors** [Playwright].
+    - Run `pnpm test`, `pnpm test:e2e` and `pnpm lint` and report the outputs.
+    - _Requirements: 8.5, 9.3, 9.4, 9.5, 9.6, 9.7, 9.11_
+
+  - [ ] 5.6 README update
+    - `packages/symbols/README.md`: document `maxSymbols` (1..16, default 1, example with 9 for the board grid), the `found_many` outcome and `FoundSymbol`, the `skipped` count and the zero-usable rule, that the order is the reader's order and duplicates are not removed, and that `not_strip_packet` appears only with `maxSymbols` 1. State the measured claim with N and method: 12 MP synthetic page photos, 3 x 3 grid of v30 L, N = 100, at least 8 of 9 symbols, Wilson lower bound, symbols-read rate and decode median from the task 5.3 run, the gate of 0.90, the spike result as the cross-check, and the limits (synthetic images, photo mode not gated, 1080p camera not measured, desktop CPU). Add the cross-reference to the app spec dependency D2.
+    - Test: the README mentions `maxSymbols`, `found_many`, `skipped`, and the N and method of the measured claim (R16.14, R6.12) [unit].
+    - Test: the README's barrel export statement still lists exactly the 11 runtime names and names `FoundSymbol` as type-only (R12.4) [unit].
+    - _Requirements: 6.12, 12.4, 16.4, 16.14_
+
+  - [ ] 5.7 Group 5 checkpoint
+    - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:measured`, `pnpm perf` and `pnpm test:e2e` and report the outputs and test counts.
+    - Report the Page_Photo_Gate result (symbols read of 900, pages with at least 8 of 9, Wilson lower bound, decode median and p95), the informational 75% batch, the 12 MP perf median, and whether the TypeScript generator reproduced the spike within the Wilson interval.
+    - Verify the traceability table: every requirement id R1.1..R16.14 is in at least one sub-task and every property P1..P37 is in exactly one test sub-task. Verify `tools/deps.test.ts` still passes (no dependency was added in Group 5). Report any gap.
+    - Ensure all tests pass, ask the user if questions arise.
+    - _Requirements: 6.12, 7.13, 9.11, 16.13_
+
 ## Notes
 
 - No task is optional. Every property test is required.
@@ -318,6 +408,8 @@ Tag legend, as in design.md "Test configs":
 - Each sub-task cites the criterion ids it covers. The commit for a sub-task ticks its checkbox and names the task id.
 - The `wasm-url.ts` file is a placeholder until task 2.4 because the `zxing-wasm` dependency does not exist before task 2.1.
 - Property P8 has a Node half (task 1.9) and a Chromium half (a plain Playwright test in task 3.5). The 160-cell unit half of P4 is in task 1.5 and the property half is in task 1.6. P15 and P16 are carried by Playwright tests in task 2.6. The Property tag appears on the test that owns it in the traceability table.
+- Group 5 (user-approved amendment, added after Group 4; ticked tasks are unchanged). Task 5.1 and 5.2 keep `maxSymbols` 1 byte-for-byte backward compatible, so all earlier tests stay valid. P30 is one test file with a `decodeFrame` half in 5.1 and a `createFrameDecoder` half in 5.2. Task 5.4 runs under the policy read from `csp.ts`, so it passes before and after 5.5; the `worker-src 'self'` assertions are in 5.5. Tasks 2.4 and 2.6 (ticked) quote the first CSP string and are history, superseded by 5.5. The barrel runtime export list stays the 11 names; only types are added.
+- Group 5 gates: Page_Photo_Gate at Wilson lower bound 0.90 (spike 0.963), perf median at most 250 ms (spike 78 ms), informational 75% batch. The gate uses video-mode reader options as the spike did; the photo-mode path with several symbols is not gated (flagged to the app spec, whose Image_Intake uses photo mode).
 
 ## Task Dependency Graph
 
@@ -355,7 +447,14 @@ Tag legend, as in design.md "Test configs":
     { "id": 28, "tasks": ["4.4"] },
     { "id": 29, "tasks": ["4.5"] },
     { "id": 30, "tasks": ["4.6"] },
-    { "id": 31, "tasks": ["4.7"] }
+    { "id": 31, "tasks": ["4.7"] },
+    { "id": 32, "tasks": ["5.1"] },
+    { "id": 33, "tasks": ["5.2"] },
+    { "id": 34, "tasks": ["5.3"] },
+    { "id": 35, "tasks": ["5.4"] },
+    { "id": 36, "tasks": ["5.5"] },
+    { "id": 37, "tasks": ["5.6"] },
+    { "id": 38, "tasks": ["5.7"] }
   ]
 }
 ```
@@ -390,3 +489,43 @@ Tag legend, as in design.md "Test configs":
 | P24 | 2.2 | unit |
 | P25 | 4.1 | measured |
 | P26 | 1.3 | unit |
+| P27 | 5.1 | property (reduced runs) |
+| P28 | 5.1 | property (reduced runs) |
+| P29 | 5.1 | property |
+| P30 | 5.1 | property (`createFrameDecoder` half added in 5.2) |
+| P31 | 5.1 | property |
+| P32 | 5.1 | property |
+| P33 | 5.2 | property |
+| P34 | 5.2 | property |
+| P35 | 5.3 | property (small photo size) |
+| P36 | 5.3 | measured |
+| P37 | 5.4 | Playwright |
+
+P15 is also re-verified by 5.5 (amended policy string with `worker-src 'self'`) and P17 stays in 3.3 (the 11-name list is unchanged; the type export check is in 5.1).
+
+## Traceability: requirements added or amended by Group 5
+
+| Requirement | Sub-task |
+|---|---|
+| R5.4 (maxSymbols 1 only) | 5.1 |
+| R6.12 (Page_Photo_Gate) | 5.3, 5.6, 5.7 |
+| R6.13 (informational 75%) | 5.3 |
+| R7.3 (maxSymbols in the video options) | 5.2 |
+| R7.13 (12 MP perf) | 5.3, 5.7 |
+| R9.3, R9.5 (new string, worker-src) | 5.5 |
+| R9.11 (same-origin worker file) | 5.5, 5.7 |
+| R12.4 (type exports, 11 runtime names) | 5.1, 5.6 |
+| R16.1 (validation) | 5.1, 5.2 |
+| R16.2 (default unchanged) | 5.1, 5.4 |
+| R16.3 (reader options) | 5.1, 5.2 |
+| R16.4 (found_many shape) | 5.1, 5.6 |
+| R16.5 (exact set) | 5.1 |
+| R16.6 (skipped) | 5.1 |
+| R16.7 (zero-usable rule) | 5.1 |
+| R16.8 (fresh copies) | 5.1 |
+| R16.9 (order, duplicates) | 5.1 |
+| R16.10 (photo retry) | 5.1, 5.2 |
+| R16.11 (frame decoder) | 5.2 |
+| R16.12 (worker protocol) | 5.2, 5.4 |
+| R16.13 (Playwright composite) | 5.4, 5.7 |
+| R16.14 (app D2 cross-reference) | 5.6 |
