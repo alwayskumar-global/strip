@@ -266,7 +266,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 5.14**
     - _Requirements: 5.14_
 
-  - [ ] 5.7 P4: duplicates and foreign sessions
+  - [x] 5.7 P4: duplicates and foreign sessions
     - **Property 4** (design P4). numRuns 200. Interleaved duplicates and foreign-session Packets.
     - Tag: `Feature: codec, Property 4: duplicates and foreign Packets leave state unchanged and the result is correct`.
     - **Validates: Requirements 2.6, 5.3, 5.4**
