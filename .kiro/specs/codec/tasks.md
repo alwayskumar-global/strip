@@ -115,7 +115,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5_
 
-- [ ] 3. Group 3: Encoder, decoder (including the dense path), hash and barrel (no golden vectors, no calibrated numbers)
+- [x] 3. Group 3: Encoder, decoder (including the dense path), hash and barrel (no golden vectors, no calibrated numbers)
   - [x] 3.1 `hash.ts`
     - Implement `HashFn` and `sha256WebCrypto` using `globalThis.crypto.subtle`.
     - Unit tests: a 32-byte digest, known SHA-256 vectors including empty input, and both a sync and an async `HashFn` accepted.
@@ -182,7 +182,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Round trip with a mix of systematic, sparse and dense Packets (including a stream where some systematic Packets are dropped and recovery depends on dense rows), and a dense-only repair set with all systematic Packets present.
     - _Requirements: 1.8, 2.5, 2.6, 5.3, 5.4, 5.10, 5.12, 5.23, 7.7_
 
-  - [ ] 3.10 Group 3 checkpoint
+  - [x] 3.10 Group 3 checkpoint
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5, 9.4_
