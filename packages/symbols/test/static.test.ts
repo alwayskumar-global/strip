@@ -105,3 +105,12 @@ describe("import graph (R10.4, R12.3)", () => {
     expect(seen.size).toBeGreaterThan(5);
   });
 });
+describe("worker boundaries (R7.10, R10.4)", () => {
+  it("the decode worker has no asset-URL import, and frame-decoder.ts has no postMessage or self", () => {
+    const worker = read(`${root}/../../apps/strip/src/decode.worker.ts`);
+    expect(importSpecs(worker).filter((s) => s.endsWith("?url"))).toEqual([]);
+    const fd = read(`${root}/src/frame-decoder.ts`).replace(/\/\/.*$/gm, "");
+    expect(/\bpostMessage\b/.test(fd)).toBe(false);
+    expect(/\bself\b/.test(fd)).toBe(false);
+  });
+});

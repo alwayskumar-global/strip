@@ -187,7 +187,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the `src/index.ts` import graph does not reach `wasm-url.ts` (R10.4, R12.3) [unit].
     - _Requirements: 9.3, 9.4, 9.5, 9.7, 10.4, 12.3_
 
-  - [ ] 2.5 `decode.worker.ts` and `decode-client.ts`
+  - [x] 2.5 `decode.worker.ts` and `decode-client.ts`
     - `apps/strip/src/decode.worker.ts`: dedicated module worker owning the Frame_Decoder, no `?url` import, with the protocol of design section 6: `init { wasmUrl, maxWidth, maxHeight, mode }` answered by `ready` or `init-error { code, message }`; `frame { id, width, height, buffer }` (transferred) or `bitmap { id, bitmap }` (transferred, drawn to an `OffscreenCanvas` to get RGBA) answered by `outcome { id, outcome }` (`bytes` transferred) or `error { id, code, message }`.
     - `apps/strip/src/decode-client.ts`: main-thread wrapper with an idle flag. A frame is sent only when the worker has reported idle; otherwise the frame is dropped on the main thread without a copy. The `.wasm` URL comes from `symbols-wasm.ts` and is sent in `init`.
     - Test (client logic against a fake `Worker`): a frame submitted while not idle is dropped and nothing is posted; a frame is posted with its buffer in the transfer list; `outcome` and `error` messages mark idle again; `init-error` rejects the ready promise with the given code [unit].
