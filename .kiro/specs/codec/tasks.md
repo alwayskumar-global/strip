@@ -235,8 +235,8 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 2.2, 10.7_
 
   - [ ] 5.2 Calibrate and commit `overhead-table.json`
-    - Run `calibrate --write` with the frozen c, delta and D for K in {10, 25, 50, 100, 250, 500, 1000, 2000} with the committed seeds. Commit the table without the `provisional` flag, recording c, delta and D.
-    - Add the unit test that a fresh calibration for K in {10, 25, 50} (with the table's N_cal and D) equals the committed rows.
+    - Run `calibrate --write` with the frozen c, delta and D for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384} with the committed seeds. N per K: 1000 for K <= 100, 500 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; drop the K = 16384 row to N = 30 if it would take more than 15 minutes. Commit the table without the `provisional` flag, recording c, delta and D. Each committed row carries its N; the table has no top-level samples field. Report the wall-clock time of the calibration run.
+    - Add the unit test that a fresh calibration for K in {10, 25, 50} (using each row's N and the table's D) equals the committed rows.
     - Add a unit test that the table's recorded c, delta and D equal the frozen constants.
     - _Requirements: 10.2, 10.4, 10.5, 10.7_
 
@@ -327,7 +327,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 7.7, 9.2_
 
   - [ ] 5.17 P12: overhead interpolation
-    - **Property 12** (design P12). numRuns 300. `fc.integer(1, 5000)`: integer outputs, R >= 0, the table value at table K, linear in between within ceil rounding, clamped outside [10, 2000].
+    - **Property 12** (design P12). numRuns 300. `fc.integer(1, 20000)`: integer outputs, R >= 0, the table value at table K, linear in between within ceil rounding, clamped outside [10, 16384].
     - Tag: `Feature: codec, Property 12: overhead values interpolate linearly and clamp`.
     - **Validates: Requirements 10.3**
     - _Requirements: 10.3_
@@ -418,6 +418,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Cover usage of `encode` and `createDecoder`, a packet format summary, and the measured M1 to M3 table from `overhead-table.json` with N and Wilson bounds.
     - Document the dense repair rows: the index rule, the frozen D and (c, delta), the dense Block-set derivation, the `maxDenseRows` bound, the DENSE_STORE_FULL ignore reason and the dense `next()` cost measurements.
     - Include the no-fixed-overhead note and the non-goals.
+    - Large files placeholder section: state the cap behaviour above about K = 1000 (1.6x to 1.9x packets for late join), that maxGaussianBlocks is configurable, the Gaussian cost trade-off at the real block size, and the measured K = 1500 number (456 ms with maxGaussianBlocks = 2048, 1501 packets; 62 ms but 2805 packets with 1024). Fill in from the design's Large files note.
     - _Requirements: 2.2, 2.7, 2.8, 4.7, 5.20, 8.7, 10.2, 10.7_
 
   - [ ] 6.6 Final verification

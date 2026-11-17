@@ -246,17 +246,17 @@ Reference vector (design-time, to be re-derived by the independent Python genera
 **Table.** `packages/codec/src/overhead-table.json` holds integers only, so no floating point is involved:
 
 ```json
-{ "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "D": 4, "samples": {"K<=500": 2000, "K>=1000": 500},
+{ "formatVersion": 1, "c": [1, 10], "delta": [1, 2], "D": 4,
   "quantile": "0.995",
-  "rows": [ { "K": 10, "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
+  "rows": [ { "K": 10, "N": 1000, "fLatePermille": 0, "fColdPermille": 0, "R": 0 } ] }
 ```
 
-Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000}. `samples` records N_cal per K range. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`. `D` is an integer (0 = none) and records the dense period under which the table was calibrated. `calibrate.ts` takes `--D`; M1, M2, M3 and calibration run with the frozen D. The sweep covers (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}.
+Rows exist for K in {10, 25, 50, 100, 250, 500, 1000, 2000, 4000, 8000, 16384}. Each row carries N, the number of calibration trials (N_cal) behind that row; there is no top-level samples field. The values above are placeholders; the real ones come from `calibrate.ts`. The count for a factor is `ceilDiv(permille * K, 1000)`. `D` is an integer (0 = none) and records the dense period under which the table was calibrated. `calibrate.ts` takes `--D`; M1, M2, M3 and calibration run with the frozen D. The sweep covers (c, delta) in {(0.1, 0.5), (0.03, 0.5)} x D in {none, 8, 4, 3}.
 
 **`overhead.ts` API.** `fLatePermille(K)`, `fColdPermille(K)`, `lateCount(K) = ceilDiv(fLatePermille(K) * K, 1000)`, `coldLimit(K)` likewise with `fColdPermille`, and `R(K)`.
-For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K - K_lo), K_hi - K_lo)`. K <= 10 or K >= 2000 clamps to the end row. Interpolated permille values are ceil'd again by the consumer. `R(K)` is always an integer >= 0 and is the default `page()` repairCount.
+For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K - K_lo), K_hi - K_lo)`. K <= 10 or K >= 16384 clamps to the end row. Interpolated permille values are ceil'd again by the consumer. `R(K)` is always an integer >= 0 and is the default `page()` repairCount.
 
-**`perf/calibrate.ts`** is seeded and deterministic. It sits outside `src`, so it may import `src` modules by relative path. It uses the real encoder and decoder with `sha256WebCrypto`, and the codec's own xoshiro128** (`prng.ts`) seeded with a fixed constant mixed with K for all shuffles and loss draws (no `Math.random`). Payload bytes come from the same PRNG and vary per trial so session ids vary. `packetSize` 62 gives blockSize 32 for speed. For each K it runs N_cal trials (2000 for K <= 500, 500 for K = 1000 and 2000):
+**`perf/calibrate.ts`** is seeded and deterministic. It sits outside `src`, so it may import `src` modules by relative path. It uses the real encoder and decoder with `sha256WebCrypto`, and the codec's own xoshiro128** (`prng.ts`) seeded with a fixed constant mixed with K for all shuffles and loss draws (no `Math.random`). Payload bytes come from the same PRNG and vary per trial so session ids vary. `packetSize` 62 gives blockSize 32 for speed. For each K it runs N_cal trials (1000 for K <= 100, 500 for K = 250 and 500, 300 for K = 1000 and 2000, 100 for K >= 4000; the K = 16384 row drops to 30 if it would take more than 15 minutes, stated in that row's N):
 
 | Claim | Simulation | Recorded value |
 |---|---|---|
@@ -266,7 +266,7 @@ For K_lo < K < K_hi (adjacent rows), `v = ceilDiv(v_lo * (K_hi - K) + v_hi * (K 
 
 Calibration targets the 0.995 quantile while the properties assert 0.99. The margin absorbs sampling noise between the calibration sample and the fresh-seed assertion sample.
 If any quantile is Infinity, calibrate exits non-zero, prints the failing K and writes nothing. It prints the table and a Wilson lower bound for each cell, and writes the JSON only with an explicit `--write` flag.
-The suite test re-runs calibrate for K in {10, 25, 50} with the table's N_cal and fails on any difference from the committed rows (R10.5). Rows for K >= 100 are verified by running calibrate manually or in perf, not in the default suite (runtime).
+The suite test re-runs calibrate for K in {10, 25, 50} with each row's N and fails on any difference from the committed rows (R10.5). Rows for K >= 100 are verified by running calibrate manually or in perf, not in the default suite (runtime).
 
 M1, M2 and M3 use fresh seeds different from the calibration seed.
 
@@ -405,7 +405,7 @@ All use fast-check. Measured properties use fixed seeds.
 | P9 | For any push sequence, `solvedBlocks` and `distinctPackets` never decrease, `solvedBlocks <= totalBlocks`, and `complete` holds iff all Blocks are solved and the hash matched. With an injected wrong-digest HashFn the result is `HASH_MISMATCH` and `complete` stays false. | Random sequences with duplicates and foreign Packets; call-recording HashFn | 200 | R5.6, R5.10, R5.11 |
 | P10 | For any (sessionId, seq, K), `neighbors` is pure, returns d distinct values in [0, K) with d in [1, K], and a systematic seq i gives {i}. | Random triples | 500 | R2.3, R2.4, R6.2 |
 | P11 | For any arbitrary or mutated bytes, `push` never throws, a `rejected` status carries a valid ErrorCode, and the progress snapshot is unchanged. | Random bytes; mutated valid Packets | 500 | R7.7, R9.2 |
-| P12 | For any K in 1..5000, the overhead module returns integers with R >= 0, values equal to the table at table K, linear in between within ceil rounding, and clamped outside [10, 2000]. | `fc.integer(1, 5000)` | 300 | R10.3 |
+| P12 | For any K in 1..20000, the overhead module returns integers with R >= 0, values equal to the table at table K, linear in between within ceil rounding, and clamped outside [10, 16384]. | `fc.integer(1, 20000)` | 300 | R10.3 |
 | P13 | For any invalid option or payload shape, the public function throws `CodecError` (`INVALID_INPUT` or a more specific code) with no partial effect on existing Encoder or Decoder state. | Invalid options and shapes | 300 | R9.2, R9.3 |
 | P14 | Dense-or-sparse rule. For any K in 1..20000, any seq (including seq >= 2^32 - 50 and the wrap) and every D in {0, 3, 4, 8}, kind(seq) equals the index rule: systematic if seq < K, dense iff D > 0 and (seq-K) mod D == D-1, else sparse. | K, seq and D arbitraries with wrap-biased seq | 1000 | R2.2, R2.10 |
 | P15 | Hash-gated dense safety. For any decoder fed only dense and systematic Packets (random subsets, some dense payloads corrupted with a recomputed valid CRC), the Decoder either never completes or completes with bytes equal to the original, and never exposes bytes when the hash fails. | Subset and corruption arbitraries; blockSize 32 | 200 | R5.18 to R5.23, R5.10, R5.11 |
@@ -492,6 +492,14 @@ Estimated 0.3 to 1 s worst case per full elimination at U = 1024 and default str
 
 The 0.995 calibration quantile against the 0.99 assertion leaves a margin, but a rare false stop is still possible. Calibration at K = 1000 and 2000 is slow (minutes), and at K = 2000 the 1024 cap may delay completion. The table records N_cal. Recommended default: keep the margin, run K >= 1000 calibration offline with `--write`, and verify only K in {10, 25, 50} in the default suite.
 
+### Large files
+
+Above about K = 1000 (roughly 2.9 MB at the default 2923-byte block) the Gaussian cap (maxGaussianBlocks = 1024) makes a repair-only late join need about 1.6x to 1.9x the packets. Measured at K = 1250 to 2000, N = 20 per cell, blockSize 32: median 1.59x, 1.64x and 1.69x at K = 1250, 1500 and 2000, against 1.00x with the cap raised to 4096.
+
+The cap is configurable through maxGaussianBlocks. Raising it trades packets for Gaussian cost: the value work is about U^2 / 2 row XORs of stride bytes each (U = unsolved Blocks), which is seconds on a phone at the real block size.
+
+One measured number (informational, no budget, one run, real 2923-byte block, Apple M2 Pro, Node v25.9.0, includes SHA-256): K = 1500 repair-only late join takes 456 ms and 1501 packets with maxGaussianBlocks = 2048, versus 62 ms of compute but 2805 packets (1.87x) with the default 1024. Real files are expected to be small (K well below 1000), so the default stays 1024.
+
 ### Decisions
 
 - **Frozen format constants:** c = 1/10, delta = 1/2, D = 3 (every third repair packet is dense, 33%).
@@ -499,6 +507,7 @@ The 0.995 calibration quantile against the 0.99 assertion leaves a margin, but a
 - **Why:** dense rows cut R at 5% loss from 109 to 30 at K = 100 and from 471 to 86 at K = 500 versus none. D = 3 beat D = 4 on f_cold and R at every K at about +10% decode cost. c = 1/10 and 3/100 are within noise at D = 3 (summed f_cold 3.868 vs 3.850), so the default 1/10 was kept.
 - **Conditional check, D = 2 vs D = 3 (c = 1/10, delta = 1/2):** summed f_cold 3.592 vs 3.868 (-7.1%, not more than 10%), R at K = 500 72 vs 86 (-16%), 1 MiB repair-only decode 31 ms vs 28 ms (under 100 ms). The rule required more than 10% on both summed f_cold and R at K = 500, so D = 3 was kept.
 - **Consequence:** changing any of the three now changes sampled packets. Regenerate golden vectors and the overhead table, and bump the format version after a release.
+- Decision B (large files): keep maxGaussianBlocks = 1024; overhead table grid extended to K = 16384 so values above K = 2000 are measured, not clamped.
 
 ## Architecture
 
