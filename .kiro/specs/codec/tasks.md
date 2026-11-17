@@ -73,7 +73,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5, 9.4_
 
-- [ ] 2. Group 2: Generation (sparse and dense, parameterised, no golden vector JSON committed)
+- [x] 2. Group 2: Generation (sparse and dense, parameterised, no golden vector JSON committed)
   - [x] 2.1 `soliton.ts`
     - Implement BigInt fixed point (F = 2^48) with `isqrt`, `lnQ` and the table build, parameterised by (c, delta) as rational numbers. The table is cached by K.
     - Put `SOLITON_C = 1/10` and `SOLITON_DELTA = 1/2` in `constants.ts` as provisional defaults, marked PROVISIONAL until Group 5.
@@ -110,7 +110,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests that the set-XOR helper matches a naive byte XOR for a dense-sized set (about K/2 Blocks) and for a single-Block set.
     - _Requirements: 2.1, 2.3, 2.13_
 
-  - [ ] 2.6 Group 2 checkpoint
+  - [x] 2.6 Group 2 checkpoint
     - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the outputs.
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 6.5_
