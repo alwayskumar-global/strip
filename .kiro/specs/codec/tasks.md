@@ -103,7 +103,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Do NOT commit golden vector JSON in this group.
     - _Requirements: 2.2, 2.10, 2.11, 2.12, 6.2_
 
-  - [ ] 2.5 `xor.ts`, stride helpers and the dense XOR helper
+  - [x] 2.5 `xor.ts`, stride helpers and the dense XOR helper
     - Implement `xorInto` with `Uint32Array` views plus a byte tail, and stride helpers (`ceil(blockSize / 4) * 4`).
     - Implement the helper that XORs the Blocks of a given Block set into a destination, used for dense payloads (about K/2 Blocks) and sparse payloads alike.
     - Unit tests for unaligned blockSize values 16, 17, 18, 19 and 2923, compared against a naive byte XOR.
