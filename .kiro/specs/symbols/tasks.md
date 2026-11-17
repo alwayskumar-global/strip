@@ -287,9 +287,9 @@ Tag legend, as in design.md "Test configs":
     - Test g: the file is served from the same origin and linked from the app (R15.5) [Playwright].
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-  - [ ] 4.4 README and device-check template
+  - [x] 4.4 README and device-check template
     - `packages/symbols/README.md`: API, `QR_DEFAULTS` (v30, L, 1732, 4 ppm) with the statement that a symbol should fill no more than about 70% of the short side of the camera frame (R14.6), the Latin-1 mapping, the Strip_CSP and the host requirement that the policy is an HTTP header because `frame-ancestors` is ignored in a meta element (R9.6), the `@strip/symbols/wasm-url` subpath and how the app uses it, and the measured claims, each with N and method.
-    - `docs/spikes/symbols-device-check.md`: template with device, OS, camera, display or print, distance, symbol version, ppm, mode, result, time per decode, at least one mid-range phone, and the 5 decodes per second check with the assumed 5 to 10 times slowdown (R6.7, R7.12) [manual].
+    - `docs/device-test.md` (path chosen by the user; replaces `docs/spikes/symbols-device-check.md`): checklist with device, OS, camera, display or print, distance, symbol version, ppm, mode, result, time per decode, at least one mid-range phone, and the 5 decodes per second check with the assumed 5 to 10 times slowdown (R6.7, R7.12) [manual].
     - Test: the README contains the 70% statement and the CSP header-only statement [unit].
     - _Requirements: 6.7, 7.12, 9.6, 14.6_
 
