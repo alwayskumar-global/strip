@@ -1,0 +1,52 @@
+{
+ "images": [
+  {
+   "file": "img1-v3-blur0.pgm.gz",
+   "version": 3,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 0,
+   "expectedHex": "193023d16be9295e7878e4c09acdda37ee1babfef1be60e2a29adbaa688414a8db9f5d0dc84cda348213aaa45e52868bc82cedf2ef"
+  },
+  {
+   "file": "img2-v3-blur1.pgm.gz",
+   "version": 3,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 1,
+   "expectedHex": "fabd2786ece8f6f32f247836e70f52445e993d519405f8b4740dc7428f26f20831a950efdecbd9a65eee7bd13e1c7899c9965b3aaf"
+  },
+  {
+   "file": "img3-v4-blur0.pgm.gz",
+   "version": 4,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 0,
+   "expectedHex": "d03f0c65d2508d5195f9e08a6b946d405ed629fbe5a13dbdfb7454ebad8b0b7e685329556bc246dccbe7d4180214efd4454df10d7011763b7f3c992eb0c5cac4e7ee4559cb3d8f4de84e5d13cd5d"
+  },
+  {
+   "file": "img4-v4-blur1.pgm.gz",
+   "version": 4,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 1,
+   "expectedHex": "feefdd8cbdac35f0fc88ee92fdca706e77507654cba05eca8b9dd1e91ffb5b56835a82e3ade522d3198112bb6110a6a2b073e298f2b7ce16c7e42715fc52124574c1dc52209cf9928d21b81f0aeb"
+  },
+  {
+   "file": "img5-v5-blur0.pgm.gz",
+   "version": 5,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 0,
+   "expectedHex": "0c6c95f3c65e713379d3d4e79a28cad05d17531eb0fc546dd9c12ae3bf460d5dc1ddaeddc42369c079ce504bd311f10a0560459e2ed0324fb347c1ab481d54d13def3e8561419f2564323df6045d2f6bdaaea27fdb54a248281b279a289a969424ebe1651f3d5f0f7033"
+  },
+  {
+   "file": "img6-v5-blur1.pgm.gz",
+   "version": 5,
+   "ecc": "L",
+   "ppm": 4,
+   "blur": 1,
+   "expectedHex": "18f81c1a6af58c2a13458a9d854492fefbbf7dbc1e55a7cbd298b63c6c5032ec82f7ca780913f116ddf3fdd43b61f063e968b83f1f06e7c46683c845fe0e85bb56ca39eed1a00325bd2f39229c468ca73bb0680e41e6ea2e068f9008475bb19ead00ec813e64cf004c09"
+  }
+ ]
+}

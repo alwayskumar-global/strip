@@ -226,7 +226,7 @@ Tag legend, as in design.md "Test configs":
     - Test: each Degradation_Family hook changes the output relative to the identity case, and the identity case with no degradation reproduces the rendered symbol on the grey frame [unit].
     - _Requirements: 6.2, 6.3, 6.5_
 
-  - [ ] 3.2 Degraded fixtures and decode-from-fixture tests
+  - [x] 3.2 Degraded fixtures and decode-from-fixture tests
     - `test/fixtures/degraded/recipes.json`: `{ version, ecc, ppm, blur, seed, profile, sha256 }` per case, the sha256 of the expected payload regenerated from the seed. At most 6 gzipped PGM real images of small symbols (about 45 to 65 modules wide, 4 ppm), each under 50 KB gzipped, total under 300 KB.
     - Test: the size budget: no more than 6 PGM files, each at most 50 KB, total at most 300 KB (design Degraded-image fixtures) [unit].
     - Test: every recipe regenerates a payload whose sha256 matches, and the degraded frame decodes to that payload (the recipes are chosen from cells the spike reports as saturated, so they must decode) (R6.2, R6.3) [unit].

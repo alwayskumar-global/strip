@@ -5,7 +5,7 @@ declare module "node:fs" {
   export function readFileSync(path: string, encoding: "utf8"): string;
   export function readFileSync(path: string): Uint8Array;
   export function readdirSync(path: string): string[];
-  export function statSync(path: string): { isDirectory(): boolean };
+  export function statSync(path: string): { isDirectory(): boolean; size: number };
   export function writeFileSync(path: string, data: string): void;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
 }
@@ -20,3 +20,7 @@ declare const process: {
   stdout: { write(text: string): boolean };
 };
 declare function setTimeout(callback: () => void, ms: number): unknown;
+
+declare module "node:zlib" {
+  export function gunzipSync(data: Uint8Array): Uint8Array;
+}
