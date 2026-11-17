@@ -202,7 +202,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit test that the written JSON records the c, delta and D passed on the command line.
     - _Requirements: 10.4, 10.7_
 
-  - [ ] 4.3 `perf/dense-cost.ts`
+  - [x] 4.3 `perf/dense-cost.ts`
     - Measure the cost of one Dense_Packet from `next()` at K = 359 (1 MiB input, default packetSize): 3 discarded warm-ups, 20 timed runs, `process.hrtime.bigint`, report the median, p95, Node version and CPU model.
     - Measure and report the per-Dense_Packet cost at K = 11,500 (32 MiB payload) as informational output with no assertion.
     - Export the measurement functions so the sweep can call them.
