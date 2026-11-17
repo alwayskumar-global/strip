@@ -367,7 +367,7 @@ Tag legend, as in design.md "Test configs":
     - Run `pnpm test:measured` and `pnpm perf` and report the symbols-read rate, N, Wilson lower bound and decode times.
     - _Requirements: 6.12, 6.13, 7.13_
 
-  - [ ] 5.4 Playwright test for multi-symbol under the real CSP (through the worker)
+  - [x] 5.4 Playwright test for multi-symbol under the real CSP (through the worker)
     - Extend the existing harness (`apps/strip/e2e-harness`) with a composite-page page: several symbols (at least 6, mixed versions) drawn with `renderToCanvas` on one canvas in a grid, the canvas converted to an `ImageBitmap` or RGBA buffer, and decoded through the app decode worker and client with `maxSymbols` 9. The harness runs under the CSP string read from `apps/strip/src/csp.ts` (the policy of the moment, not a copy). Test file `apps/strip/e2e/symbols-multi.spec.ts`.
     - Test j: the worker returns a `found_many` outcome whose payload set equals every payload drawn; zero `securitypolicyviolation` events and zero console errors; the request log has only same-origin requests (R16.13, R9.8, R9.9) [Playwright].
     - Test j (default): the same canvas decoded through the worker with `maxSymbols` absent returns a single `found` (R16.2) [Playwright].

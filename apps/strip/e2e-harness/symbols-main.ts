@@ -33,6 +33,7 @@ function render(bytes: Uint8Array, ppm = 4): ImageData {
 const errInfo = (e: unknown) => ({ ok: false as const, code: e instanceof SymbolError ? e.code : "OTHER", message: e instanceof Error ? e.message : String(e) });
 
 let client: DecodeClient | undefined;
+let worker: Worker | undefined;
 const api = {
   wasmUrl: wasmSource.url,
   violations,
@@ -136,15 +137,53 @@ const api = {
     const t2 = performance.now();
     return { initMs: t1 - t0, firstDecodeMs: t2 - t1, found: r.kind === "found" };
   },
-  async startWorker(maxWidth = 640, maxHeight = 640) {
+  async startWorker(maxWidth = 640, maxHeight = 640, maxSymbols?: number) {
     try {
-      const worker = new Worker(new URL("../src/decode.worker.ts", import.meta.url), { type: "module" });
-      client = createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth, maxHeight });
+      worker?.terminate();
+      worker = new Worker(new URL("../src/decode.worker.ts", import.meta.url), { type: "module" });
+      client = createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth, maxHeight, ...(maxSymbols === undefined ? {} : { maxSymbols }) });
       await client.ready;
       return { ok: true as const };
     } catch (err) {
       return { ...errInfo(err), code: (err as { code?: string }).code ?? "OTHER" };
     }
+  },
+  /** Several symbols (hex payloads, smallest version each) drawn on one canvas, as a printed page would look to a camera. */
+  composite(hexes: string[], cols = 3, ppm = 4): ImageData {
+    const mats = hexes.map((h) => encodeSymbol(fromHex(h), {}));
+    const cell = (Math.max(...mats.map((m) => m.size)) + 8) * ppm;
+    const rows = Math.ceil(mats.length / cols);
+    const page = document.createElement("canvas");
+    page.width = cell * cols;
+    page.height = cell * rows;
+    const g = page.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, page.width, page.height);
+    mats.forEach((m, i) => {
+      const tile = document.createElement("canvas");
+      const tg = tile.getContext("2d") as CanvasRenderingContext2D;
+      const { width } = renderToCanvas(tg, m, { ppm });
+      g.drawImage(tile, (i % cols) * cell + Math.floor((cell - width) / 2), Math.floor(i / cols) * cell + Math.floor((cell - width) / 2));
+    });
+    return g.getImageData(0, 0, page.width, page.height);
+  },
+  /** Decode a composite page through the worker. */
+  async pageViaWorker(hexes: string[]) {
+    if (client === undefined) throw new Error("worker not started");
+    const f = api.composite(hexes);
+    const o = await client.submitFrame(f.width, f.height, f.data.buffer.slice(0) as ArrayBuffer);
+    if (o.kind === "found_many") return { kind: o.kind, hexes: o.symbols.map((s) => toHex(s.bytes)), skipped: o.skipped };
+    if (o.kind === "found") return { kind: o.kind, hexes: [toHex(o.bytes)], skipped: 0 };
+    return { kind: o.kind, hexes: [] as string[], skipped: 0 };
+  },
+  /** Offer two frames back to back: the second must be dropped by the client while the first is in flight. */
+  async busyDrop(hexes: string[]) {
+    if (client === undefined) throw new Error("worker not started");
+    const f = api.composite(hexes);
+    const first = client.submitFrame(f.width, f.height, f.data.buffer.slice(0) as ArrayBuffer);
+    const second = await client.submitFrame(f.width, f.height, f.data.buffer.slice(0) as ArrayBuffer);
+    const done = await first;
+    return { second: second.kind, first: done.kind };
   },
   /** Decode `count` distinct symbols through the worker, as fast as the worker allows. */
   async workerSequence(count: number) {
