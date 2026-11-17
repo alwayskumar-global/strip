@@ -66,7 +66,7 @@ Tag legend, as in design.md "Test configs":
     - Property P26: **Feature: symbols, Property 26: QR_CAPACITY_BY_VERSION equals the ISO_Capacity_Table in all 160 cells, QR_CAPACITY equals its version 40 row, the codec default stays 2953, and each codec packetSize up to capacity is accepted** [unit].
     - _Requirements: 1.2, 1.4, 1.10, 1.14, 14.1, 14.2, 14.3_
 
-  - [ ] 1.4 `bytes.ts` and P20
+  - [x] 1.4 `bytes.ts` and P20
     - `bytesToLatin1` (chunked, 8192) and `latin1TextEncoder` as in the design.
     - Test: all 256 byte values map to the same char codes and back [unit].
     - Test: empty input, input longer than the chunk size (for example 20000 bytes) [unit].
