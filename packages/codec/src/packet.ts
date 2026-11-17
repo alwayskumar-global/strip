@@ -13,6 +13,7 @@ import { CodecError } from "./errors.js";
 import { ceilDiv, OFFSETS, readHeader, writeHeader } from "./header.js";
 import {
   assertInteger,
+  assertObject,
   assertUint32,
   assertUint8Array,
   invalidInput,
@@ -40,6 +41,7 @@ export interface Limits {
 
 /** Serialize a Packet: 26-byte header, XOR payload, trailing CRC-32 over everything before it. */
 export function encodePacket(p: PacketFields): Uint8Array {
+  assertObject("packet", p);
   const sessionId = assertUint32("sessionId", p.sessionId);
   const totalLength = assertInteger("totalLength", p.totalLength, 1, 0xffffffff);
   const blockSize = assertInteger("blockSize", p.blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);

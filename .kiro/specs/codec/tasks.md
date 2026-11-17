@@ -332,7 +332,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - **Validates: Requirements 10.3**
     - _Requirements: 10.3_
 
-  - [ ] 5.18 P13: invalid input rejected without partial effect
+  - [x] 5.18 P13: invalid input rejected without partial effect
     - **Property 13** (design P13). numRuns 300. Invalid options and shapes throw `CodecError` (INVALID_INPUT or a more specific code) and leave existing Encoder and Decoder state unchanged. This validates public-API rejection behaviour.
     - Tag: `Feature: codec, Property 13: invalid input throws CodecError with no partial effect`.
     - **Validates: Requirements 9.2, 9.3**

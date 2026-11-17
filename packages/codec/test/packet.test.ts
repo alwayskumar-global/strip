@@ -46,6 +46,12 @@ describe("encodePacket layout (R3.1, R3.2)", () => {
     }
   });
 
+  it("regression (property 13 counterexample): a null or undefined packet is INVALID_INPUT, not a TypeError", () => {
+    for (const bad of [null, undefined, 5, "x", [1, 2]]) {
+      expect(codeOf(() => encodePacket(bad as never))).toBe("INVALID_INPUT");
+    }
+  });
+
   it("rejects invalid fields with INVALID_INPUT", () => {
     expect(codeOf(() => encodePacket(fields({ payload: new Uint8Array(15) })))).toBe("INVALID_INPUT");
     expect(codeOf(() => encodePacket(fields({ blockCount: 4 })))).toBe("INVALID_INPUT");
