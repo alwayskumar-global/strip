@@ -127,7 +127,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Unit tests for interpolation examples, clamping, the table K values, integer outputs, and that the table records c, delta and D (R10.7).
     - _Requirements: 10.1, 10.2, 10.3, 10.7_
 
-  - [ ] 3.3 `encoder.ts`
+  - [x] 3.3 `encoder.ts`
     - `encode()`: validate, hash, build the record, take the session id, build the strided buffer, check limits (PAYLOAD_TOO_LARGE, TOO_MANY_BLOCKS).
     - Packet payloads follow the dispatch rule: systematic copy for seq < K, XOR of the dense Block set for Dense_Packets, XOR of the sparse Block set otherwise.
     - `next()` is synchronous, goes 0..K-1 then K, K+1, ..., and wraps from 2^32 - 1 to K.
