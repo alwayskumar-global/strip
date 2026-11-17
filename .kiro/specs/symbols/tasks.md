@@ -218,7 +218,7 @@ Tag legend, as in design.md "Test configs":
     - _Requirements: 7.7, 7.8, 9.8, 9.10_
 
 - [ ] 3. Group 3: Degrader, fixtures, barrel, codec integration, remaining Playwright tests
-  - [ ] 3.1 Test helpers `prng.ts`, `wilson.ts`, `degrade.ts`
+  - [x] 3.1 Test helpers `prng.ts`, `wilson.ts`, `degrade.ts`
     - `test/helpers/prng.ts`: seeded mulberry32 and a seed-hash helper over (cell parameters, trial index). `test/helpers/wilson.ts`: Wilson 95% interval lower and upper bound. `test/helpers/degrade.ts`: seeded pure TypeScript port of the spike degrader (render with a 4-module quiet zone onto a grey frame 1.2 x the symbol size, rotation, projective warp, 2x2 supersampling, Gaussian blur, contrast compression, linear brightness gradient, Gaussian noise, clamp and round) with presets `TYPICAL` (rotation ±5°, perspective ±4%, contrast 70%, noise 4%, gradient ±10) and `HARSH` (±10°, ±8%, 50%, 8%, ±16), and parameter hooks for each Degradation_Family (rotation 0..359, perspective angle, blur sigma, brightness fraction plus noise, occlusion fraction as solid block or scattered, inverted polarity). No `Math.random`.
     - Test: Wilson bound at known values (for example 200/200 gives a lower bound near 0.981, 0/0 handled, 100/100 near 0.963) [unit].
     - Test: the PRNG is deterministic per seed and the seed hash differs across cell parameters [unit].
