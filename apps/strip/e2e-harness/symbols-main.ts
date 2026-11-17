@@ -86,9 +86,9 @@ const api = {
     return r.kind === "found" ? toHex(r.bytes) : `(${r.kind})`;
   },
   /** Packet -> qr -> inline SVG element in the page (innerHTML, CSP-safe), sized with width and height attributes. */
-  mountSvg(hex: string, ppm = 4) {
+  mountSvg(hex: string, ppm = 4, ecc: "L" | "M" | "Q" | "H" = "L", version?: number) {
     const box = document.getElementById("svgbox") as HTMLElement;
-    const m = encodeSymbol(fromHex(hex), { version: 30, ecc: "L" });
+    const m = encodeSymbol(fromHex(hex), version === undefined ? { ecc } : { ecc, version });
     box.innerHTML = renderToSvg(m, { ppm });
     const svg = box.querySelector("svg") as SVGSVGElement;
     svg.setAttribute("width", String((m.size + 8) * ppm));
@@ -106,6 +106,25 @@ const api = {
     g.drawImage(bmp, 0, 0);
     const r = await decodeFrame(g.getImageData(0, 0, bmp.width, bmp.height), { wasm: wasmSource });
     return r.kind === "found" ? toHex(r.bytes) : `(${r.kind})`;
+  },
+  /** Canvas raster of a symbol: size, FNV-1a hash of the RGBA bytes, and the count of pixels that are not exactly dark or light. */
+  canvasRaster(hex: string, ppm: number, quietZone: number, ecc: "L" | "M" | "Q" | "H") {
+    const m = encodeSymbol(fromHex(hex), { ecc });
+    const { width, height } = renderToCanvas(ctx, m, { ppm, quietZone });
+    const d = ctx.getImageData(0, 0, width, height).data;
+    let h = 2166136261;
+    let nonBinary = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = d[i] as number;
+      if (!((v === 0 || v === 255) && d[i + 1] === v && d[i + 2] === v && d[i + 3] === 255)) nonBinary++;
+    }
+    for (let i = 0; i < d.length; i++) h = Math.imul(h ^ (d[i] as number), 16777619) >>> 0;
+    return { width, height, hash: h, nonBinary };
+  },
+  /** The matrix the encoder produces in this browser, as a 0/1 string plus version and mask. */
+  matrixOf(hex: string, version: number, ecc: "L" | "M" | "Q" | "H") {
+    const m = encodeSymbol(fromHex(hex), { version, ecc });
+    return { version: m.version, mask: m.mask, size: m.size, modules: m.modules.map((x) => (x ? "1" : "0")).join("") };
   },
   /** Time compile plus instantiate of the reader wasm (fresh page, same origin, no cache). */
   async measureInit() {

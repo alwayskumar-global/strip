@@ -251,7 +251,7 @@ Tag legend, as in design.md "Test configs":
     - Test: the integration test file is outside `src` (R13.3) [unit].
     - _Requirements: 1.10, 13.1, 13.2, 13.3_
 
-  - [ ] 3.5 Playwright tests e and f (pixels, SVG raster, built wasm, Node-vs-Chromium parity)
+  - [x] 3.5 Playwright tests e and f (pixels, SVG raster, built wasm, Node-vs-Chromium parity)
     - Test e: canvas pixels in Chromium equal `matrixToImageData` for each of ppm 1..8 and quiet zone 4 and above, and every pixel is exactly the dark or light colour (no blended pixel) (R3.3, R3.4) [Playwright]. Property P6: **Feature: symbols, Property 6: for any matrix, ppm in 1..8 and quiet zone at least 4, canvas pixels in Chromium equal matrixToImageData and every pixel is exactly the dark or light colour** [Playwright], using fast-check with fixed seeds to generate the matrix inputs.
     - Test e (SVG): the SVG rasterised in Chromium decodes to the input bytes, completing P8 (R4.6) [Playwright].
     - Test e (wasm): the built `.wasm` URL is not `data:` and the file is at most 1,000,000 bytes (R7.8) [Playwright].
