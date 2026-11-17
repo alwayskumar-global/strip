@@ -4,7 +4,7 @@
 
 `@strip/symbols` turns one codec Packet (1..2953 bytes) into a QR symbol matrix, renders it to canvas or SVG, and decodes camera or image pixels back to the exact Packet bytes. It is pure TypeScript (lib ES2023, no DOM lib, no Node types, no fetch, no clock) and imports only types from `@strip/codec` (R1.11).
 
-The library pair is fixed (requirements, Resolved questions 1): `qr` 0.7.2 as encoder only, `zxing-wasm` 3.1.7 as reader only. Bytes reach `qr` through a Latin-1 mapping (one byte, one character code). Decoding reads `result.bytes` from zxing with no text decoding (R5.6).
+The library pair is fixed and approved (requirements, Resolved questions 1 and 7): `qr` 0.7.2 as encoder only, `zxing-wasm` 3.1.7 as reader only, both exact-pinned. Bytes reach `qr` through a Latin-1 mapping (one byte, one character code). Decoding reads `result.bytes` from zxing with no text decoding (R5.6).
 
 Default_Cell: version 30, ECC L, 1732-byte packet, 4 px/module (R14.1). It comes from a saturated synthetic grid (Risk 1).
 
@@ -16,7 +16,7 @@ Requirement ids are written R2.7 and so on. Evidence for numbers is `docs/spikes
 
 | File | Responsibility | May import |
 |---|---|---|
-| `index.ts` | Barrel, the only public surface (R12) | everything below except `qr-encoder`, `zxing-backend` |
+| `index.ts` | Barrel, the public runtime surface (R12.1); the only other public entry is the subpath export of `wasm-url.ts` | everything below except `qr-encoder`, `zxing-backend`, `wasm-url` |
 | `errors.ts` | `SYMBOL_ERROR_CODES` tuple, `SymbolErrorCode`, `SymbolError extends Error` with `readonly code` (R8.1) | none |
 | `validate.ts` | Hand-written validators that throw `SymbolError` INVALID_INPUT: `assertBytes`, `assertImageDataLike`, `assertEncodeOptions`, `assertRenderOptions`, `assertDecodeOptions`. No Zod in this package (R5.5, R8.3) | errors, capacity |
 | `capacity.ts` | `QR_CAPACITY`, `QR_CAPACITY_BY_VERSION` (40 x 4 table, defined here, R1.4), `QR_DEFAULTS` (R14.1), `smallestVersion(len, ecc)` | errors |
@@ -30,6 +30,7 @@ Requirement ids are written R2.7 and so on. Evidence for numbers is `docs/spikes
 | `fit-scale.ts` | `fitScale` (R3.5, R3.6, R14.5) | matrix, validate |
 | `decoder-backend.ts` | Internal `DecoderBackend` interface (R11.6) | none |
 | `zxing-backend.ts` | `createZxingBackend(runtime): DecoderBackend`. The only file importing `zxing-wasm` | decoder-backend, **`zxing-wasm/reader`** |
+| `wasm-url.ts` | The Wasm_URL_Module: `import readerWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url"; export { readerWasmUrl }`. Vite-only construct. Exposed as the subpath `@strip/symbols/wasm-url`. Not imported by `index.ts` or by any other src file, so the Node test graph never loads it (R10.4, R12.3) | none (a `?url` import) |
 | `wasm-runtime.ts` | Once-per-page init, memoised by source (R5.7, R5.8, R8.5) | zxing-backend, errors |
 | `decode.ts` | `decodeFrame` (R5) | wasm-runtime, validate, capacity |
 | `frame-decoder.ts` | `createFrameDecoder` (R7) | decode internals, wasm-runtime, validate |
@@ -53,6 +54,7 @@ graph TD
 |---|---|
 | `qr` only in `qr-encoder.ts`; `qr` decoder entry never imported (R11.5) | ESLint override + unit test grepping src |
 | `zxing-wasm/reader` only in `zxing-backend.ts`; never `zxing-wasm`, `zxing-wasm/full`, `zxing-wasm/writer` (R11.4) | same |
+| `?url` imports only in `wasm-url.ts`; no other src file imports `wasm-url.ts` or any `?url` module (R10.4) | ESLint `no-restricted-imports` with a pattern `*?url` for all src files except `wasm-url.ts`, plus a unit test grepping src |
 | `@strip/codec` only as `import type` (R1.11); `verbatimModuleSyntax` makes a value import visible | ESLint `consistent-type-imports` + test |
 | No `Math.random`, `Date.now`, `performance.now`, `fetch`, `document`, `window` in `src` (R10.1, R10.4) | existing purity ESLint rule |
 | Apps import `@strip/symbols` barrel only (via `exports`) | existing boundary rule |
@@ -63,26 +65,25 @@ Dependency direction is codec <- symbols <- app. The zxing types never leak thro
 
 | Path | Content |
 |---|---|
-| `package.json` | `exports: { ".": "./src/index.ts" }`, scripts `test`, `test:measured`, `perf`, `typecheck`; dependencies added only after user approval (R11.2, R11.3) |
+| `package.json` | `exports: { ".": "./src/index.ts", "./wasm-url": "./src/wasm-url.ts" }`, exactly these two entries (R12.3); scripts `test`, `test:measured`, `perf`, `typecheck`; dependencies `qr` 0.7.2 and `zxing-wasm` 3.1.7 exact-pinned (R11.1, approved), each added together with its docs/dependencies.md row (R11.3) |
 | `tsconfig.json`, `tsconfig.test.json` | lib ES2023, no DOM; test config may add Node types |
 | `vitest.config.ts`, `vitest.measured.config.ts`, `vitest.perf.config.ts` | split as in the codec package |
-| `test/*.test.ts` | unit and property tests, one file per area (`capacity`, `bytes`, `matrix`, `golden`, `canvas`, `svg`, `fit-scale`, `decode`, `frame-decoder`, `errors`, `barrel`, `codec-integration`, `notices`, `csp`) |
+| `test/*.test.ts` | unit and property tests, one file per area (`capacity`, `capacity-table`, `bytes`, `matrix`, `canvas`, `svg`, `fit-scale`, `decode`, `frame-decoder`, `errors`, `barrel`, `codec-integration`, `notices`, `csp`) |
 | `test/helpers/matrix-to-image.ts` | `matrixToImageData(matrix, ppm, quietZone): ImageDataLike` (see section 4) |
 | `test/helpers/degrade.ts` | Seeded degrader (section 8) |
-| `test/helpers/fake-backend.ts` | Controllable `DecoderBackend` for P13, P14 |
+| `test/helpers/fake-backend.ts` | Controllable `DecoderBackend` for P12, P13 |
 | `test/helpers/wilson.ts`, `test/helpers/prng.ts` | Wilson bound, seeded PRNG (mulberry32 in test code) |
-| `test/fixtures/golden/*.json` | Golden_Matrix files (R2.5) |
+| `test/fixtures/iso-capacity.ts` | The ISO_Capacity_Table: 40 versions x L, M, Q, H byte-mode capacities, typed from ISO/IEC 18004 (data only, R1.14) |
 | `test/fixtures/degraded/recipes.json`, `test/fixtures/degraded/*.pgm.gz` | Section 8 |
 | `perf/encode.perf.ts`, `perf/decode.perf.ts`, `perf/wasm-init.perf.ts`, `perf/measure.ts` | Perf_Method scripts (R7.5 to R7.7) |
 | `perf/measured/*.measured.ts` | N=200 Wilson runs and informational grids (R6) |
-| `scripts/gen-golden.py` | Golden generator (run once, committed with output) |
 | `README.md` | API, QR_DEFAULTS documentation (R14.6), real-device check template link |
 
 ### apps/strip (app side)
 
 | Path | Content |
 |---|---|
-| `src/symbols-wasm.ts` | `import readerWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url"`; exports `wasmSource = { kind: 'url', url: readerWasmUrl }` |
+| `src/symbols-wasm.ts` | `import { readerWasmUrl } from "@strip/symbols/wasm-url"`; exports `wasmSource = { kind: 'url', url: readerWasmUrl }`. The app has no `zxing-wasm` dependency (R11.8) |
 | `src/csp.ts` | The single source of the Strip_CSP string (R9.7); imported by the vite dev server config, the e2e harness server and the documented host config generator |
 | `src/decode.worker.ts` | Dedicated module worker owning the Frame_Decoder (section 6) |
 | `src/decode-client.ts` | Main-thread wrapper: idle flag, frame transfer, outcome callback |
@@ -90,7 +91,7 @@ Dependency direction is codec <- symbols <- app. The zxing types never leak thro
 | `e2e-harness/server.ts` | Static server for the built harness that sends the Strip_CSP header on every response including worker JS and `.wasm`, logs requests, and can start with an alternative CSP (negative test) |
 | `e2e-harness/index.html`, `main.ts` | Extended: encode, render, decode, round trip, worker path |
 | `e2e/symbols-*.spec.ts` | Playwright tests of section 8 |
-| `public/THIRD_PARTY_NOTICES` | Notices file (R15; static vs generated is an open decision) |
+| `public/THIRD_PARTY_NOTICES` | Static committed notices file, never generated (R15.1) |
 
 ## Byte mapping into qr (Latin-1 mechanism)
 
@@ -166,7 +167,7 @@ export function renderToCanvas(ctx: Canvas2DLike, m: SymbolMatrix, o: RenderOpti
 - `ppm` is an integer >= 1 (validator). Pixel width = `(size + 2 * quietZone) * ppm`. Quiet zone below 4 modules needs `allowShortQuietZone`, otherwise INVALID_INPUT (R2.3).
 - Draw: set `imageSmoothingEnabled = false`, fill the whole area with `light`, then one `fillRect` per dark module on integer coordinates `(qz + x) * ppm`. Merging horizontal runs into one `fillRect` per run is allowed and reduces calls; pixels are identical.
 - Missing `fillRect` or `imageSmoothingEnabled` in the context throws UNSUPPORTED_ENVIRONMENT (R8.5). The structural type means no DOM lib is needed (R3.2). If `canvas` is present its width and height are set before drawing.
-- No blended pixel exists because every edge is on an integer coordinate and smoothing is off (R3.3). P7 checks this in Chromium.
+- No blended pixel exists because every edge is on an integer coordinate and smoothing is off (R3.3). P6 checks this in Chromium.
 
 ### fitScale (R3.5, R3.6, R14.5)
 
@@ -201,7 +202,7 @@ Output shape (one line, no whitespace between tags):
 
 ### matrixToImageData (test support, not public)
 
-`matrixToImageData(matrix, ppm, quietZone): { width, height, data: Uint8ClampedArray }` produces the same pixels the canvas path draws (black on white, RGBA, alpha 255). It is a pure Node function used by tests and by R13.2. Per R12.1 the barrel's runtime export list is exact, so it is **not** exported from the barrel. It lives in `test/helpers/matrix-to-image.ts`. The app has no use for it, because it renders through canvas. P7 proves it equals the canvas output in Chromium, which ties the Node tests to the real renderer.
+`matrixToImageData(matrix, ppm, quietZone): { width, height, data: Uint8ClampedArray }` produces the same pixels the canvas path draws (black on white, RGBA, alpha 255). It is a pure Node function used by tests and by R13.2. Per R12.1 the barrel's runtime export list is exact, so it is **not** exported from the barrel. It lives in `test/helpers/matrix-to-image.ts`. The app has no use for it, because it renders through canvas. P6 proves it equals the canvas output in Chromium, which ties the Node tests to the real renderer.
 
 ## Wasm loading and self-hosting under Vite
 
@@ -215,18 +216,32 @@ export type WasmSource =
 ```
 
 ```ts
-// apps/strip/src/symbols-wasm.ts
+// packages/symbols/src/wasm-url.ts  (the Wasm_URL_Module; package subpath "@strip/symbols/wasm-url")
 import readerWasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
+export { readerWasmUrl };
+```
+
+```ts
+// apps/strip/src/symbols-wasm.ts
+import { readerWasmUrl } from "@strip/symbols/wasm-url";
 export const wasmSource = { kind: "url", url: readerWasmUrl } as const;
 ```
 
-This needs `zxing-wasm` to expose `./reader/zxing_reader.wasm` in its `exports` (verified against the zxing-wasm 3.1.7 `package.json` exports during the spike review; the first task re-checks it only when adding the pinned dependencies). Since `zxing-wasm` is a dependency of `@strip/symbols`, the app resolves it through pnpm; if strict hoisting blocks it, the task adds a re-export asset from `@strip/symbols`' `exports` field instead of adding a dependency to the app. A `vite/client` types reference supplies the `?url` module declaration in the app only.
+**Why a subpath and not the barrel.** The `?url` suffix is a Vite construct. Node, Vitest without the Vite asset plugin, and the pure src graph cannot resolve it. The barrel export list is exact (R12.1), and `index.ts` must stay loadable in Node. So `wasm-url.ts` is the single file with the `?url` import, nothing in src imports it, and `package.json` `exports` lists it as the only subpath next to `"."` (R12.3). The app imports that documented subpath, never a package internal path. Vite resolves `zxing-wasm/reader/zxing_reader.wasm` relative to `packages/symbols`, where `zxing-wasm` is a dependency, so `apps/strip` needs no `zxing-wasm` dependency (R11.8).
+
+**Types.** `packages/symbols/src/vite-url.d.ts` declares `module "*?url" { const url: string; export default url; }`, so the DOM-free typecheck passes without `vite/client`. The ESLint rule allows `?url` imports only in `wasm-url.ts` (R10.4).
+
+**Export shape.** The subpath exports one value, `readerWasmUrl: string`. The barrel does not re-export it. `WasmSource` accepts it as `{ kind: "url", url: readerWasmUrl }`.
+
+**Dependency on zxing-wasm exports.** `zxing-wasm` 3.1.7 must expose `./reader/zxing_reader.wasm` in its `exports` (checked against its `package.json` during the spike review; the task that adds the package re-checks it).
+
+**Build-and-load test (R9.10).** A Playwright test runs against the production Vite build of the app: it reads the URL from `@strip/symbols/wasm-url`, asserts it is a hashed same-origin `.wasm` asset and not a `data:` URL, decodes a symbol with it, and asserts `apps/strip/package.json` lists no `zxing-wasm`. **Contingency, not a default:** only if this test fails (for example, pnpm or Vite does not resolve the import from the symbols package), the task adds a direct `apps/strip` dependency on `zxing-wasm` 3.1.7 with the identical exact pin and its own docs/dependencies.md row in that same task, and R11.8 and R9.10 are amended in that task. The task records which path was taken.
 
 ### Vite behaviour and asserted facts
 
 | Fact | Effect | Test |
 |---|---|---|
-| `build.assetsInlineLimit` default is 4096 bytes; the file is 946,598 bytes | never inlined as a `data:` URL | built URL does not start with `data:` (R7.8, R9.1) |
+| `build.assetsInlineLimit` default is 4096 bytes; the file is 946,598 bytes | never inlined as a `data:` URL | built URL does not start with `data:` (R7.8, R9.10) |
 | Assets are emitted with a content hash under `build.assetsDir` (default `assets`) | cache-busting, same origin | URL matches `^/assets/zxing_reader-[\w-]+\.wasm$` |
 | Size budget | | built file <= 1,000,000 bytes (R7.8) |
 | Response `Content-Type: application/wasm` is required | see below | e2e asserts header on the `.wasm` response |
@@ -282,7 +297,7 @@ default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; ob
 | `img-src`, `style-src` unset | fall back to `default-src 'self'` |
 | `frame-ancestors` | ignored in a `<meta>`, so the header is the only delivery (R9.6) |
 
-A dedicated worker script is governed by the CSP in the HTTP response of the worker script itself, not by the page's policy. The host must send the Strip_CSP header on every response, including the worker JS and the `.wasm`. The harness server does so for all paths, and a test asserts it for the three resource types (P16).
+A dedicated worker script is governed by the CSP in the HTTP response of the worker script itself, not by the page's policy. The host must send the Strip_CSP header on every response, including the worker JS and the `.wasm`. The harness server does so for all paths, and a test asserts it for the three resource types (P15).
 
 ## Frame-decoder API
 
@@ -319,14 +334,14 @@ export function createFrameDecoder(options: FrameDecoderOptions): Promise<FrameD
 
 `decodeFrame` never returns `dropped`. `bytes` is a fresh copy of `result.bytes`. `version`, `ecc` and `corners` are filled when zxing reports them (R5.2). Validation (`assertImageDataLike`) runs first and throws INVALID_INPUT (R5.5).
 
-`createFrameDecoder` is async because it awaits the wasm init, so an init failure rejects with `SymbolError` UNSUPPORTED_ENVIRONMENT. This settles R7.1 and R5.7 (init is async, so a synchronous factory could not report it) and is not a requirement change. After creation, `submit` never waits for init.
+`createFrameDecoder` is async because it awaits the wasm init, so an init failure rejects with `SymbolError` UNSUPPORTED_ENVIRONMENT. This is stated in R7.1 and R5.7: init is async, so a synchronous factory could not report it. After creation, `submit` never waits for init.
 
 ### Behaviour
 
 | Rule | Design | Req |
 |---|---|---|
 | One decode in flight | `busy` flag set before the backend call, cleared in `finally` | R7.10 |
-| Drop while busy | `submit` while busy resolves `{ kind: "dropped" }` at once; the frame is **not** queued. Pending frames: zero. R7.11 allows at most one pending, and zero satisfies that more strictly | R7.11 |
+| Drop while busy | `submit` while busy resolves `{ kind: "dropped" }` at once; the frame is **not** queued. Pending frames: zero (R7.11) | R7.11 |
 | Staging buffer | One `Uint8ClampedArray(maxWidth * maxHeight * 4)` allocated at creation. When idle, `submit` copies the frame in with `set`, then decodes `staging.subarray(0, w * h * 4)` through a `{width, height, data}` view. The caller may reuse its buffer as soon as `submit` returns the Promise | R7.1 |
 | Oversize | `w > maxWidth` or `h > maxHeight` throws INVALID_INPUT (checked before the busy check, so an oversize frame never silently drops) | R7.4 |
 | Modes | below | R7.2, R7.3 |
@@ -339,13 +354,13 @@ Reader options (zxing `readBarcodes`):
 | `video` (default) | `{ formats: ["QRCode"], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: 1, binarizer: "LocalAverage", tryInvert: false }`. These are exactly the options the spike measured, and every budget was measured with them |
 | `photo` | the same plus `tryInvert: true`, and on a miss one retry with `binarizer: "GlobalHistogram"`. The benefit of the retry is measured in the implementation task and not gated (R7.3) |
 
-An `effort` option (R7.2) is not given a separate name in the API. `mode` is the effort knob; requirement R7.2's "effort option" is mapped to `mode` (see Requirement changes suggested, item 4).
+`mode` is the only effort knob (R7.2, R7.3).
 
 Known cost: `zxing-wasm` copies each frame into wasm memory per call. That allocation is outside our control, and our staging buffer removes only the JS-side allocation per frame. Results copy `result.bytes` out because the wasm heap view is not stable.
 
 Not in this package: camera access, video-to-canvas capture, frame scheduling, and the worker.
 
-### App side: decode worker (decision for R7.9 and Open question (d))
+### App side: decode worker (decision for R7.9 and Open question (c))
 
 **Decision: decode in a dedicated module worker.** The Frame_Decoder itself stays environment-agnostic (no `self`, no `postMessage`), so it also runs on the main thread in Node and in the Playwright CSP test.
 
@@ -354,7 +369,7 @@ Not in this package: camera access, video-to-canvas capture, frame scheduling, a
 const worker = new Worker(new URL("./decode.worker.ts", import.meta.url), { type: "module" });
 ```
 
-Vite emits the worker as a same-origin hashed file. `worker-src` falls back to `script-src 'self'`, so no `blob:` is needed (R9.5). The `.wasm` URL is resolved on the main thread (`symbols-wasm.ts`) and sent in the init message, because `?url` resolution happens at build time in that module.
+Vite emits the worker as a same-origin hashed file. `worker-src` falls back to `script-src 'self'`, so no `blob:` is needed (R9.5). The `.wasm` URL is resolved on the main thread from `@strip/symbols/wasm-url` (through `symbols-wasm.ts`) and sent in the init message, so the worker file needs no `?url` import.
 
 Message protocol:
 
@@ -368,7 +383,7 @@ Message protocol:
 
 The main thread sends a new frame only when the worker has reported idle, so frames are dropped on the main-thread side without copying. The worker's own Frame_Decoder still enforces one in flight, as a second line. Camera capture to a transferable `ImageBitmap` or `ArrayBuffer` is the app's job.
 
-R7.9 test: in Chromium, observe `PerformanceObserver({ type: "longtask" })` on the main thread while the worker decodes a sequence of frames, and assert no entry longer than 50 ms attributable to the decode (P22). If the worker cannot start under the Strip_CSP or fails the criterion, the recorded fallback is a main-thread decode with a yield per frame (Open question (d)).
+R7.9 test: in Chromium, observe `PerformanceObserver({ type: "longtask" })` on the main thread while the worker decodes a sequence of frames, and assert no entry longer than 50 ms attributable to the decode (P21). If the worker cannot start under the Strip_CSP or fails the criterion, the recorded fallback is a main-thread decode with a yield per frame (Open question (c)).
 
 ## Correctness properties
 
@@ -378,35 +393,34 @@ PBT fits the pure logic (encode, matrix, fitScale, validators, SVG text, frame-d
 
 | # | Property (for all ...) | Covers | Kind |
 |---|---|---|---|
-| P1 | For any byte array of 1..`QR_CAPACITY[ecc]` bytes and each ecc, encode, rasterise at 4 ppm, decode with the zxing backend returns identical bytes. Plus a unit case over all 256 byte values, and the 30-packet codec set. Runs decode in Node; run count per ecc is lower (N=100 total per ecc, because each decode costs ms) | R1.1, R1.7, R1.8, R5.1, R5.6 | PBT + unit |
+| P1 | For any byte array of 1..`QR_CAPACITY[ecc]` bytes and each ecc, encode, rasterise at 4 ppm, decode with the zxing backend returns identical bytes. This is the independent oracle for `qr` output (zxing-wasm decoding what `qr` encodes). Plus a unit case over all 256 byte values, and the 30-packet codec set. Runs decode in Node; run count per ecc is lower (N=100 total per ecc, because each decode costs ms) | R1.1, R1.7, R1.8, R5.1, R5.6 | PBT + unit |
 | P2 | For any bytes and options, two `encodeSymbol` calls return deep-equal matrices (same `mask`) | R1.9, R10.2 | PBT |
 | P3 | For any encoded matrix: `modules.length == size * size`, `size == 17 + 4 * version`; finder patterns, separators, timing row and column 6, the dark module, format information (BCH check, both copies) and, for version >= 7, version information (BCH check, both copies) match the spec | R2.1, R2.4, R14.4 | PBT |
-| P4 | For any ecc and for any version v (explicit option): a payload of capacity(v, ecc) bytes encodes at exactly v, and capacity + 1 throws `PACKET_TOO_LARGE`. With no version, `QR_CAPACITY[ecc]` bytes gives version 40 and +1 throws | R1.5, R1.6, R1.12 | PBT (over v, ecc) |
+| P4 | For any ecc and for any version v (explicit option), with capacity(v, ecc) taken from the ISO_Capacity_Table: a payload of that many bytes encodes at exactly v, and one byte more throws `PACKET_TOO_LARGE`; exhaustively over all 160 cells as well. With no version, `QR_CAPACITY[ecc]` bytes gives version 40 and +1 throws | R1.5, R1.6, R1.12, R1.14 | PBT (over v, ecc) + unit (all 160 cells) |
 | P5 | For any length and ecc, with no version option the matrix version equals the smallest v whose table capacity >= length | R1.2 | PBT |
-| P6 | For each committed golden input, the matrix equals the Python-generated golden (versions 1, 2, 7, 10, 20, 30, 40 at L, M, Q, H) | R2.5 | unit |
-| P7 | For any matrix, ppm in 1..8 and quiet zone >= 4: canvas pixels in Chromium equal `matrixToImageData`; every pixel is exactly the dark or light colour (no blended pixel) | R3.1, R3.3, R3.4 | PW |
-| P8 | For any matrix, quiet zone and box: `fitScale` returns the largest integer ppm with `modules * ppm <= min(box)`, width and height `= modules * ppm`; returns `{0,0,0}` and never throws when the box is smaller than `modules` | R3.5, R3.6, R14.5 | PBT |
-| P9 | For any matrix and options, the SVG string has no `<script`, `<style`, `style=`, `on\w+=`, `href`, `url(` or `data:`, has `shape-rendering="crispEdges"`, a viewBox in module units and mm width and height iff `mm` given. In Chromium the rasterised SVG decodes to the input bytes | R4.1 to R4.6 | PBT + PW |
-| P10 | For blank frames (any size, any uniform colour) and seeded noise frames, `decodeFrame` resolves `not_found` and never throws | R5.3, R8.2 | PBT |
-| P11 | For any frame-like value with wrong type, non-integer or non-positive size, wrong data type or wrong data length, `decodeFrame` and `FrameDecoder.submit` throw `SymbolError` INVALID_INPUT before the backend is called (fake backend call count 0) | R5.5, R8.3, R7.4 | PBT |
-| P12 | For any invalid input to any public function, the thrown error is a `SymbolError` whose `code` is in `SYMBOL_ERROR_CODES`; failure to load wasm gives `UNSUPPORTED_ENVIRONMENT`; a missing wasm source gives INVALID_INPUT | R8.1, R8.3, R8.5, R8.6, R5.8 | PBT + unit |
-| P13 | For any sequence of `submit` calls with a controllable fake backend: at most one backend call is in flight, a call made while one is in flight resolves `dropped` and never reaches the backend, and after the in-flight decode resolves the next `submit` runs | R7.10, R7.11 | PBT (model-based) |
-| P14 | For any sequence of frames up to the max size, the staging buffer object passed to the backend is the same `ArrayBuffer` every time, and mutating the caller's buffer after `submit` returns does not change the decode result | R7.1 | PBT |
-| P15 | Default_Cell (v30 L, 1732 bytes, 4 ppm, blur 1) under the Typical_Profile, N = 200 fresh seeds: Wilson lower bound >= 0.90 (screen) and >= 0.97 (print) | R6.8, R6.9 | measured |
-| P16 | The served `Content-Security-Policy` header equals the R9.3 string exactly on the page, the worker script and the `.wasm`; the page loads under it with zero `securitypolicyviolation` events and zero console errors; the `.wasm` response has `Content-Type: application/wasm` | R9.3 to R9.8 | PW + unit |
-| P17 | Every request recorded during the round trip goes to the harness origin; none to another origin (jsDelivr included); the `.wasm` is requested from the same origin | R9.1, R9.2, R9.9 | PW |
-| P18 | The runtime export list of the barrel equals exactly the 11 names of R12.1; no export type or value comes from `qr` or `zxing-wasm` | R12.1 to R12.3, R11.7 | unit |
-| P19 | For any file (seeded) encoded by the codec at `packetSize` 1732: each Packet through `encodeSymbol`, `matrixToImageData`, `decodeFrame` and the codec decoder completes with the identical file. Same through canvas and SVG in Chromium | R13.1, R13.2, R1.10 | PBT (small N) + PW |
-| P20 | `THIRD_PARTY_NOTICES` exists, lists `zxing-wasm` 3.1.7, zxing-cpp, the zxing-wasm glue and `qr` 0.7.2 each with licence text, contains the Apache-2.0 text, does not mention zint; is served same origin and linked | R15.1, R15.2, R15.4, R15.5 | unit + PW |
-| P21 | For any bytes in 0..255 repeated or mixed, `bytesToLatin1` then `latin1TextEncoder.encode` returns the input; each char code equals the byte | R1.13 | PBT |
-| P22 | While the worker decodes a frame sequence, the main thread records no longtask over 50 ms attributable to decoding | R7.9 | PW |
-| P23 | For any `ppm`, quiet zone < 4 without `allowShortQuietZone` throws INVALID_INPUT, with it renders | R2.3 | PBT |
-| P24 | Node and Chromium produce matrices identical to the golden files for every golden input | R10.3 | PW |
-| P25 | For any payload longer than 2953 bytes in a decoded symbol, the outcome is `not_strip_packet` (tested with a fake backend returning that many bytes) | R5.4 | unit |
-| P26 | Clean fixtures: every version 1..40 at each ecc, 4 and 8 ppm (320 fixtures) decode to the input | R6.1 | unit |
-| P27 | `QR_CAPACITY` and `QR_CAPACITY_BY_VERSION` equal the independent values (v30: 1732, 1370, 982, 742; v40: 2953, 2331, 1663, 1273); the codec default stays 2953; for each ecc and each codec packetSize in 46..65565 up to capacity, the size is accepted | R1.4, R1.10, R14.1 to R14.3 | unit |
+| P6 | For any matrix, ppm in 1..8 and quiet zone >= 4: canvas pixels in Chromium equal `matrixToImageData`; every pixel is exactly the dark or light colour (no blended pixel) | R3.1, R3.3, R3.4 | PW |
+| P7 | For any matrix, quiet zone and box: `fitScale` returns the largest integer ppm with `modules * ppm <= min(box)`, width and height `= modules * ppm`; returns `{0,0,0}` and never throws when the box is smaller than `modules` | R3.5, R3.6, R14.5 | PBT |
+| P8 | For any matrix and options, the SVG string has no `<script`, `<style`, `style=`, `on\w+=`, `href`, `url(` or `data:`, has `shape-rendering="crispEdges"`, a viewBox in module units and mm width and height iff `mm` given. In Chromium the rasterised SVG decodes to the input bytes | R4.1 to R4.6 | PBT + PW |
+| P9 | For blank frames (any size, any uniform colour) and seeded noise frames, `decodeFrame` resolves `not_found` and never throws | R5.3, R8.2 | PBT |
+| P10 | For any frame-like value with wrong type, non-integer or non-positive size, wrong data type or wrong data length, `decodeFrame` and `FrameDecoder.submit` throw `SymbolError` INVALID_INPUT before the backend is called (fake backend call count 0) | R5.5, R8.3, R7.4 | PBT |
+| P11 | For any invalid input to any public function, the thrown error is a `SymbolError` whose `code` is in `SYMBOL_ERROR_CODES`; failure to load wasm gives `UNSUPPORTED_ENVIRONMENT`; a missing wasm source gives INVALID_INPUT | R8.1, R8.3, R8.5, R8.6, R5.8 | PBT + unit |
+| P12 | For any sequence of `submit` calls with a controllable fake backend: at most one backend call is in flight, a call made while one is in flight resolves `dropped` and never reaches the backend, and after the in-flight decode resolves the next `submit` runs | R7.10, R7.11 | PBT (model-based) |
+| P13 | For any sequence of frames up to the max size, the staging buffer object passed to the backend is the same `ArrayBuffer` every time, and mutating the caller's buffer after `submit` returns does not change the decode result | R7.1 | PBT |
+| P14 | Default_Cell (v30 L, 1732 bytes, 4 ppm, blur 1) under the Typical_Profile, N = 200 fresh seeds: Wilson lower bound >= 0.90 (screen) and >= 0.97 (print) | R6.8, R6.9 | measured |
+| P15 | The served `Content-Security-Policy` header equals the R9.3 string exactly on the page, the worker script and the `.wasm`; the page loads under it with zero `securitypolicyviolation` events and zero console errors; the `.wasm` response has `Content-Type: application/wasm` | R9.3 to R9.8 | PW + unit |
+| P16 | Every request recorded during the round trip goes to the harness origin; none to another origin (jsDelivr included); the `.wasm` is requested from the same origin | R9.1, R9.2, R9.9 (including no script loaded or dynamically imported from another origin) | PW |
+| P17 | The runtime export list of the barrel equals exactly the 11 names of R12.1, and does not include `readerWasmUrl`; package `exports` has exactly the entries `.` and `./wasm-url`; no export type or value comes from `qr` or `zxing-wasm` | R12.1 to R12.3, R11.7 | unit |
+| P18 | For any file (seeded) encoded by the codec at `packetSize` 1732: each Packet through `encodeSymbol`, `matrixToImageData`, `decodeFrame` and the codec decoder completes with the identical file. Same through canvas and SVG in Chromium | R13.1, R13.2, R1.10 | PBT (small N) + PW |
+| P19 | The static committed `THIRD_PARTY_NOTICES` names `qr` 0.7.2 (MIT), `zxing-wasm` 3.1.7 (MIT), zxing-cpp (Apache-2.0) and the zxing-wasm C++ glue (Apache-2.0), each with version and licence, contains the Apache-2.0 text, does not mention zint; the served file is same origin and linked | R15.1, R15.2, R15.4, R15.5 | unit + PW |
+| P20 | For any bytes in 0..255 repeated or mixed, `bytesToLatin1` then `latin1TextEncoder.encode` returns the input; each char code equals the byte | R1.13 | PBT |
+| P21 | While the worker decodes a frame sequence, the main thread records no longtask over 50 ms attributable to decoding | R7.9 | PW |
+| P22 | For any `ppm`, quiet zone < 4 without `allowShortQuietZone` throws INVALID_INPUT, with it renders | R2.3 | PBT |
+| P23 | For any fixed set of inputs (seeded bytes at versions 1, 2, 7, 10, 20, 30, 40 and each ecc), the matrices encoded in Node equal the matrices encoded by the same encoder in Chromium (Node output compared with Chromium output, no stored files) | R10.3 | PW |
+| P24 | For any payload longer than 2953 bytes in a decoded symbol, the outcome is `not_strip_packet` (tested with a fake backend returning that many bytes) | R5.4 | unit |
+| P25 | Clean fixtures: every version 1..40 at each ecc, 4 and 8 ppm (320 fixtures) decode to the input | R6.1 | measured |
+| P26 | `QR_CAPACITY_BY_VERSION` equals the committed ISO_Capacity_Table in all 160 cells, and `QR_CAPACITY` equals its version 40 row (2953, 2331, 1663, 1273; v30: 1732, 1370, 982, 742); the codec default stays 2953; for each ecc and each codec packetSize in 46..65565 up to capacity, the size is accepted | R1.4, R1.10, R14.1 to R14.3, R1.14 | unit |
 
-P19's run count is small because each case encodes and decodes a whole file; each iteration uses a few KB of file.
+P18's run count is small because each case encodes and decodes a whole file; each iteration uses a few KB of file.
 
 ## Test strategy
 
@@ -414,8 +428,8 @@ P19's run count is small because each case encodes and decodes a whole file; eac
 
 | Command | Config | Runs |
 |---|---|---|
-| `pnpm test` | `vitest.config.ts` | unit and property tests incl. goldens, P1 with reduced runs, P2 to P14, P18, P20 (static part), P21 to P23, P25 to P27, the fixture-size budget. Fast (target under 60 s) |
-| `pnpm test:measured` | `vitest.measured.config.ts` | N = 200 Wilson runs (P15), clean 320 fixtures (P26), informational grids (Harsh_Profile, 3 ppm at blur 1, all Degradation_Families). Prints rate, N and Wilson bound per cell (R6.2 to R6.5, R6.10, R6.11) |
+| `pnpm test` | `vitest.config.ts` | unit and property tests incl. the ISO_Capacity_Table checks, P1 with reduced runs, P2 to P13, P17, P19 (static part), P20 to P22, P24 to P26, the fixture-size budget. Fast (target under 60 s) |
+| `pnpm test:measured` | `vitest.measured.config.ts` | N = 200 Wilson runs (P14, tagged [measured] for R6.8 and R6.9), clean 320 fixtures (P25, R6.1 tagged [measured]), informational grids (Harsh_Profile, 3 ppm at blur 1, all Degradation_Families). Prints rate, N and Wilson bound per cell (R6.2 to R6.5, R6.10, R6.11) |
 | `pnpm perf` | `vitest.perf.config.ts` | `perf/*.perf.ts`, Perf_Method (R7.5 to R7.7) |
 | `pnpm --filter @strip/app e2e` | Playwright | Section "Playwright" below |
 
@@ -423,9 +437,15 @@ P19's run count is small because each case encodes and decodes a whole file; eac
 
 fast-check with fixed seeds for CI, at least 100 runs each, tagged `Feature: symbols, Property N: <text>`. No `Math.random` in `src`; test helpers use a seeded mulberry32 PRNG. Each property is one test.
 
-### Golden matrices (R2.5, R2.6)
+### Independent oracle and capacity table (R1.7, R1.8, R1.14, R2.4)
 
-`scripts/gen-golden.py` is run once and committed with its JSON output and the Python implementation name and version, under the codec golden policy. The independent Python QR implementation is to be chosen and approved in the task as a tooling dependency question; **no dependency is added now**. The goldens cover versions 1, 2, 7, 10, 20, 30, 40 at L, M, Q, H, with fixed inputs (a seeded pattern, a full-capacity case, and a 0x00..0xFF sweep). If the Python implementation chooses a different mask for the same input, the golden records the mask and the test compares modules for that mask only by asking `qr` to use it (an `encodeSymbol` internal option, test-only); the mask itself is compared against the Python penalty choice, and any mismatch is reported and not worked around.
+There are no golden matrix files and no Python tooling. Correctness of `qr` output rests on three independent checks:
+
+1. **Decoder oracle.** zxing-wasm decodes what `qr` encodes, over all 256 byte values and random payloads at each ecc (P1, R1.7, R1.8).
+2. **Structure.** The matrix invariants of R2.4 (finder, separators, timing, dark module, format and version information with BCH checks) are asserted by P3.
+3. **Capacity table.** `test/fixtures/iso-capacity.ts` holds the ISO/IEC 18004 byte-mode capacities for all 40 versions x L, M, Q, H, typed from the standard (data only, no import from `src`). The test asserts it equals `QR_CAPACITY_BY_VERSION` (P26), and cross-checks it at runtime: for each of the 160 cells it calls `encodeSymbol` with an explicit version and a payload of exactly the table capacity (expects success at that version) and with capacity + 1 bytes (expects `SymbolError` PACKET_TOO_LARGE) (P4, R1.14). The `+1` rejection comes from the package's own check, which reads `QR_CAPACITY_BY_VERSION`; the success case at exactly capacity is what proves `qr` accepts that many bytes at that version.
+
+Node-vs-Chromium parity (P23, R10.3) compares matrices produced by the same encoder in the two environments; nothing is stored.
 
 ### Degraded-image fixtures
 
@@ -444,7 +464,7 @@ Expected baseline from the spike (the numbers are measurements, not guarantees):
 | 3 ppm at blur 1 | 0.26 to 0.45 (documented limit, reported, not asserted, R6.11) |
 | Harsh_Profile | informational only (R6.6, R6.10) |
 
-If the TypeScript degrader gives a rate that differs from the spike's Python-or-script numbers beyond the Wilson interval, stop and report instead of retuning (project rule on counterexamples).
+If the TypeScript degrader gives a rate that differs from the spike's script numbers beyond the Wilson interval, stop and report instead of retuning (project rule on counterexamples).
 
 ### Playwright (bundled Chromium, localhost harness)
 
@@ -455,15 +475,16 @@ If the TypeScript degrader gives a rate that differs from the spike's Python-or-
 | c | Request log: all requests same origin, none to jsDelivr, `.wasm` same origin; `Content-Type: application/wasm`; CSP header present on page, worker and wasm responses | R9.1, R9.2, R9.7, R9.9 |
 | d | Worker decode with a `longtask` observer; no entry over 50 ms | R7.9 |
 | e | Canvas and SVG rasterisation decode to the input; canvas pixels equal `matrixToImageData`; built `.wasm` URL is not `data:` and the file is <= 1,000,000 bytes | R3.3, R4.6, R7.8 |
-| f | Golden matrix parity Node vs Chromium | R10.3 |
+| f | Matrix parity: Node output equals Chromium output of the same encoder for the same inputs | R10.3 |
 | g | `THIRD_PARTY_NOTICES` served same origin and linked from the app | R15.5 |
+| i | Build-and-load: against the production Vite build, the URL from `@strip/symbols/wasm-url` is a hashed same-origin `.wasm` (not `data:`), the decoder loads it and decodes a symbol, and `apps/strip/package.json` has no `zxing-wasm`. Contingency only on failure: add the direct app dependency with the identical pin (see Wasm loading) | R9.10, R11.8 |
 | h | Codec integration through canvas and SVG | R13.1 |
 
 ### Perf scripts (R7.5 to R7.7)
 
 `perf/` scripts use the codec's Perf_Method: median of 20 runs after 3 warm-ups, `process.hrtime.bigint`, results printed with frame content, version and ECC stated. Assertions: decode median <= 20 ms at 1280x720 and <= 40 ms at 1920x1080; encode median <= 5 ms for 1732 bytes at v30 L; wasm init <= 500 ms.
 
-### Manual real-device check (R6.7, R7.12, Open questions b and e)
+### Manual real-device check (R6.7, R7.12, Open questions a and d)
 
 `docs/spikes/symbols-device-check.md` (template, created in the implementation tasks) records: device, OS, camera, display or print, distance, symbol version, ppm, mode, result, time per decode, on at least one mid-range phone.
 
@@ -484,27 +505,13 @@ The `.wasm` is a precache candidate for the service worker (about 1 MB, see Risk
 
 ## Risks
 
-1. **Defaults rest on synthetic images and a saturated grid.** The grid's upper limit was v30, all 90 cells scored 200/200, so the grid does not locate an optimum. The probe showed v40 also passes at 4 px/module. Moiré, glare, motion blur, rolling shutter and print defects are not modelled. Mitigation: `QR_DEFAULTS` is one object in `capacity.ts`; version and ECC are overrides (R14.2); the manual device test runs before release; Open question (a) stays open.
-2. **Wasm delivery chain.** The chain has several links that must all hold: MIME type `application/wasm`, the CSP header on every response including the worker and the `.wasm`, Vite asset handling (no inlining, hashed name), the roughly 1 MB service-worker precache, and Emscripten console noise on an instantiateStreaming fallback. Mitigation: the Playwright tests (a) to (e), the size and `data:` assertions, and the negative CSP test (b).
+1. **Defaults rest on synthetic images and a saturated grid.** The grid's upper limit was v30, all 90 cells scored 200/200, so the grid does not locate an optimum. The probe showed v40 also passes at 4 px/module. Moiré, glare, motion blur, rolling shutter and print defects are not modelled. Mitigation: `QR_DEFAULTS` is one object in `capacity.ts`; version and ECC are overrides (R14.2); the manual device test runs before release and can move the default. The decision to keep v30 is in Resolved questions 6.
+2. **Wasm delivery chain.** The chain has several links that must all hold: MIME type `application/wasm`, the CSP header on every response including the worker and the `.wasm`, Vite asset handling (no inlining, hashed name), the roughly 1 MB service-worker precache, and Emscripten console noise on an instantiateStreaming fallback. Mitigation: the Playwright tests (a) to (e) and (i), the size and `data:` assertions, and the negative CSP test (b).
 3. **Dependence on zxing-wasm behaviour we do not control.** Per-call copy into wasm memory, module-global state, the shallow overrides equality check, and version upgrades that change accuracy or size. Mitigation: the exact pin, the internal `DecoderBackend` interface (R11.6), the pinned real-image fixtures, and the budgets in the perf and measured suites.
 
-## Open decisions carried to the tasks phase
+## Review amendments applied
 
-- Independent Python QR implementation for the goldens: needs the user's approval as a tooling dependency (R2.6). No dependency is added by this design.
-- Whether the app ships `THIRD_PARTY_NOTICES` as a static file in `public/` or generates it from package metadata at build time (R15).
-- Open question (a): v30 versus v40 default. Left as in the requirements (keep v30, revisit after the device test).
-- Adding `qr` and `zxing-wasm` rows to `docs/dependencies.md` (R11.3) and the user's approval to add the dependencies (R11.2).
-- Whether pnpm resolves `zxing-wasm/reader/zxing_reader.wasm?url` from `apps/strip` without a direct app dependency (section 5).
-
-### Requirement changes suggested (not applied)
-
-1. **R7.11**: "hold no more than one pending frame" versus the rule "drop frames while a decode is in flight". The design holds zero pending frames, which satisfies R7.11 but is stricter. Suggest: "SHALL hold no pending frame (zero)".
-2. **R5.7 and R7.1**: `createFrameDecoder` is async in this design (returns `Promise<FrameDecoder>`) because init is async and init failure must surface as UNSUPPORTED_ENVIRONMENT. R7.1 reads as if the factory were synchronous. Suggest stating the Promise return.
-3. **R7.2**: "effort option" is not defined elsewhere. Suggest replacing with "mode option" or defining an explicit `effort` type; the design maps it to `mode`.
-4. **R6.1**: "320 deterministic fixtures" is 40 versions x 4 ECC levels x 2 ppm; matches. No change, but the clean-fixture test runs in the measured config, not in `pnpm test`, because it costs about 320 decodes; R6.1 is tagged [unit]. Suggest tagging it [measured] or accepting it in the default run.
-5. **R6.6 versus R6.8 and R6.9**: R6.6 says only fresh-seed rates for the Default_Cell are asserted, and R6.8 and R6.9 are tagged [property]; they run in the measured config for cost reasons. Suggest tagging them [measured].
-6. **R9.1**: "without dynamic import from a remote origin" is not testable beyond the request log (P17). Suggest folding it into R9.9.
-
+The user's decisions A to F (Resolved questions 6 and 7 in requirements.md) are applied to both documents: default cell kept at v30; dependencies approved with their docs rows added in the task that adds each package; no golden matrices (ISO_Capacity_Table and the zxing-wasm round trip are the oracle); `@strip/symbols/wasm-url` subpath; static THIRD_PARTY_NOTICES; and the five requirement changes (R7.11, R7.1 with R5.7, R7.2 and R7.3, R6.1 R6.8 R6.9 tags, R9.1 with R9.9).
 
 ## Architecture
 
