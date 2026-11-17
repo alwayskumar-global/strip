@@ -116,7 +116,7 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - _Requirements: 6.5_
 
 - [ ] 3. Group 3: Encoder, decoder (including the dense path), hash and barrel (no golden vectors, no calibrated numbers)
-  - [ ] 3.1 `hash.ts`
+  - [x] 3.1 `hash.ts`
     - Implement `HashFn` and `sha256WebCrypto` using `globalThis.crypto.subtle`.
     - Unit tests: a 32-byte digest, known SHA-256 vectors including empty input, and both a sync and an async `HashFn` accepted.
     - _Requirements: 1.9, 1.10_
