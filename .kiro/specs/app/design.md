@@ -8,16 +8,16 @@ Stack (R22.3, Resolved question 24):
 |---|---|---|
 | Bundler | Vite 8.3.8 (installed), Rolldown and Oxc inside | no plugin |
 | Language | TypeScript 6.0.3 strict, `jsx: "react-jsx"` in `apps/strip/tsconfig.json` | |
-| UI | `react`, `react-dom`, `@types/react`, `@types/react-dom`, exact-pinned, each with a `docs/dependencies.md` row in the task that adds it | version is Open question 7. Recommendation: 18.3.1, the Baseline's version. The design works with 18 or 19 |
+| UI | `react`, `react-dom`, `@types/react`, `@types/react-dom`, exact-pinned, each with a `docs/dependencies.md` row in the task that adds it | latest 19.x: `react` and `react-dom` at the same exact version, `@types/react` and `@types/react-dom` at 19.x exact versions, all chosen in the first dependency task and recorded in `docs/dependencies.md` (Resolved question 37). No jsdom |
 | JSX transform | Vite 8 itself, through its Oxc transform, no `@vitejs/plugin-react` | Confirmed against the installed `vite@8.3.8`: `transformWithOxc` on a `.tsx` snippet with no options emits `import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime"` (automatic runtime, `importSource` "react"). `vite.config.ts` still sets `oxc: { jsx: { runtime: "automatic", importSource: "react" } }` explicitly so a Vite default change cannot alter it. No Fast Refresh (that is the plugin's job); dev reloads the page on edit. Dev builds emit `react/jsx-dev-runtime` (Vite sets `development: true` outside production), which React ships |
 | Router, state | none: `src/app/router.ts` (history API) and `useSyncExternalStore` stores | R22.3 |
 | Service worker | one hand-written `sw.js`, generated from a template by `scripts/build-sw.mjs` | no Workbox, no plugin |
 | Tests | vitest 5.1.0 (node env, no DOM emulation), fast-check 4.10.2, `react-dom/server` `renderToStaticMarkup`, Playwright 1.65.1 | R22.7 |
 | Packages | stay DOM-free (no change). The app imports `@strip/codec`, `@strip/symbols` (barrels) and `@strip/symbols/wasm-url` (only from `src/workers/symbols-wasm.ts`) | R22.1 |
 
-Design decisions that differ from or add to the requirements are collected under "Requirement changes suggested (not applied)" at the end. Where this design makes a choice the requirements leave open, the section says "Decision".
+Design decisions that differ from or add to the requirements are listed in the Requirements document (Resolved questions 32 to 41); the approved review amendments are applied (see "Review amendments applied" at the end). Where this design makes a choice the requirements leave open, the section says "Decision".
 
-Verified or measured facts used here (this design session): Vite 8.3.8 JSX output (above); `packages/symbols` barrel runtime exports are the 11 names of its README; `csp.ts` today already contains `worker-src 'self'` (so `APP_CSP` equals `STRIP_CSP`, see section 9); `apps/strip/package.json` has `zod` 4.6.7 (unused by the app, R22.6); the existing worker protocol is in `src/decode-protocol.ts`. Items that cannot be confirmed before code exists are marked "verify in task N".
+Verified or measured facts used here (this design session): Vite 8.3.8 JSX output (above); `packages/symbols` barrel runtime exports are the 11 names of its README; `csp.ts` today already contains `worker-src 'self'` (so `APP_CSP` equals `STRIP_CSP`, see section 9); `apps/strip/package.json` has `zod` 4.6.7 (unused by the app, R22.6; the lead removes it and its `docs/dependencies.md` row in a separate commit, dependency D4); the codec barrel gains the export `pageRepairCount` (codec spec Group 8, dependency D5); the existing worker protocol is in `src/decode-protocol.ts`. Items that cannot be confirmed before code exists are marked "verify in task N".
 
 ## Module layout
 ### apps/strip
@@ -46,7 +46,7 @@ Verified or measured facts used here (this design session): Vite 8.3.8 JSX outpu
 | `main.tsx` | `createRoot(#root).render(<App/>)`; registers the service worker after `load` when `import.meta.env.PROD && !__STRIP_GALLERY__`; `StrictMode` in dev only | R14.3 |
 | `env.d.ts` | `declare const __STRIP_GALLERY__: boolean`, `/// <reference types="vite/client" />` | |
 | `csp.ts` | existing `STRIP_CSP`; adds `APP_CSP`, `SECURITY_HEADERS` (section 9) | R15.3 |
-| `limits.ts` | the only definitions of FILE_CAP_BYTES, PAPER_WARN_BYTES, PER_PAGE, FPS_MIN/MAX/DEFAULT, STEP_HISTORY, STALL_TIMEOUT_MS, NOTHING_TIMEOUT_MS, REPEAT_HOLD_MS, VERIFY_SLOW_MS (100), IMAGE_* , MAX_PAYLOAD (= FILE_CAP_BYTES + 422), REPO_URL | R9.1, R9.3 |
+| `limits.ts` | the only definitions of FILE_CAP_BYTES, PAPER_WARN_BYTES, PER_PAGE, FPS_MIN/MAX/DEFAULT, STEP_HISTORY, STALL_TIMEOUT_MS, NOTHING_TIMEOUT_MS, REPEAT_HOLD_MS, VERIFY_SLOW_MS (100), IMAGE_* (20 MB, 24 photos, long side 4096), MAX_PAYLOAD (= FILE_CAP_BYTES + 422), REPO_URL | R9.1, R9.3 |
 | `app/` | `App.tsx` (shell: `Chrome`, route switch, error boundary), `router.ts` (pure), `router-store.ts` (history store), `links.ts` (interception, pure), `focus.ts` (heading focus, scroll) | R8 |
 | `screens/` | containers, one per route: `HomeScreen`, `SendScreen`, `StreamScreen`, `PaperScreen`, `ReceiveScreen`, `AboutScreen` | R1 to R6 |
 | `components/` | presentational, pure functions of props, no service import: `Chrome` (page root and `header.nav`), `HomeView`, `SendView` (+ `FileCard`, `OutputChoices`), `StreamView`, `FullScreenView`, `PaperView` (+ `Sheet`, `Tile`), `ReceiveView` (the `ReceiveState` board: viewfinder, capture, `PhotoList`, stats, dock), `ErrorPanel` (the `ErrorState` board), `AboutView`, `Symbol`, `Ring`, `Icon` (the board's inline `svg.ico` paths) | R19.1, R19.12 |
@@ -54,7 +54,7 @@ Verified or measured facts used here (this design session): Vite 8.3.8 JSX outpu
 | `services/` | impure edges: `sample-file.ts`, `send-session.ts` (store), `file-intake.ts`, `paper-pages.ts`, `stream-player.ts`, `camera.ts`, `frame-loop.ts`, `image-intake.ts`, `receive-session.ts`, `download.ts`, `browser.ts` (print, fullscreen, clipboard, matchMedia, visibility), `diag.ts`, `sw-register.ts` | R9 to R12 |
 | `workers/` | `decode.worker.ts`, `decode-client.ts`, `decode-protocol.ts`, `transfer-list.ts`, `symbols-wasm.ts` (moved from `src/` with `smart_relocate` in task 2; update `e2e-harness/symbols-main.ts` and the `new URL(...)` strings by grep) | R12.17 |
 | `clock/index.ts` | the only module reading time: `Clock` interface (`now`, `setTimeout`, `clearTimeout`) and `systemClock` | R11.3, R22.2 |
-| `styles/` | `strip.css` (copy, byte-identical to `design/project/strip.css`), `fonts.css` (6 `@font-face`, `font-display: swap`, `url(/fonts/...)`), `strip-additions.css` (exactly the rules of R19.8 and R19.13: `.paper--off`, ring tick override, `.vf video, .vf canvas`, `#diag`) | R19.2, R19.8 |
+| `styles/` | `strip.css` (copy, byte-identical to `design/project/strip.css`), `fonts.css` (6 `@font-face`, `font-display: swap`, `url(/fonts/...)`), `strip-additions.css` (exactly the rules of R19.8: `.paper--off`, `.vf video, .vf canvas`, `#diag`; no ring rule) | R19.2, R19.8 |
 | `gallery/` | Harness_Build only: `index.tsx` (gallery router), `fixtures.ts` (board instance values), one file per board family | R20.7 |
 | `test-support/` | `fake-clock.ts`, `fake-encoder.ts`, `arbitraries.ts` (fast-check), never imported by non-test code | |
 
@@ -88,22 +88,22 @@ Presentational components take one view-model prop (`vm`) plus callback props, a
 | SendPaper, SendPaperLetter (+ M) | `/send/paper` | `PaperView` (`size` is CSS state: radios and `:has()`; gallery Letter board only presets `checked` and, to match the board DOM, nothing else) | `PaperScreen` | `toPaperVM(set, page, file): PaperVM` (tiles `{label:"P{p}·{ii}", of:"{g}/{T}", matrixIndex}`, "{p} / {N}", Print label) | `paper-pages`, `browser` |
 | Receive (desktop, `scan`), ReceiveState, ReceiveStates | `/receive`; ReceiveStates and phone cells gallery only | `ReceiveView` (`phase`: 10 values; `viewfinder?: ReactNode` slot, default is the board's `.vf__code`) | `ReceiveScreen` | `toReceiveVM(r: ReceiveUi, opts?: { pct?: number }): ReceiveVM` (tag, tagCls, head, msg, ring, stats, buttons, vf, hud, camState, banner, bar, photos, photoHint, howto). `opts.pct` is the fixture override for C6 | `camera`, `frame-loop`, `image-intake`, `receive-session`, `download` |
 | About, AboutMobile | `/about` | `AboutView` | `AboutScreen` | `toAboutVM()` (cap text from `limits.ts`) | none |
-| ErrorState; Errors, ErrorsAll (+ M) | inline in `ReceiveScreen` and `SendScreen`; galleries only | `ErrorPanel` (`kind`: 14 values, `vm: ErrorVM`) | `ReceiveScreen`, `SendScreen`, `App` error boundary | `toErrorVM(kind, ctx): ErrorVM` per Appendix F; `ctx` carries computed values (name, size, counts, sessions, hashes, solved, total, seen, ago) | `browser` (copy link, reload) |
+| ErrorState; Errors, ErrorsAll (+ M) | inline in `ReceiveScreen` and `SendScreen`; galleries only | `ErrorPanel` (`kind`: 14 values, `vm: ErrorVM`) | `ReceiveScreen`, `SendScreen`, `App` error boundary | `toErrorVM(kind, ctx): ErrorVM` per Appendix F; `ctx` carries computed values (name, size, counts, pages (`ceil((K + pageRepairCount(K)) / PER_PAGE)`, no encoding), sessions, hashes, solved, total, seen, ago) | `browser` (copy link, reload) |
 | Symbol | everywhere a code is drawn | `Symbol` (`matrix: SymbolMatrix`, `label`) | none | `symbolPath(matrix): string` (R19.12) | `encodeSymbol` in `paper-pages`, `stream-player`, `sample-file` |
 | Main (design system) | none | not converted, not shipped | | | |
 
-Rules: a presentational component never calls `Date`, `navigator`, `window`, a service or `@strip/*` at runtime; every string the board shows as text is in the VM, so `renderToStaticMarkup(vm)` equals the board's text. Interpolated `aria-label` strings are built in the VM (R19.10). Ring: `Ring` takes `{ pct, k }` and sets `--tick-on` and `--tick-off` through the React `style` prop (the only `style` use, R19.13); `ring.ts` has `arc(p)` (the board's formula, verbatim) and `tick(k)`.
+Rules: a presentational component never calls `Date`, `navigator`, `window`, a service or `@strip/*` at runtime; every string the board shows as text is in the VM, so `renderToStaticMarkup(vm)` equals the board's text. Interpolated `aria-label` strings are built in the VM (R19.10). Ring: `Ring` takes `{ pct, k }` and sets `stroke-dasharray` on `.ring__track` and `.ring__bar` through the React `style` prop on the SVG elements (the only `style` use, R19.13, Resolved question 34); `ring.ts` has `arc(p)` (the board's formula, verbatim) and `tick(k)`, which returns `{ on, off }` with `tick = 2π × 44 / K`, `on = tick × 0.723`, `off = tick × 0.277`, and nothing while K is unknown (the Stylesheet pattern then applies).
 
 ## Router
 `src/state/routes.ts` is the table; `src/app/router.ts` is pure (no `window`); `src/app/router-store.ts` binds it to `history`.
 
-| id | path | `document.title` (board `<title>`) | View | Guard |
+| id | path | `document.title` (board `<title>`, except Receive) | View | Guard |
 |---|---|---|---|---|
 | home | `/` | Strip home | `HomeScreen` | none |
 | send | `/send` | Send step 1 | `SendScreen` | none |
 | stream | `/send/screen` | Send on screen | `StreamScreen` | no Sender_File: `replace("/send")` (R3.2) |
 | paper | `/send/paper` | Send on paper | `PaperScreen` | no Sender_File: `replace("/send")` (R4.2) |
-| receive | `/receive` | Receive desktop | `ReceiveScreen` | none |
+| receive | `/receive` | Receive | `ReceiveScreen` | none |
 | about | `/about` | About and privacy | `AboutScreen` | none |
 | gallery | prefix `/__gallery/` | board title | `gallery/index.tsx` | exists only when `__STRIP_GALLERY__` |
 
@@ -137,7 +137,7 @@ How the design hrefs map (`href-map.ts`, used by the views, the DOM-parity gate 
 | `SendScreenFull.dc.html` (Full screen link) and `SendScreen.dc.html` (Exit full screen) | `/send/screen` | `a` with a click handler that calls `preventDefault` and sets the `fullScreen` state (deviation line, R7.12 pattern) |
 | `SendPaper.dc.html` | `/send/paper` | link |
 | `Receive.dc.html` | `/receive` | link, or a handler for actions that are not navigation (Appendix F) |
-| `About.dc.html` | `/about` (Error panel "About limits": `/about#limits`, R7.3) | link |
+| `About.dc.html` | `/about` (Error panel "About limits": `/about#limits`, R7.3; parity allowlist entry and deviation line) | link |
 | `#privacy` etc. | unchanged | hash scroll |
 | `/THIRD_PARTY_NOTICES`, REPO_URL | unchanged | browser navigation, `rel="noopener"` on REPO_URL |
 
@@ -175,7 +175,7 @@ export type SendEffect =
 | `chosen` | OUTPUT | `output` set | none |
 | `chosen` | CONTINUE | unchanged | NAVIGATE (`screen` to `/send/screen`, `paper` to `/send/paper`) |
 | `empty`, `toolarge`, `emptyfile` | OUTPUT, CONTINUE | unchanged | none (fieldset disabled, button disabled, R2.17) |
-The MIME fallback and name rules run in the `PICK` mapping: `mimeOf(type)` returns `application/octet-stream` for an empty type, a type over 127 bytes, or any byte above 0x7F (R2.14, P3). Derived text: loop seconds `round(K / FPS_DEFAULT)`, pages `ceil(T / PER_PAGE)`, paper warning when `size > PAPER_WARN_BYTES && output === "paper"` (R9.8). The Sender_File bytes live in `services/send-session.ts` (memory only, R16.5).
+The MIME fallback and name rules run in the `PICK` mapping: `mimeOf(type)` returns `application/octet-stream` for an empty type, a type over 127 bytes, or any byte above 0x7F (R2.14, P3). Derived text: loop seconds `round(T / FPS_DEFAULT)` (the real lap; deliberate deviation from the board's K / fps, Resolved question 39), pages `ceil(T / PER_PAGE)` with T = K + `pageRepairCount(K)` when computed for display without encoding, paper warning when `size > PAPER_WARN_BYTES && output === "paper"` (R9.8). The Sender_File bytes live in `services/send-session.ts` (memory only, R16.5).
 
 ### (b) Send on screen (`state/stream.ts`, `services/stream-player.ts`, R3, R11)
 ```ts
@@ -360,7 +360,7 @@ export function ofCamera(name: string | "API_MISSING"): Disposition;          //
 | Symbol INVALID_INPUT, PACKET_TOO_LARGE, ENCODE_FAILED, UNSUPPORTED_ENVIRONMENT | panel `internal` | panel `internal` |
 | Outcome `found`, `found_many` | push every Packet | push every Packet |
 | Outcome `not_found`, `not_strip_packet`, `dropped` | silent | panel `nocode` when no Packet at all |
-| Image unreadable, over 25 MB, 100 photos | | `imgread`, `imgbig`, `imgmany` |
+| Image unreadable, over 20 MB, 24 photos | | `imgread`, `imgbig`, `imgmany` |
 | Camera `NotAllowedError`, `SecurityError` | phase `denied` | |
 | Camera `NotFoundError`, `NotReadableError`, `OverconstrainedError`, `AbortError` | phase `nocam` | |
 | `navigator.mediaDevices` or `getUserMedia` missing | panel `camera` | |
@@ -370,7 +370,7 @@ export function ofCamera(name: string | "API_MISSING"): Disposition;          //
 
 ## Data flow of the pipelines
 Budget math (R9.6, Resolved question 10), packetSize 1732, blockSize 1702, Metadata_Record 75 bytes for "field-notes-2026.pdf" plus "application/pdf":
-| File | K = ceil((size + 75) / 1702) | T = K + R(K) | N = ceil(T / 9) | Lap at 8 fps |
+| File | K = ceil((size + 75) / 1702) | T = K + `pageRepairCount(K)` | N = ceil(T / 9) | Lap at 8 fps |
 |---|---|---|---|---|
 | 184 KB = 188,416 B | 111 | 149 | 17 | 18.6 s |
 | 64 KB = 65,536 B (PAPER_WARN_BYTES) | 39 | 67 | 8 | 8.4 s |
@@ -399,7 +399,7 @@ flowchart LR
 ```
 Frame loop: `video.requestVideoFrameCallback` where present, else `requestAnimationFrame`; each callback first checks `client.idle` and `document.visibilityState === "visible"`, then creates the bitmap, then re-checks `client.idle` and closes the bitmap when busy (drop without a copy, R12.3, R12.15). `createImageBitmap(video)` replaces the canvas draw of R12.2 (cheaper, same pixels). Camera constraints: `{ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }` (R12.1). Torch: `track.applyConstraints({ advanced: [{ torch: true }] })`, button only when `track.getCapabilities().torch` (R12.13). Tracks stop on `verify`, `done`, `failed`, `empty`, `nocam`, "Stop scanning", route leave, and when a late `getUserMedia` resolves after unmount (R12.14).
 
-Image resize policy (Decision; see suggested change on R9.12): `scaleOf(w, h) = max(w, h) > 4096 ? 4096 / max(w, h) : 1`. A frame is at most 4096 per side, hence at most 16,777,216 pixels, which satisfies both IMAGE_MAX_PIXELS and the 4096 x 4096 Frame_Decoder maximum. A 4000 x 3000 photo goes through unscaled. The first `createImageBitmap(file)` decodes the whole image to learn its size, so a 25 MB JPEG of 100 MP can fail; that failure is `imgread` (Risk 3).
+Image resize policy (R9.12): `scaleOf(w, h) = max(w, h) > IMAGE_LONG_SIDE ? IMAGE_LONG_SIDE / max(w, h) : 1`, so the long side is at most 4096 and the frame fits the 4096 x 4096 Frame_Decoder maximum. A 4000 x 3000 photo goes through unscaled. The first `createImageBitmap(file)` decodes the whole image to learn its size, so a 20 MB JPEG of 100 MP can fail; that failure is `imgread` (Risk 3).
 
 Memory: the symbols Frame_Decoder allocates `maxWidth * maxHeight * 4` bytes of staging at creation. One decoder at 4096 x 4096 would hold 67 MB for the whole session. Decision: two decoders in the single worker, created lazily and never together busy: camera 1920 x 1080 (8.3 MB, `video` mode, `maxSymbols` 9) and image 4096 x 4096 (67.1 MB, `photo` mode, `maxSymbols` 9). The image decoder is created at the first image and disposed on `release` (sent when the last photo row is removed or the route unmounts). The zxing wasm runtime is shared (it is memoised per page by `@strip/symbols`). Worst case resident: 8.3 + 67.1 MB staging, plus one `getImageData` of the image (67 MB), plus the wasm copy (67 MB), all transient.
 
@@ -510,7 +510,7 @@ Goal (R20): for each of 53 targets, the app must match the original board render
 
 Facts verified by the user in a scratch run (not re-verified in this session; task 10 re-verifies them and fails loudly if they change):
 - `support.js` bundles React; it `fetch()`es sibling `*.dc.html` files, so boards must be served over HTTP (`file://` fails with "URL scheme file is not supported").
-- The only external requests were the Google Fonts CSS (twice per board). The three CDN URLs (`react` 18.3.1, `react-dom` 18.3.1, `@babel/standalone` 7.29.0, with SRI) were not requested in any of the 5 boards rendered, so nothing is vendored. Open question 2 is moot and C44 is resolved.
+- The only external requests were the Google Fonts CSS (twice per board). The three CDN URLs (`react` 18.3.1, `react-dom` 18.3.1, `@babel/standalone` 7.29.0, with SRI) were not requested in any of the 5 boards rendered, so nothing is vendored; a test (`baseline-no-cdn`) fails if a Baseline page requests `cdn.jsdelivr.net`.
 - A board renders in about 0.7 s with no console errors. Ready means the `.strip` root exists (it never appears in the broken `file://` case) and no `.sc-has-error` element.
 - Route interception must exclude `127.0.0.1` (intercepting the local server broke rendering).
 
@@ -557,7 +557,7 @@ Fonts are the same six files on both sides, loaded and awaited before capture. A
 | Text | collapsed whitespace, trimmed, empty nodes dropped |
 | Attributes | sorted by name; dropped: `style`, `tabindex="-1"` on `h1`/`h2` (focus management), names starting `data-dc`, `hint-`, `sc-`, React-only `data-reactroot`; `class` is split into sorted tokens and the tokens `page--m`, `fs--m`, `paper--letter` are dropped (CSS or gallery state); `checked` and `disabled` are read from the DOM property; `href` goes through `href-map.ts` (baseline `X.dc.html` to the route) |
 | Codes | `svg.code` keeps its tag and attributes; its children keep tags and attributes, with `d` replaced by `"*"` |
-Compared per target with `expect(app).toEqual(base)`. Known deviations live in `parity-allowlist.ts` (target id, path, reason); the test fails on an unused allowlist entry. Expected entries: Error panel "About limits" (`/about#limits` against board `About.dc.html`, R7.3), Receive `.vf` camera element in the real route (gallery uses the board markup, so none), runtime `tabindex`.
+Compared per target with `expect(app).toEqual(base)`. Known deviations live in `parity-allowlist.ts` (target id, path, reason); the test fails on an unused allowlist entry. Expected entries: Error panel "About limits" (`/about#limits` against board `About.dc.html`, R7.3), Receive `.vf` camera element in the real route (gallery uses the board markup, so none), runtime `tabindex`; the class `paper--letter` of the SendPaperLetter board is a listed deviation (the app sets none, R4.14) and the normalizer ignores it.
 Wiring (`playwright.config.ts`): `webServer` entry `{ command: "pnpm build && pnpm build:gallery && node e2e-harness/app-server.mjs", url: "http://127.0.0.1:5182/", timeout: 300_000, reuseExistingServer: true }`; projects `harness` (existing specs, `http://127.0.0.1:5173` and 5180), `app` (e2e `app-*.spec.ts`, base 5182), `camera` (section 13), `fidelity-baseline` and `fidelity` (`testDir: "e2e-fidelity"`, `fullyParallel: true`, `workers: 4`, `use: { reducedMotion: "reduce", deviceScaleFactor: 1 }`).
 Time: 53 baseline renders (about 1 s each with the screenshot) and 53 app renders (about 0.7 s) plus 106 DOM walks; about 3 minutes serial, about 50 s with 4 workers. CI order: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm build:gallery`, `pnpm test:e2e`, `pnpm test:fidelity` (Chromium installed once by `pnpm exec playwright install chromium`); any non-zero exit fails the job and the artifacts above are uploaded.
 
@@ -602,7 +602,7 @@ Kinds: property = fast-check in `pnpm test`; unit = example or table test; Playw
 | P4 | For any name that breaks the codec name rules, the disposition is panel `internal` and the name is never altered | R9.7, R13.10 | property |
 | P5 | For any byte count, the "{n} KB" (ceil), "{n.n} MB" and "{bytes} bytes" strings parse back to the count within the stated rounding, and `{cap}` equals FILE_CAP_BYTES / 1024 | R2.3, R2.4, R2.11 | property |
 | P6 | For any bytes, the hash chip is the first 12 hex digits of SHA-256 in 3 groups of 4 and equals the first 6 bytes of the Metadata_Record hash | R2.4, R2.5 | property |
-| P7 | For the fixture at 16, 32, 64, 128, 184 and 256 KB, K and T equal the pinned values; loop seconds equal `round(K / 8)`; pages equal `ceil(T / 9)` | R9.6, R2.7 | unit |
+| P7 | For the fixture at 16, 32, 64, 128, 184 and 256 KB, K and T equal the pinned values; loop seconds equal `round(T / 8)`; pages equal `ceil(T / 9)` | R9.6, R2.7 | unit |
 | P8 | For any T of 1 or more, `paginate(T)` gives N = `ceil(T / 9)` pages, every sequence number once and in order, labels `P{p}·{ii}` and captions `{g}/{T}` unique and consistent | R10.4, R10.5 | property |
 | P9 | For any file and any permutation of the tile Packets, a codec Decoder completes with identical bytes | R10.12 | property |
 | P10 | For any Packet of an Encoder at packetSize 1732, `encodeSymbol(packet, { version: 30, ecc: "L" })` has size 137 and the drawn viewBox is 145 | R10.2, R10.3 | property |
@@ -619,15 +619,15 @@ Kinds: property = fast-check in `pnpm test`; unit = example or table test; Playw
 | P21 | For any event sequence (Packets of sessions A and B, duplicates, corrupt Packets, timers, user actions, stale generations), the phase is one of the 10 values, `done` holds only when the codec is complete, no download effect is emitted unless `complete`, `skipped` equals the camera SESSION_MISMATCH statuses, `repeat` is left on the next accepted Packet or REPEAT_HOLD_MS, and stale `gen` events change nothing | R5.6 to R5.11, R12.20 to R12.22, R13.7 | property |
 | P22 | For any outcome sequence on a fake clock, `stall` fires only after a first accepted Packet and 20 s without a new solved block, `nothing` only after 30 s without `found`, `stall` wins when both hold, and "Keep scanning" restarts both | R12.12, R7.7 | property |
 | P23 | For any Packet sequence, Packets seen, distinct, solved and percent never decrease within a session; percent is 100 only when complete; the Distinct meter value is `min(distinct, K)` | R12.7, R12.8, R5.17 | property |
-| P24 | For any percent 0 to 100, `arc(p)` is well formed, empty at 0 and the full circle at 100; for any K of 1 or more, `tick(k).period * K` equals the circumference and keeps the Stylesheet values while K is unknown | R7.6, R19.13 | property |
+| P24 | For any percent 0 to 100, `arc(p)` is well formed, empty at 0 and the full circle at 100; for any K of 1 or more, `tick(k).on + tick(k).off` times K equals the circumference, `on / off` equals 0.723 / 0.277, and nothing is set while K is unknown | R7.6, R19.13 | property |
 | P25 | For any pair of 32-bit session ids, Session_Short is 4 uppercase hex digits, or 8 for both when the two 4-digit forms in view are equal | Resolved question 19, R4.8 | property |
 | P26 | For any photo list and any removed row, the rebuilt Scan_Session equals a fresh session fed with the remaining sources in their original order | R12.24, R21.11 | property |
 | P27 | Every member of `ERROR_CODES` (10), `SYMBOL_ERROR_CODES` (4), the 4 Ignore_Reasons, the 5 outcome kinds, the image failures and the camera names has exactly one disposition per origin, and unreachable only for INCOMPLETE_DECODE | R13.1, R13.10, R7.8 | property |
 | P28 | For any error value (any code, any `message`), the rendered text of the resulting view contains no code string (`HASH_MISMATCH`, `PAYLOAD_TOO_LARGE`, ...) and no stack trace | R13.2, R13.8 | property |
-| P29 | For any width and height, `scaleOf` yields a frame with each side at most 4096 and so at most 16,777,216 pixels, keeps the aspect ratio within one pixel, and leaves smaller images unscaled; the 25 MB and 100-photo limits are checked before decoding | R9.9, R9.12 | property |
+| P29 | For any width and height, `scaleOf` yields a frame with each side at most 4096 and so at most 16,777,216 pixels, keeps the aspect ratio within one pixel, and leaves smaller images unscaled; the 20 MB and 24-photo limits are checked before decoding | R9.9, R9.12 | property |
 | P30 | For any interleaving of camera and image submits, at most one decode is in flight in the client, every busy submit resolves `dropped` with no post, and a bitmap is closed when dropped | R12.3, R12.10 | property |
 | P31 | For any decode outcome, the transfer list holds each Packet buffer exactly once | R12.5 | property |
-| P32 | For each of the 10 phases and any counters, `toReceiveVM` equals the Appendix D copy with computed numbers, and the meter, torch and photo hint appear in exactly the listed phases | R5.2, R5.5, R5.17, R5.18 | property |
+| P32 | For each of the 10 phases and any counters, `toReceiveVM` equals the Appendix D copy with computed numbers, and the meter appears whenever `total` is above 0 (with `data-addition` in the phases where the board has none), and the torch and photo hint appear in exactly the listed phases | R5.2, R5.5, R5.17, R5.18 | property |
 | P33 | For each of the 14 kinds and any context, `toErrorVM` equals the Appendix F copy, rows, icon and hrefs, with the constants substituted | R7.2 to R7.5, R7.10 to R7.15 | property |
 | P34 | For any photo list, the Photo_List count tag and row texts use the singular and plural forms of R5.16 and `{m}` equals the sum of the found counts | R5.16 | property |
 | P35 | For each of the 53 targets, the normalized DOM of the app equals the normalized DOM of the baseline except for allowlisted, justified deviations | R19.1, R20.1 | Playwright |
@@ -636,7 +636,7 @@ Kinds: property = fast-check in `pnpm test`; unit = example or table test; Playw
 | P38 | `src` and `dist/app` contain none of `{{`, `sc-for`, `sc-if`, `dc-import`, `x-dc`, `<helmet`, `data-dc-script`, `hint-`, `fonts.googleapis.com`, `codegen`, `support.js`, `.dc.html`, no `https?://` except REPO_URL and the SVG namespace, and no `sendBeacon`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `MediaRecorder`, `ImageCapture` | R19.4, R19.5, R19.7, R16.3, R16.6, R12.16 | unit |
 | P39 | `APP_CSP`, the `vercel.json` values and the headers served by Vite, preview and the harness servers are the same strings; rewrites do not match assets | R15.1 to R15.7 | unit, Playwright |
 | P40 | The production build has no gallery chunk, no sentinel, no `page--m` and no `fs--m`; the gallery build has them | R7.1, R19.11, R20.7 | unit |
-| P41 | Over every flow, the Request_Log (page, worker, service worker; all methods) holds only same-origin GET requests to paths in `sw-manifest.json`, none to Google Fonts, and no `.wasm` request from the page before the first receive action | R16.1, R16.2, R16.8, R18.4 | Playwright |
+| P41 | Over every flow, the Request_Log (page, worker, service worker; all methods) holds only same-origin GET requests to paths in `sw-manifest.json`, none to Google Fonts, and no page-initiated `.wasm` request (`request.serviceWorker() === null`) before the first receive action | R16.1, R16.2, R16.8, R18.4 | Playwright |
 | P42 | After the flows, `localStorage`, `sessionStorage`, cookies and IndexedDB are empty and every Cache API URL is in the precache list | R16.4, R16.7 | Playwright |
 | P43 | After first load and activation, offline reload of all six routes, a send and an image decode produce zero failed requests | R14.5, R14.6 | Playwright |
 | P44 | A new `sw.js` stays `waiting`; `sw.js` has no `skipWaiting`; the running page keeps its assets | R14.9 | Playwright |
@@ -664,14 +664,14 @@ Kinds: property = fast-check in `pnpm test`; unit = example or table test; Playw
 | Fidelity (`pnpm test:fidelity`) | section 10 | Playwright |
 Paper round trip (P47, R21.1): in the `app` project, with `deviceScaleFactor: 3` (a 145-module code is 58.7 mm, about 222 CSS px, 1.53 CSS px per module, so DPR 3 gives about 4.6 px per module and the long side 3,369 px stays under 4096; a second run at DPR 4 gives about 6.1 px per module and exercises the resize path, long side 4,492 scaled to 4096): choose a deterministic fixture on `/send`, continue to `/send/paper`, `emulateMedia({ media: "print" })`, screenshot each `article.paper` with `locator("article.paper").nth(i).screenshot()`, then on `/receive` add the PNGs one by one through the file input with `setInputFiles({ name, mimeType: "image/png", buffer })`, assert the progress grows, press "Download" and compare the downloaded bytes, name and MIME. A second run withholds the last sheet (R21.2).
 Screen round trip (P48, R21.3): project `camera` runs Chromium with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture=<abs>/test-results/fake-camera/cam.y4m`. A prerequisite project `camera-prep` (a `dependencies` entry) runs first: it opens `/send/screen?` in step mode with a small fixture (about 6 KB, K = 4, T about 14), presses Next once per Packet, screenshots `.stage__code`, decodes the PNG in the page with `createImageBitmap` and a canvas to raw RGBA, composes each into a 1920 x 1080 white frame with the symbol scaled by nearest neighbour to 700 px (4.8 px per module, 65% of the short side), converts to I420 in Node and writes the frames as a Y4M (`YUV4MPEG2 W1920 H1080 F5:1 Ip A1:1 C420jpeg`, each frame prefixed `FRAME\n`; the file is looped by Chromium) before the `camera` browser launches. The test then opens `/receive`, presses "Start camera" and expects `done` and a byte-identical download. Fallback if the file path proves unworkable (flag or loop semantics differ in the bundled Chromium; verify in task 14): the same frames are fed to the worker through the same `createDecodeClient` and `receive-session` code from `page.evaluate`, which still exercises worker, decoder and codec, but not `getUserMedia`, `createImageBitmap(video)` and `requestVideoFrameCallback`; that gap is then covered by the manual device check.
-Other e2e specifics: privacy test uses `context.on("request")` (includes service worker requests with `serviceWorkers: "allow"`) and the `__requests` log of the server; for P41 the `.wasm` check filters `request.serviceWorker() === null`, because the service worker precaches the `.wasm` at install (see suggested change on R18.4). Camera permission flows mock `navigator.mediaDevices.getUserMedia` through `addInitScript` (reject with `NotAllowedError`, `NotFoundError`, or remove `mediaDevices`) and reduced motion uses `emulateMedia({ reducedMotion: "reduce" })`. Print tests use `page.pdf({ preferCSSPageSize: true })` and read page count and `/MediaBox` from the PDF bytes with a small regex (Skia writes plain page dictionaries; verify in task 13). Installability (R14.8): the Chromium checks run through the manifest and service worker tests; the Android and iPhone install is manual (`docs/device-test.md` gains a receiver and sender section; the device check runs on three phones, R21.10). The Bundle_Report gate runs in `pnpm build`.
+Other e2e specifics: privacy test uses `context.on("request")` (includes service worker requests with `serviceWorkers: "allow"`) and the `__requests` log of the server; for P41 the `.wasm` check filters `request.serviceWorker() === null`, because the service worker precaches the `.wasm` at install (R18.4). Camera permission flows mock `navigator.mediaDevices.getUserMedia` through `addInitScript` (reject with `NotAllowedError`, `NotFoundError`, or remove `mediaDevices`) and reduced motion uses `emulateMedia({ reducedMotion: "reduce" })`. Print tests use `page.pdf({ preferCSSPageSize: true })` and read page count and `/MediaBox` from the PDF bytes with a small regex (Skia writes plain page dictionaries; verify in task 13). Installability (R14.8): the Chromium checks run through the manifest and service worker tests; the Android and iPhone install is manual (`docs/device-test.md` gains a receiver and sender section; the device check runs on three phones, R21.10). The Bundle_Report gate runs in `pnpm build`.
 Commands (CI order): `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm build` (app, `sw.js`, report); `pnpm --filter @strip/app build:gallery`; `pnpm test` again for `dist` tests; `pnpm test:e2e`; `pnpm test:fidelity`; `pnpm --filter @strip/app perf` for P52 and P53 (not a gate). Root `package.json` gains `"fidelity": "pnpm --filter @strip/app test:fidelity"`. No `.github` workflow exists today; adding one is outside this spec.
 
 ## Performance notes
 Bundle composition estimate (gzip, not measured; the Bundle_Report decides):
 | Part | Estimate |
 |---|---|
-| react and react-dom (18.3.1 production) | about 45 KB |
+| react and react-dom (19.x production) | about 45 KB (estimate; the first Bundle_Report measures it) |
 | codec (`encode`, `createDecoder`, `decodePacket`, `sha256WebCrypto`) | about 5 to 8 KB |
 | symbols main-thread part (`encodeSymbol`, `qr` encoder) | about 10 to 15 KB if the barrel tree-shakes; up to about 50 KB more if the `zxing-wasm` JS glue reaches the main chunk through `createFrameDecoder`. Check in task 1; if present, ask for `sideEffects: false` in `packages/symbols` (outside this spec) |
 | app code (views, state, services, router) | about 20 to 30 KB |
@@ -688,26 +688,11 @@ The Baseline is only as stable as `support.js` (188,749 bytes, a design-tool run
 ### Risk 2: camera and real-device behaviour unverified, and the fake-camera e2e
 No real phone has decoded a screen or paper symbol from this app; every number is synthetic (symbols README). `getUserMedia`, `requestVideoFrameCallback`, torch, orientation, autofocus and iOS Safari behaviour are untested by automation. The Chromium fake-device path (`--use-file-for-fake-video-capture`) may behave differently from a real camera (looping, frame rate, pixel format), and if it is unworkable the fallback covers the worker and codec path only. Mitigations: `#diag` readout on the production build for the device check, `docs/device-test.md` on three phones (R21.10), screen modules at 3.86 CSS px (Medium) reported by P54, and a documented place to move the Default_Cell if a phone fails.
 ### Risk 3: memory, time and print behaviour
-(a) 16.8 MP images: the first `createImageBitmap(file)` decodes the full image to learn its size, so a 25 MB JPEG of 100 MP may exceed memory and shows `imgread`; the 4096 x 4096 decoder holds 67 MB staging plus a 67 MB `getImageData` plus the wasm copy, which a low-memory phone may not survive (mitigation: the image decoder is lazy and released; exact-size per-image decoders are the fallback). (b) A 256 KB send builds 200 symbols and 23 sheets with about 13 MB of path text in the document (estimate); print of 23 pages renders 207 SVGs with about 4,700 subpaths each, which may be slow on a low-end laptop. (c) Named `@page a4` and `@page letter`, `page:` assignment and `:has(#paper-letter:checked)` are Chromium-tested here; Safari and Firefox support differs (named pages are newer in Safari and Firefox), so Letter on those browsers may print on A4 or fall back to the printer default. The Vite CSS minifier must keep `@page`, `@container page` and `:has()`: a built-CSS test asserts the four strings and the fidelity gate would show a layout change.
+(a) Large images: the first `createImageBitmap(file)` decodes the full image to learn its size, so a 20 MB JPEG of 100 MP may exceed memory and shows `imgread`; the 4096 x 4096 decoder holds 67 MB staging plus a 67 MB `getImageData` plus the wasm copy, which a low-memory phone may not survive (mitigation: the image decoder is lazy and released; exact-size per-image decoders are the fallback). (b) A 256 KB send builds 200 symbols and 23 sheets with about 13 MB of path text in the document (estimate); print of 23 pages renders 207 SVGs with about 4,700 subpaths each, which may be slow on a low-end laptop. (c) Named `@page a4` and `@page letter`, `page:` assignment and `:has(#paper-letter:checked)` are Chromium-tested here; Safari and Firefox support differs (named pages are newer in Safari and Firefox), so Letter on those browsers may print on A4 or fall back to the printer default. The Vite CSS minifier must keep `@page`, `@container page` and `:has()`: a built-CSS test asserts the four strings and the fidelity gate would show a layout change.
 
-## Requirement changes suggested (not applied)
-1. Open question 2 is moot and C44 is resolved: the three Runtime_Libs are not requested in any board rendered. Remove the Runtime_Libs glossary entry, the vendoring wording of R20.2, P1's "vendor decision", R22.3's mention, the Open question 2 text and C44; keep a test that fails if `support.js` requests `cdn.jsdelivr.net`.
-2. R15.1, R15.3, the Glossary entry App_CSP and C16: `STRIP_CSP` in `src/csp.ts` already contains `worker-src 'self'` (dependency D3 changed it), so App_CSP equals Strip_CSP. State that `APP_CSP = STRIP_CSP` and drop "with `worker-src 'self'` inserted".
-3. R9.12 and IMAGE_MAX_PIXELS: a pixel-count rule lets a 5000 x 3000 image (15 MP) through, wider than the 4096-pixel Frame_Decoder maximum. Replace with "scale so the long side is at most 4096"; the pixel limit then follows.
-4. R18.4 against R14.4 and Resolved question 25: the service worker precaches the `.wasm` at install, which is a request on first visit to `/`. Restrict R18.4 to page-initiated requests (`request.serviceWorker() === null`), or state that the install precache is excluded.
-5. R12.24, R12.23 and R12.25: define the retained set as accepted Packets only (duplicates and foreign Packets are not kept), and say what an image from another session does: no Photo_List row, Packets held pending, "Start over" adopts them, "Keep current file" drops them.
-6. R5.17: the meter shows only in `nocam`, `scan`, `repeat` and `dup`, so photos added in `empty` change the ring and stats but not the meter. Consider showing the meter whenever `total > 0`.
-7. Appendix D `failed` "Scan again: go to `scan`": the camera is released on `failed`, so the request is asynchronous. Say "scan with `cameraPending`, then `denied` or `nocam` on failure", and say that panel `hash` "Scan again" goes to `empty`.
-8. R8.7 and Appendix A: the title "Receive desktop" is a board name. Use "Receive".
-9. R7.3 and Appendix F: the board's "About limits" `href` is `About.dc.html` (no fragment) while the requirement says `/about#limits`; list it as the DOM-parity allowlist entry and a deviation line.
-10. R4.14 and the baseline Letter board: `SendPaperLetter` sets the class `paper--letter` on the sheet while the app sets none (the `:has()` rule does the work). List the class as a deviation in the task report; the parity normalizer ignores it.
-11. R20.1 and R20.3: Receive_Phase and Error_Panel targets render `ReceiveState.dc.html` and `ErrorState.dc.html` through server-synthesized wrapper boards (no file under `design/` changes). Also state that mobile heights come from `canvas.json` as the minimum viewport height with `fullPage` capture (the `hint-size` of `SendScreenMobile.dc.html` says 1450, `canvas.json` says 1750).
-12. R14.9: add that `activate` calls `clients.claim()` so the first visit is controlled; it cannot swap assets under a running page because activation of an update waits for all windows to close.
-13. R15.5 and R15.6: place `vercel.json` at `apps/strip/vercel.json` (Vercel project Root Directory), with `outputDirectory` `dist/app`.
-14. R12.2: the Frame_Loop uses `createImageBitmap(video, resize)` and no canvas; reword "draw to a canvas" to "capture a bitmap".
-15. R22.6 and `docs/dependencies.md`: `apps/strip/package.json` still lists `zod` 4.6.7 although the app must not import it; remove the dependency and its row, or record why it stays.
-16. R14.1 and R14.8: iPhone install uses an `apple-touch-icon`; add a 180 px PNG and `<link rel="apple-touch-icon">`.
-17. R18.1: name the Bundle_Report path `apps/strip/bundle-report.json` and gitignore it.
+## Review amendments applied
+The 17 suggested review changes were approved and are applied to this design and to the Requirements document (Resolved question 41).
+The approved answers to the open questions are Resolved questions 32 to 40 of the Requirements document; the codec gains `pageRepairCount` (codec spec, Group 8).
 
 ## Architecture
 See Overview, Module layout (layering rules and the gallery exclusion mechanism), Router and State machines. The data-flow diagrams are under "Data flow of the pipelines".
