@@ -1,10 +1,12 @@
 // Three static servers for the app and the fidelity gate. Run: node e2e-harness/app-server.mjs
 //   5182  dist/app      (production build), SPA fallback for dot-less paths, SECURITY_HEADERS
 //   5183  dist/gallery  (Harness_Build with /__gallery/* routes), same fallback, SECURITY_HEADERS
+//   5185  dist/app routed exactly as vercel.json says: its header rules (merged, in file order), the static files first, then its rewrites
 //   5184  baseline: design/project as is, /__fonts/<file>.woff2 from public/fonts, and virtual wrapper boards
 //         /__w-ReceiveState-<phase>.dc.html and /__w-ErrorState-<kind>.dc.html. No headers: support.js is not under the App CSP.
 // A missing dist directory answers 503 (the baseline server never needs a build).
 import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -72,7 +74,8 @@ function serve(port, label, handler, headers) {
     }
     log.push({ server: label, method: req.method, url: req.url });
     const out = await handler(decodeURIComponent(url.pathname));
-    res.writeHead(out.status, { ...headers, "Content-Type": out.type ?? "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+    const extra = typeof headers === "function" ? headers(decodeURIComponent(url.pathname)) : headers;
+    res.writeHead(out.status, { "Content-Type": out.type ?? "text/plain; charset=utf-8", "Cache-Control": "no-store", ...extra });
     res.end(out.body ?? "");
   });
   server.listen(port, "127.0.0.1");
@@ -109,10 +112,28 @@ async function baseline(path) {
   if (path.startsWith("/__fonts/")) return readUnder(join(appRoot, "public/fonts"), path.slice("/__fonts/".length));
   return readUnder(designRoot, path === "/" ? "/Home.dc.html" : path);
 }
-const ports = { app: Number(process.env.APP_PORT ?? 5182), gallery: Number(process.env.GALLERY_PORT ?? 5183), baseline: Number(process.env.BASELINE_PORT ?? 5184) };
+/** A mirror of the Vercel routing in apps/strip/vercel.json: header rules, then static files, then rewrites. */
+const vercel = () => JSON.parse(readFileSync(join(appRoot, "vercel.json"), "utf8"));
+const rx = (source) => new RegExp(`^${source}$`);
+function vercelHeaders(path) {
+  const out = {};
+  for (const r of vercel().headers) if (rx(r.source).test(path)) for (const h of r.headers) out[h.key] = h.value;
+  return out;
+}
+function vercelServer() {
+  const root = resolve(appRoot, vercel().outputDirectory);
+  return async (path) => {
+    const direct = await readUnder(root, path === "/" ? "/index.html" : path);
+    if (direct.status === 200 || direct.status === 403) return direct;
+    for (const r of vercel().rewrites) if (rx(r.source).test(path)) return readUnder(root, r.destination);
+    return { status: 404, body: "not found" };
+  };
+}
+const ports = { app: Number(process.env.APP_PORT ?? 5182), gallery: Number(process.env.GALLERY_PORT ?? 5183), baseline: Number(process.env.BASELINE_PORT ?? 5184), vercel: Number(process.env.VERCEL_PORT ?? 5185) };
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   serve(ports.app, "app", spaServer("dist/app"), SECURITY_HEADERS);
   serve(ports.gallery, "gallery", spaServer("dist/gallery"), SECURITY_HEADERS);
   serve(ports.baseline, "baseline", baseline, {});
-  console.log(`app-server: ${ports.app} app, ${ports.gallery} gallery, ${ports.baseline} baseline`);
+  serve(ports.vercel, "vercel", vercelServer(), vercelHeaders);
+  console.log(`app-server: ${ports.app} app, ${ports.gallery} gallery, ${ports.baseline} baseline, ${ports.vercel} vercel mirror`);
 }

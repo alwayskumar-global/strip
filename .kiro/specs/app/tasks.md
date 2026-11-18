@@ -215,7 +215,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: after first load and activation, offline reload of all six routes, a send and an image decode produce zero failed requests (P43, R14.5, R14.6) [Playwright].
     - Test: a new `sw.js` stays `waiting`, `sw.js` has no `skipWaiting`, the running page keeps its assets (P44, R14.9) [Playwright].
     - _Requirements: 14.4, 14.5, 14.6, 14.7, 14.8, 14.9_
-  - [ ] 4.3 `vercel.json` and header equality (M, 15)
+  - [x] 4.3 `vercel.json` and header equality (M, 15)
     - `apps/strip/vercel.json` with the CSP, `Permissions-Policy` (camera on self) and other security headers from `SECURITY_HEADERS`; SPA rewrites that do not match assets.
     - Test: `APP_CSP`, the `vercel.json` values and the headers served by Vite dev, preview and the harness servers are equal strings for every header; rewrites do not match asset paths (P39, R15.1 to R15.7) [property].
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7_
