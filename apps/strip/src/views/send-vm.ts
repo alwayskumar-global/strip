@@ -1,0 +1,84 @@
+// View-model of the Send board (the board's renderVals, with the chosen-file card lifted out of the board's literals).
+export type SendStage = "chosen" | "empty" | "toolarge" | "emptyfile";
+/** Pre-formatted facts of a chosen file; the Send container builds them from the file, the gallery from a fixture. */
+export interface FileFacts {
+  name: string;
+  mime: string;
+  /** "184 KB" */
+  size: string;
+  /** "188,416 bytes" */
+  bytes: string;
+  /** First 12 hex digits in three groups of four. */
+  hash: [string, string, string];
+  /** "111 packets · 149 symbols" */
+  encoded: string;
+  /** "184 of 256 KB" */
+  within: string;
+  value: number;
+  max: number;
+  screenNote: string;
+  paperNote: string;
+}
+/** The rejected-file card of the `toolarge` and `emptyfile` stages. */
+export interface BadFacts {
+  name: string;
+  type: string;
+  size: string;
+  limit: string;
+  value: number;
+  max: number;
+  title: string;
+  msg: string;
+}
+export interface SendInput {
+  stage: SendStage;
+  file: FileFacts;
+  bad: BadFacts;
+  /** The board's mobile class; only the gallery sets it. */
+  rootCls?: string;
+}
+export interface SendVM {
+  rootCls: string;
+  isChosen: boolean;
+  isNone: boolean;
+  isBad: boolean;
+  choicesOff: boolean;
+  screenOn: boolean;
+  dropCls: string;
+  file: FileFacts;
+  screenNote: string;
+  paperNote: string;
+  badName: string;
+  badType: string;
+  badSize: string;
+  badLimit: string;
+  badValue: number;
+  badMax: number;
+  badTitle: string;
+  badMsg: string;
+}
+export function toSendVM(input: SendInput): SendVM {
+  const s = input.stage;
+  const bad = s === "toolarge" || s === "emptyfile";
+  const b = input.bad;
+  return {
+    rootCls: input.rootCls ?? "",
+    isChosen: s === "chosen",
+    isNone: s === "empty",
+    isBad: bad,
+    choicesOff: s !== "chosen",
+    screenOn: s === "chosen",
+    dropCls: bad ? "drop--error" : "",
+    file: input.file,
+    screenNote: input.file.screenNote,
+    paperNote: input.file.paperNote,
+    badName: b.name,
+    badType: b.type,
+    badSize: b.size,
+    badLimit: b.limit,
+    badValue: b.value,
+    badMax: b.max,
+    badTitle: b.title,
+    badMsg: b.msg,
+  };
+}

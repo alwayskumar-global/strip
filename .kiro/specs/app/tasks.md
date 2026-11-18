@@ -87,7 +87,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `renderToStaticMarkup(HomeView)` contains the board copy verbatim (R1.1 to R1.7) [unit].
     - Test: fidelity and DOM parity pass for the 2 Home targets (R20.1) [Playwright].
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 19.1, 19.3, 19.4_
-  - [ ] 1.9 Convert Send with its four stages, desktop and mobile (M, 15)
+  - [x] 1.9 Convert Send with its four stages, desktop and mobile (M, 15)
     - `SendView` (`stage`: `chosen`, `empty`, `toolarge`, `emptyfile`), `FileCard`, `OutputChoices`, `toSendVM(state)`; fidelity and parity targets: Send, SendEmpty, SendTooLarge, SendEmptyFile, desktop and mobile (8).
     - Test: VM-to-markup equals the board copy for each stage (R2.1 to R2.17) [unit].
     - Test: fidelity and DOM parity pass for the 8 Send targets (R20.1) [Playwright].

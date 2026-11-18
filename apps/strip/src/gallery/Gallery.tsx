@@ -5,6 +5,9 @@ import { decodePacket } from "@strip/codec";
 import { decodeFrame } from "@strip/symbols";
 import { Symbol } from "../components/Symbol.js";
 import { wasmSource } from "../symbols-wasm.js";
+import { SendView } from "../views/SendView.js";
+import { toSendVM } from "../views/send-vm.js";
+import { BAD_FACTS, FILE_FACTS, isSendStage } from "../views/send-fixtures.js";
 import { specimens, type Specimen } from "./fixtures.js";
 export const GALLERY_SENTINEL = "STRIP_GALLERY_SENTINEL_7f3a";
 /** The board's mobile root class when the gallery URL carries mobile=1 (never present in the production bundle). */
@@ -53,6 +56,11 @@ function SymbolSpecimens(): ReactNode {
 /** One entry per gallery route; each conversion task adds its own. */
 export const GALLERY_ROUTES: Readonly<Record<string, GalleryRoute>> = {
   "symbol-specimens": () => <SymbolSpecimens />,
+  send: (p) => {
+    const stage = p.get("stage");
+    const st = isSendStage(stage) ? stage : "chosen";
+    return <SendView vm={toSendVM({ stage: st, file: FILE_FACTS, bad: BAD_FACTS[st === "emptyfile" ? "emptyfile" : "toolarge"], rootCls: mobileClass(p, "page--m") })} />;
+  },
 };
 export default function Gallery(): ReactNode {
   const name = location.pathname.replace(/^\/__gallery\//, "").replace(/\/$/, "");
