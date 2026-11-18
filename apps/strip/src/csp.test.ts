@@ -15,7 +15,8 @@ describe("Strip_CSP (R9.3 to R9.5, R9.7)", () => {
     for (const d of ["img-src", "style-src"]) expect(STRIP_CSP).not.toContain(d);
   });
   it("is the value the Vite dev server and preview server send", () => {
-    const cfg = viteConfig as { server?: { headers?: Record<string, string> }; preview?: { headers?: Record<string, string> } };
+    const make = viteConfig as unknown as (e: { command: string; mode: string }) => { server?: { headers?: Record<string, string> }; preview?: { headers?: Record<string, string> } };
+    const cfg = make({ command: "serve", mode: "development" });
     expect(cfg.server?.headers?.["Content-Security-Policy"]).toBe(STRIP_CSP);
     expect(cfg.preview?.headers?.["Content-Security-Policy"]).toBe(STRIP_CSP);
   });

@@ -43,7 +43,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `tools/deps.test.ts` passes with the four new rows and no `^` or `~` (R22.4) [unit].
     - Test: `renderToStaticMarkup(<div className="x"/>)` compiles and renders under Vitest (R22.7) [unit].
     - _Requirements: 22.3, 22.4, 22.5, 22.7_
-  - [ ] 1.2 App shell, limits, clock, CSP constants (M, 15)
+  - [x] 1.2 App shell, limits, clock, CSP constants (M, 15)
     - `index.html`, `main.tsx`, `env.d.ts`, `limits.ts` (the only definitions of FILE_CAP_BYTES 262144, PAPER_WARN_BYTES, PER_PAGE 9, FPS 2/15/8, STEP_HISTORY 256, timeouts, image limits), `csp.ts` adds `APP_CSP` and `SECURITY_HEADERS`, `Chrome` (`header.nav`), `App.tsx` (route switch, error boundary, focus-to-main-heading on navigation).
     - Vite dev and preview headers come from `csp.ts`. Production `index.html` has no inline script, style or `style=""`.
     - Test: limits constants equal the Requirements values (R9.1, R9.2, R9.3) [unit].

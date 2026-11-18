@@ -1,7 +1,10 @@
 import { defineConfig } from "vite";
-import { STRIP_CSP } from "./src/csp.ts";
-const headers = { "Content-Security-Policy": STRIP_CSP };
-export default defineConfig({
-  server: { host: "127.0.0.1", port: 5173, strictPort: true, headers },
-  preview: { headers },
-});
+import { SECURITY_HEADERS } from "./src/csp.ts";
+// Dev and preview send the same headers as production (src/csp.ts is the single source, R15.7).
+export default defineConfig(({ command, mode }) => ({
+  define: { __STRIP_GALLERY__: JSON.stringify(command === "serve" || mode === "gallery") },
+  oxc: { jsx: { runtime: "automatic", importSource: "react" } },
+  server: { host: "127.0.0.1", port: 5173, strictPort: true, headers: { ...SECURITY_HEADERS } },
+  preview: { headers: { ...SECURITY_HEADERS } },
+  build: { outDir: mode === "gallery" ? "dist/gallery" : "dist/app", manifest: true },
+}));

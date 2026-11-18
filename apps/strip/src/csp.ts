@@ -3,3 +3,14 @@
 // (page, worker script, .wasm). worker-src is explicit: the decode worker is a same-origin file, never a blob: URL; frame-ancestors is ignored in a <meta> element, so the header is the only delivery (R9.6).
 export const STRIP_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+/** The app policy is the symbols policy: worker-src 'self' is already part of it (R15.1, R15.3). */
+export const APP_CSP = STRIP_CSP;
+
+/** Every response header the app ships (R15.5, R15.6). vercel.json repeats these and a test checks the equality. */
+export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
+  "Content-Security-Policy": APP_CSP,
+  "Permissions-Policy": "camera=(self)",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+};
