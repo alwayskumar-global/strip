@@ -170,7 +170,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 153 (cap 184), cumulative 404. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.1_
 
-- [ ] 3. Group 3: live camera receiver and screen stream sender (estimate 138, CAP 166)
+- [x] 3. Group 3: live camera receiver and screen stream sender (estimate 138, CAP 166)
   - [x] 3.1 Camera and Frame_Loop (M, 15)
     - `camera.ts` (`getUserMedia`, error names to dispositions), `frame-loop.ts` (video frame to bitmap to the worker, drop while busy), release rules (tracks stopped on leave, restart, done, hide).
     - Test: with a mocked `getUserMedia`, denied, no-camera and generic failures map to `denied`, `nocam`, `camera` (R12.16, R12.17) [unit].
@@ -200,7 +200,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: scenarios reach `dup`, `failed`, `denied`, the `camera` panel, `nocam` (photos still complete a file), `stall`, `nothing`, counters at 0 after restart, `repeat` (P49, R21.4 to R21.9, R21.11) [Playwright].
     - Test: add 2 photos on Receive, remove one: the progress counters and the thumbnails update to the remaining photo (R12.24, R21.11) [Playwright].
     - _Requirements: 21.3, 21.4, 21.5, 21.6, 21.7, 21.8, 21.9, 21.10, 21.12_
-  - [ ] 3.6 Checkpoint: Group 3 stop-and-report
+  - [x] 3.6 Checkpoint: Group 3 stop-and-report
     - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 138 (cap 166), cumulative 542. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.3_
 
