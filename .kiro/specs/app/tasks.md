@@ -194,7 +194,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: Next and Previous show exactly one Packet per activation and Previous is bounded by STEP_HISTORY (R11.9, R11.10) [unit].
     - Test: full-screen caption reads "Packet {n} of {K} + repair · Lap {L} · {fps} fps" (R3.15) [unit].
     - _Requirements: 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 11.8, 11.9, 11.10, 11.11, 11.12_
-  - [ ] 3.5 Screen-path end-to-end and receive scenarios (L, 30)
+  - [x] 3.5 Screen-path end-to-end and receive scenarios (L, 30)
     - Project `camera`: Chromium with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture=<abs>/test-results/fake-camera/cam.y4m`. If the y4m path does not decode, use the design's fallback (feed the stage captures through the decode client) and report it.
     - Test: stepping the stream and feeding the stage captures rebuilds a byte-identical file (P48, R21.3) [property].
     - Test: scenarios reach `dup`, `failed`, `denied`, the `camera` panel, `nocam` (photos still complete a file), `stall`, `nothing`, counters at 0 after restart, `repeat` (P49, R21.4 to R21.9, R21.11) [Playwright].

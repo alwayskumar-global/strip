@@ -1,7 +1,7 @@
 // Harness for the symbols e2e tests: exposes the @strip/symbols barrel, the codec and the same-origin wasm source
 // through window.__symbols. Only public entries are imported, as for any app. This file is outside src, so it may
 // read the clock for measurements.
-import { createDecoder, encode } from "@strip/codec";
+import { createDecoder, decodePacket, encode, encodePacket } from "@strip/codec";
 import { createFrameDecoder, decodeFrame, encodeSymbol, renderToCanvas, renderToSvg, SymbolError } from "@strip/symbols";
 import type { DecodeOutcome } from "@strip/symbols";
 import { createDecodeClient } from "../src/workers/decode-client.ts";
@@ -70,6 +70,20 @@ const api = {
   async packets(size: number) {
     const e = await encode({ bytes: payload(size), name: "t.bin", mime: "application/octet-stream" }, { packetSize: 1732 });
     return Array.from({ length: e.K + 6 }, () => toHex(e.next()));
+  },
+  /** Symbols of a file's page() Packets as module strings ("1" dark), for the fake-camera video files of the camera specs. */
+  async symbolsOf(size: number, seed: number, tamper = false) {
+    const bytes = Uint8Array.from({ length: size }, (_, i) => (i * 131 + seed + (i >> 8) * 5) & 255);
+    const e = await encode({ bytes, name: `f${seed}.bin`, mime: "application/octet-stream" }, { packetSize: 1732 });
+    return e.page().map((p) => {
+      let q = p;
+      if (tamper) {
+        const f = decodePacket(p);
+        q = encodePacket({ ...f, payload: Uint8Array.from(f.payload, (b, i) => (i === 100 ? b ^ 1 : b)) }); // valid CRC, wrong content in every Packet
+      }
+      const m = encodeSymbol(q, { version: 30, ecc: "L" });
+      return { size: m.size, modules: m.modules.map((d) => (d ? "1" : "0")).join("") };
+    });
   },
   /** Feed received packets (hex) to the codec decoder and compare the file with the original. */
   async complete(hexes: string[], size: number) {

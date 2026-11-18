@@ -73,7 +73,7 @@ export type ReceiveEvent =
   | { t: "PHOTO_DONE"; gen: number; row: PhotoRow | null }
   | { t: "PHOTO_FAILED"; gen: number; panel: PanelKind; ctx?: ErrorContext }
   | { t: "REMOVE_PHOTO"; id: number }
-  | { t: "REBUILT"; gen: number; counters: Omit<Counters, "seen" | "skipped">; session?: number }
+  | { t: "REBUILT"; gen: number; counters: Omit<Counters, "seen" | "skipped">; session?: number; seen?: number }
   | { t: "CAMERA_OK"; torch: boolean; at?: number }
   | { t: "CAMERA_FAIL"; name: string }
   | { t: "CAMERA_API_MISSING" }
@@ -167,7 +167,7 @@ export function reduceReceive(s: ReceiveState, ev: ReceiveEvent): R {
     case "REMOVE_PHOTO":
       return { state: { ...s, photos: s.photos.filter((p) => p.id !== ev.id) }, effects: [{ e: "REMOVE_PHOTO", id: ev.id }, "REBUILD_SESSION"] };
     case "REBUILT": {
-      const c: Counters = { ...ev.counters, seen: s.counters.seen, skipped: s.counters.skipped };
+      const c: Counters = { ...ev.counters, seen: ev.seen ?? s.counters.seen, skipped: s.counters.skipped };
       const phase: ReceivePhase = ev.counters.complete ? "done" : s.phase === "done" ? "empty" : s.phase;
       const base = { ...s, counters: c, phase };
       return { state: ev.session === undefined ? (({ session: _x, ...r }) => (void _x, r as ReceiveState))(base) : { ...base, session: ev.session }, effects: [] };

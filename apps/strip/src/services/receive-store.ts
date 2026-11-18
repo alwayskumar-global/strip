@@ -108,9 +108,7 @@ function run(fx: ReceiveEffect): void {
           if (gen !== state.gen) return;
           session = next;
           const p = next.progress();
-          const first = next.sources()[0];
-          void first;
-          receiveStore.dispatch({ t: "REBUILT", gen, counters: p });
+          receiveStore.dispatch({ t: "REBUILT", gen, counters: p, seen: next.sources().length });
         });
         break;
       }
