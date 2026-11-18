@@ -8,3 +8,5 @@ test-results/
 
 # Calibration and sweep outputs
 packages/codec/perf/out/
+
+apps/strip/.fidelity/
