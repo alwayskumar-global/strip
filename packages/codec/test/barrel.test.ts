@@ -2,11 +2,11 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import * as barrel from "../src/index.js";
 
-const RUNTIME = ["CodecError", "ERROR_CODES", "createDecoder", "decodePacket", "encode", "encodePacket", "parseMetadata", "serializeMetadata", "sha256WebCrypto"];
+const RUNTIME = ["CodecError", "ERROR_CODES", "createDecoder", "decodePacket", "encode", "encodePacket", "pageRepairCount", "parseMetadata", "serializeMetadata", "sha256WebCrypto"];
 const TYPES = ["Decoder", "DecoderOptions", "EncodeOptions", "Encoder", "ErrorCode", "HashFn", "HashPrefixes", "IgnoreReason", "Limits", "Metadata", "PacketFields", "PayloadInput", "Progress", "PushStatus"];
 
 describe("barrel (R9.1)", () => {
-  it("exports exactly the nine runtime symbols", () => {
+  it("exports exactly the ten runtime symbols", () => {
     expect(Object.keys(barrel).sort()).toEqual([...RUNTIME].sort());
   });
 

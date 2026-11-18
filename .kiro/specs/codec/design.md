@@ -42,7 +42,7 @@ graph TD
 ```
 
 The graph is acyclic and leaf modules import nothing. Tests live in `packages/codec/test` and perf scripts in `packages/codec/perf`, both outside `src`. `packages/codec/perf/calibrate.ts` (outside `src`) generates `overhead-table.json`.
-The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, `CodecError`, `ERROR_CODES`, `sha256WebCrypto`. Its type-only exports are exactly: `PayloadInput`, `Metadata`, `EncodeOptions`, `DecoderOptions`, `Encoder`, `Decoder`, `PushStatus`, `PacketFields`, `Limits`, `HashFn`, `ErrorCode`, `IgnoreReason`, `Progress`, `HashPrefixes`.
+The barrel exports exactly these runtime symbols: `encode`, `createDecoder`, `serializeMetadata`, `parseMetadata`, `encodePacket`, `decodePacket`, `CodecError`, `ERROR_CODES`, `sha256WebCrypto`, `pageRepairCount`. `pageRepairCount(K)` validates that K is an integer in 1..16384 (INVALID_INPUT otherwise) and returns `R(K)` from `overhead.ts`, the repair count `page()` uses by default, so the app can compute T = K + R(K) without encoding; it changes no wire format or golden vector. Its type-only exports are exactly: `PayloadInput`, `Metadata`, `EncodeOptions`, `DecoderOptions`, `Encoder`, `Decoder`, `PushStatus`, `PacketFields`, `Limits`, `HashFn`, `ErrorCode`, `IgnoreReason`, `Progress`, `HashPrefixes`.
 
 ## Wire formats
 
@@ -391,7 +391,7 @@ export { CodecError, type ErrorCode }
 export const sha256WebCrypto: HashFn        // Default_Hash
 ```
 
-Type-only exports are exactly those listed in Module layout; the runtime exports are exactly the nine listed there.
+Type-only exports are exactly those listed in Module layout; the runtime exports are exactly the ten listed there.
 
 ## Correctness properties
 

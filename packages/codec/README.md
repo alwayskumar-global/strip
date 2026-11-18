@@ -26,6 +26,8 @@ if (decoder.progress().complete) {
 
 Failures are `CodecError` with a code from a closed set: `INVALID_INPUT`, `PAYLOAD_TOO_LARGE`, `TOO_MANY_BLOCKS`, `BAD_METADATA`, `BAD_HEADER`, `UNSUPPORTED_VERSION`, `BAD_CRC`, `SESSION_MISMATCH`, `INCOMPLETE_DECODE`, `HASH_MISMATCH`. Packet-level problems in `push` are returned in the status and leave the decoder unchanged. `HASH_MISMATCH` (and `BAD_METADATA` after full recovery) is a decoder-level verdict: `rejected`, terminal, state already changed. CRC detects corruption, not forgery.
 
+`pageRepairCount(K)` returns how many repair packets `page()` adds for `K` blocks, so a UI can show the size of a printed set (`K + pageRepairCount(K)`) without encoding. `K` must be an integer in 1..16384.
+
 A `HASH_MISMATCH` rejection carries `status.hashes = { expected, actual }`: the first 12 lowercase hex digits (6 bytes) of the SHA-256 stored in the file record and of the SHA-256 of the reassembled bytes, so a UI can show `Expected 9f2c 41ab e07d…, got 31d8 aa02 5c19…`. Every later `push` to the terminal decoder returns the same status with the same `hashes`. `hashes` is absent from every other status. It is a display aid: the full digests are never exposed and the prefix is not a security claim. The exported type is `HashPrefixes`.
 
 The size limit `maxPayloadBytes` (default 32 MiB) applies to the coded stream: the metadata record plus the payload.

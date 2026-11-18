@@ -446,12 +446,23 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     - Run `git diff` against the Group 6 commit for the golden vector files and `overhead-table.json` and report that they are byte-identical (empty diff).
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 5.24, 5.25, 5.26, 5.27, 5.28, 5.29, 6.4, 10.5_
+- [x] 8. Group 8: pageRepairCount export (user-approved addendum)
+  - [x] 8.1 Export `pageRepairCount`, unit test and README line
+    - Add `pageRepairCount(K)` to the barrel `src/index.ts`: validate that K is an integer in 1..16384 (otherwise throw CodecError INVALID_INPUT) and return `R(K)` from `overhead.ts`. The runtime export list becomes ten symbols; update the barrel test.
+    - Unit test: for a sample of K across 1..16384 (table rows, interpolated values and both ends) `pageRepairCount(K)` equals `encoder.page().length - K` of an Encoder with K Blocks; non-integer, 0, negative, 16385, NaN and non-number inputs throw INVALID_INPUT.
+    - Add one line to `packages/codec/README.md` documenting `pageRepairCount`. No change to packets, wire format, golden vectors, overhead table or any calibrated constant. No new dependency.
+    - _Requirements: 9.1, 9.8, 10.1_
+  - [x] 8.2 Group 8 checkpoint
+    - Run `pnpm lint`, `pnpm typecheck` and `pnpm test` for the codec and report the pass counts. Report that golden vector files and `overhead-table.json` are byte-identical to the Group 7 commit (empty `git diff`).
+    - Ensure all tests pass, ask the user if questions arise.
+    - _Requirements: 9.1, 9.8, 10.1_
 ## Notes
 
 - No task is optional. Every property test is required.
 - Group 5 starts only after the user approves at the Group 4 STOP CHECKPOINT (task 4.6). c, delta and D are frozen only in task 5.1.
 - Each task cites the criterion ids it covers.
 - Group 7 is a user-approved addendum. It changes no wire format, golden vector, overhead table or calibrated constant, and adds no dependency.
+- Group 8 is a user-approved addendum with the same constraints: it only exports `pageRepairCount`.
 
 ## Task Dependency Graph
 
@@ -523,7 +534,9 @@ Six groups, built bottom-up: pure leaf modules, deterministic generation (sparse
     { "id": 62, "tasks": ["6.6"] },
     { "id": 63, "tasks": ["7.1"] },
     { "id": 64, "tasks": ["7.2"] },
-    { "id": 65, "tasks": ["7.3"] }
+    { "id": 65, "tasks": ["7.3"] },
+    { "id": 66, "tasks": ["8.1"] },
+    { "id": 67, "tasks": ["8.2"] }
   ]
 }
 ```
