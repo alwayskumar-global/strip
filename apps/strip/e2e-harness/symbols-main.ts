@@ -4,9 +4,9 @@
 import { createDecoder, encode } from "@strip/codec";
 import { createFrameDecoder, decodeFrame, encodeSymbol, renderToCanvas, renderToSvg, SymbolError } from "@strip/symbols";
 import type { DecodeOutcome } from "@strip/symbols";
-import { createDecodeClient } from "../src/decode-client.ts";
-import type { DecodeClient, WorkerLike } from "../src/decode-client.ts";
-import { wasmSource } from "../src/symbols-wasm.ts";
+import { createDecodeClient } from "../src/workers/decode-client.ts";
+import type { DecodeClient, WorkerLike } from "../src/workers/decode-client.ts";
+import { wasmSource } from "../src/workers/symbols-wasm.ts";
 
 const violations: string[] = [];
 document.addEventListener("securitypolicyviolation", (e) => violations.push(`${e.violatedDirective} ${e.blockedURI}`));
@@ -140,7 +140,7 @@ const api = {
   async startWorker(maxWidth = 640, maxHeight = 640, maxSymbols?: number) {
     try {
       worker?.terminate();
-      worker = new Worker(new URL("../src/decode.worker.ts", import.meta.url), { type: "module" });
+      worker = new Worker(new URL("../src/workers/decode.worker.ts", import.meta.url), { type: "module" });
       client = createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth, maxHeight, ...(maxSymbols === undefined ? {} : { maxSymbols }) });
       await client.ready;
       return { ok: true as const };

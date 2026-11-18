@@ -141,7 +141,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: paper warning shows above 65,536 bytes and not at it (R9.8) [unit].
     - Test: print button calls `window.print` once (R10.7) [unit].
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 10.6, 10.7, 10.8, 9.8_
-  - [ ] 2.4 Image intake, scaling, decode client and worker wiring (M, 15)
+  - [x] 2.4 Image intake, scaling, decode client and worker wiring (M, 15)
     - `image-intake.ts` (20 MB, 24 photos, long side 4096), `scaleOf`, move the worker files into `workers/` with `smart_relocate`, `maxSymbols: 9`, `decode-client` drop-while-busy, transfer list.
     - Test: for any width and height, `scaleOf` keeps each side at most 4096 (at most 16,777,216 pixels), keeps aspect within one pixel, leaves smaller images unscaled; the 20 MB and 24-photo limits hold at the boundary (P29, R12.11, R12.12, R12.13) [property].
     - Test: for any interleaving of camera and image submits at most one decode is in flight, every busy submit resolves `dropped` with no post, and a dropped bitmap is closed (P30, R12.3, R12.10) [property].

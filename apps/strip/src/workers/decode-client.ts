@@ -69,7 +69,10 @@ export function createDecodeClient(worker: WorkerLike, init: DecodeClientInit): 
       return idle;
     },
     submitFrame: (width, height, buffer) => send((id) => ({ type: "frame", id, width, height, buffer }), [buffer]),
-    submitBitmap: (bitmap) => send((id) => ({ type: "bitmap", id, bitmap }), [bitmap]),
+    submitBitmap: (bitmap) => {
+      if (!idle) bitmap.close(); // a dropped bitmap is released at once (R12.10)
+      return send((id) => ({ type: "bitmap", id, bitmap }), [bitmap]);
+    },
     terminate: () => worker.terminate(),
   };
 }

@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { decodePacket } from "@strip/codec";
 import { decodeFrame } from "@strip/symbols";
 import { Symbol } from "../components/Symbol.js";
-import { wasmSource } from "../symbols-wasm.js";
+import { wasmSource } from "../workers/symbols-wasm.js";
 import { SendView } from "../views/SendView.js";
 import { toSendVM } from "../views/send-vm.js";
 import { BAD_FACTS, FILE_FACTS, isSendStage } from "../views/send-fixtures.js";
