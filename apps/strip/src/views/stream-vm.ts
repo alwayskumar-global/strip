@@ -7,11 +7,16 @@ export interface StreamInput {
   n: number;
   /** K, the number of source packets: the counter's "of K + repair". */
   k: number;
+  /** T, Packets in one lap (K plus repair); the lap is floor((n - 1) / T) + 1. Defaults to K. */
+  t?: number;
+  size?: "s" | "m" | "l";
   lap: number;
   fps: number;
   /** "field-notes-2026.pdf · 184 KB" */
   fileTag: string;
   matrix: SymbolMatrix;
+  /** Whether the packet before the shown one is still held (Previous is disabled otherwise). */
+  canPrev?: boolean;
   /** The board's mobile class; only the gallery sets it. */
   rootCls?: string;
 }
@@ -29,7 +34,12 @@ export interface StreamVM {
   /** Previous and Next are disabled while playing. */
   stepOff: boolean;
   n: number;
+  /** progress value: min(n, K) */
+  progress: number;
   max: number;
+  size: "s" | "m" | "l";
+  sizeCls: string;
+  prevOff: boolean;
   ofTotal: string;
   lap: string;
   codeLabel: string;
@@ -58,6 +68,10 @@ export function toStreamVM(i: StreamInput): StreamVM {
     notStep: i.mode !== "step",
     stepOff: i.mode === "play",
     n: i.n,
+    progress: Math.min(i.n, i.k),
+    size: i.size ?? "m",
+    sizeCls: i.size === "s" ? "stage__code--s" : i.size === "l" ? "stage__code--l" : "",
+    prevOff: i.mode === "play" || i.canPrev === false,
     max: i.k,
     ofTotal: `of ${i.k} + repair`,
     lap: `Lap ${i.lap}`,

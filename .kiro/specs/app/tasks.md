@@ -181,7 +181,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for any outcome sequence on a fake clock, `stall` fires only after a first accepted Packet and 20 s without a new solved block, `nothing` only after 30 s without `found`, `stall` wins when both hold (P22, R12.19, R12.20, R12.21) [unit].
     - Test: restart sets all counters to 0 and releases the camera (R12.22) [unit].
     - _Requirements: 5.8, 12.19, 12.20, 12.21, 12.22, 12.23, 12.25, 5.17, 5.18, 5.19_
-  - [ ] 3.3 Stream reducer, player and ticker (L, 30)
+  - [x] 3.3 Stream reducer, player and ticker (L, 30)
     - `stream.ts` reducer (events TOGGLE, NOTICE_BUTTON, TICK, NEXT, PREV, FPS, HIDDEN), `stream-player.ts` with `encoder.next()`, STEP_HISTORY 256, the ticker on `Clock` only, counter and lap formulas.
     - Test: for any event sequence `next()` yields 0, 1, 2, ... none skipped or repeated, the shown number equals a model, no illegal transition occurs (P13, R11.1, R11.2, R11.5, R11.6) [property].
     - Test: for any fps 2 to 15 on a fake clock, 10 s of `play` shows 10 x fps Packets within 1; an fps change applies from the next tick; the player reads no global time (P14, R11.3, R11.7) [unit].

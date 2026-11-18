@@ -2,10 +2,10 @@
 import { type ReactNode } from "react";
 import { Symbol } from "../components/Symbol.js";
 import type { FullScreenVM } from "./stream-vm.js";
-export function FullScreenView({ vm }: { vm: FullScreenVM }): ReactNode {
+export function FullScreenView({ vm, onExit }: { vm: FullScreenVM; onExit?: (() => void) | undefined }): ReactNode {
   return (
     <div className={`strip fs ${vm.rootCls}`}>
-      <a className="btn fs__exit" href="/send/screen"><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>Exit full screen</a>
+      <a className="btn fs__exit" href="/send/screen" onClick={(e) => { if (onExit) { e.preventDefault(); onExit(); } }}><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>Exit full screen</a>
       <div className="fs__code">
         <Symbol matrix={vm.matrix} label={vm.codeLabel} />
       </div>

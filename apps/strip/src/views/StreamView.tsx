@@ -3,7 +3,17 @@ import { type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import { Symbol } from "../components/Symbol.js";
 import type { StreamVM } from "./stream-vm.js";
-export function StreamView({ vm }: { vm: StreamVM }): ReactNode {
+/** Optional event handlers: the gallery and the unit tests render the view without them. */
+export interface StreamHandlers {
+  toggle?: () => void;
+  notice?: () => void;
+  next?: () => void;
+  prev?: () => void;
+  fps?: (v: number) => void;
+  size?: (v: "s" | "m" | "l") => void;
+  fullScreen?: () => void;
+}
+export function StreamView({ vm, on }: { vm: StreamVM; on?: StreamHandlers | undefined }): ReactNode {
   return (
     <div className={`strip page ${vm.rootCls}`}>
       <Nav current={"send"} />
@@ -29,17 +39,17 @@ export function StreamView({ vm }: { vm: StreamVM }): ReactNode {
               <p className="t-small t-muted">Step mode is the default when your system asks for reduced motion.</p>
               <div className="callout__actions">
                 {vm.notStep && (<>
-                  <button className="btn" type="button">Switch to step mode</button>
+                  <button className="btn" type="button" onClick={() => on?.notice?.()}>Switch to step mode</button>
                 </>)}
                 {vm.isStep && (<>
-                  <button className="btn" type="button">Back to playback</button>
+                  <button className="btn" type="button" onClick={() => on?.notice?.()}>Back to playback</button>
                 </>)}
               </div>
             </div>
           </div>
         </div>
         <section className="stage" aria-label={`Animated code, frame ${vm.n}`}>
-          <div className="stage__code">
+          <div className={`stage__code${vm.sizeCls === "" ? "" : ` ${vm.sizeCls}`}`}>
             <Symbol matrix={vm.matrix} label={vm.codeLabel} />
           </div>
         </section>
@@ -51,12 +61,12 @@ export function StreamView({ vm }: { vm: StreamVM }): ReactNode {
               <span className="t-mono">{vm.ofTotal}</span>
               <span className="tag">{vm.lap}</span>
             </div>
-            <progress className="progress" value={vm.n} max={vm.max} aria-label="Packet progress"></progress>
-            <button className="btn btn--primary btn--lg btn--block" type="button">{vm.isPlay && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg></>)}{vm.notPlay && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg></>)}{" "}{vm.ppLabel} <span className="kbd">Space</span></button>
+            <progress className="progress" value={vm.progress} max={vm.max} aria-label="Packet progress"></progress>
+            <button className="btn btn--primary btn--lg btn--block" type="button" onClick={() => on?.toggle?.()}>{vm.isPlay && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg></>)}{vm.notPlay && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg></>)}{" "}{vm.ppLabel} <span className="kbd">Space</span></button>
             <div className="stepctl">
-              <button className="btn" type="button" disabled={vm.stepOff}><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6" /></svg>Previous</button>
-              <button className="btn" type="button" disabled={vm.stepOff}>Next<svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg></button>
-              <a className="btn btn--block" href="/send/screen"><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>Full screen</a>
+              <button className="btn" type="button" disabled={vm.prevOff} onClick={() => on?.prev?.()}><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6" /></svg>Previous</button>
+              <button className="btn" type="button" disabled={vm.stepOff} onClick={() => on?.next?.()}>Next<svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg></button>
+              <a className="btn btn--block" href="/send/screen" onClick={(e) => { if (on?.fullScreen) { e.preventDefault(); on.fullScreen(); } }}><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>Full screen</a>
             </div>
             <p className="t-small t-muted">{vm.loopNote}</p>
             <p className="t-label t-muted">{vm.modeNote}</p>
@@ -67,22 +77,22 @@ export function StreamView({ vm }: { vm: StreamVM }): ReactNode {
                 <label className="t-label" htmlFor="fps">Speed</label>
                 <span className="field__val">{vm.speed}</span>
               </div>
-              <input id="fps" className="range" type="range" min="2" max="15" defaultValue={vm.fpsValue} disabled={vm.isStep} />
+              <input id="fps" className="range" type="range" min="2" max="15" value={vm.fpsValue} disabled={vm.isStep} onChange={(e) => on?.fps?.(Number(e.currentTarget.value))} />
               <p className="t-small t-muted">Drop to 4–6 fps if the receiver skips frames.</p>
             </div>
             <fieldset className="seg">
               <legend className="t-label">Code size</legend>
               <div className="seg__row">
                 <label className="seg__opt">
-                  <input className="seg__in" type="radio" name="size" defaultValue="s" />
+                  <input className="seg__in" type="radio" name="size" value="s" checked={vm.size === "s"} onChange={() => on?.size?.("s")} />
                   <span className="seg__box">Small</span>
                 </label>
                 <label className="seg__opt">
-                  <input className="seg__in" type="radio" name="size" defaultValue="m" defaultChecked />
+                  <input className="seg__in" type="radio" name="size" value="m" checked={vm.size === "m"} onChange={() => on?.size?.("m")} />
                   <span className="seg__box">Medium</span>
                 </label>
                 <label className="seg__opt">
-                  <input className="seg__in" type="radio" name="size" defaultValue="l" />
+                  <input className="seg__in" type="radio" name="size" value="l" checked={vm.size === "l"} onChange={() => on?.size?.("l")} />
                   <span className="seg__box">Large</span>
                 </label>
               </div>
