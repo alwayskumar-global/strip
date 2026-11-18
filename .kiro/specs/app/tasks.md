@@ -219,7 +219,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - `apps/strip/vercel.json` with the CSP, `Permissions-Policy` (camera on self) and other security headers from `SECURITY_HEADERS`; SPA rewrites that do not match assets.
     - Test: `APP_CSP`, the `vercel.json` values and the headers served by Vite dev, preview and the harness servers are equal strings for every header; rewrites do not match asset paths (P39, R15.1 to R15.7) [property].
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7_
-  - [ ] 4.4 Privacy: request log and storage inspection (M, 15)
+  - [x] 4.4 Privacy: request log and storage inspection (M, 15)
     - Playwright flows over send, paper, stream, camera and images with `context.on("request")` and `serviceWorkers: "allow"`.
     - Test: over every flow the Request_Log holds only same-origin GET requests to paths in `sw-manifest.json`, none to Google Fonts, and no page-initiated `.wasm` request (P41, R16.1 to R16.3, R16.5) [property].
     - Test: after the flows `localStorage`, `sessionStorage`, cookies and IndexedDB are empty and every Cache API URL is in the precache list (P42, R16.4, R16.7) [Playwright].
