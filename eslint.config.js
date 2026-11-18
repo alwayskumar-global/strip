@@ -73,7 +73,7 @@ const symbolsImports = (override) => {
   };
 };
 export default tseslint.config(
-  { ignores: ["design/**", "**/dist/**", "**/node_modules/**", "**/coverage/**", "**/playwright-report/**", "**/test-results/**"] },
+  { ignores: ["design/**", "**/dist/**", "**/node_modules/**", "**/coverage/**", "**/playwright-report/**", "**/test-results/**", "apps/strip/.fidelity/**", "apps/strip/scripts/sw.template.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -81,7 +81,7 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.es2023 } },
   },
   {
-    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts", "apps/strip/e2e-harness/*.mjs", "apps/strip/e2e-fidelity/*.mjs"],
+    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts", "apps/strip/e2e-harness/*.mjs", "apps/strip/e2e-fidelity/*.mjs", "apps/strip/scripts/*.mjs"],
     languageOptions: { globals: { ...globals.node } },
   },
   {

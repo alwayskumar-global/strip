@@ -209,7 +209,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - `manifest.webmanifest`, `scripts/make-icons.mjs` (bundled Chromium, no new dependency), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, the 180 px `apple-touch-icon`, `theme-color` `#F7F5EF` equal in `index.html` and the manifest.
     - Test: manifest fields, icon sizes read from PNG IHDR, equal `theme-color` (P57, R14.1, R14.2) [unit].
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 4.2 Hand-written service worker, build script, offline test (L, 30)
+  - [x] 4.2 Hand-written service worker, build script, offline test (L, 30)
     - `scripts/build-sw.mjs` and `scripts/sw.template.js` generate `dist/app/sw.js` and `sw-manifest.json`, cache name from a content hash, no `skipWaiting`, registered after `load` in production only.
     - Test: the precache list equals the emitted files minus `sw.js`, maps and `.vite`; includes the `.wasm`, fonts, notices, manifest, icons; all same-origin; the cache name changes when any byte changes (P45, R14.4) [unit].
     - Test: after first load and activation, offline reload of all six routes, a send and an image decode produce zero failed requests (P43, R14.5, R14.6) [Playwright].
