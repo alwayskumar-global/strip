@@ -1,7 +1,7 @@
 // Test g (R15.5): THIRD_PARTY_NOTICES is served from the same origin and linked from the app.
 import { expect, test } from "@playwright/test";
 test("g: the app links THIRD_PARTY_NOTICES and the file is served from the same origin", async ({ page, request }) => {
-  await page.goto("/");
+  await page.goto("/e2e-harness/index.html");
   const link = page.locator("a#notices");
   await expect(link).toHaveText(/third-party notices/i);
   const href = await link.evaluate((a) => (a as HTMLAnchorElement).href);

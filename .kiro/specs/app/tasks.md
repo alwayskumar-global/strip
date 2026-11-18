@@ -63,13 +63,13 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `src` contains none of `{{`, `sc-for`, `sc-if`, `dc-import`, `x-dc`, `<helmet`, `data-dc-script`, `hint-`, `fonts.googleapis.com`, `codegen`, `support.js`, `.dc.html` (P38, R19.1, R19.5) [unit].
     - Test: glyph coverage of the six fonts for the listed characters (R19.9) [unit].
     - _Requirements: 19.1, 19.2, 19.5, 19.8, 19.9_
-  - [ ] 1.5 Fidelity harness: baseline server, setup project, route interception (L, 30)
+  - [x] 1.5 Fidelity harness: baseline server, setup project, route interception (L, 30)
     - `e2e-harness/app-server.mjs` (ports 5182 production, 5183 gallery, 5184 baseline over HTTP for `design/project` with `/__fonts/` and virtual wrapper boards for the 10 Receive phases and 14 error kinds), `e2e-fidelity/targets.ts` (53 targets, viewports read from `canvas.json`), `baseline.setup.ts` (project `fidelity-baseline` renders baselines from `support.js`), external-host route interception excluding `127.0.0.1` and `localhost`.
     - The facts in design.md "Fidelity harness" are re-verified here and the task fails loudly if they change.
     - Test: `support.js` never requests `cdn.jsdelivr.net` or any other external host except the intercepted fonts CSS (R20.2) [Playwright].
     - Test: each of the 53 baselines renders `.strip` with no `.sc-has-error` and no console error (R20.1) [Playwright].
-    - Test: existing harness specs on 5173, 5180 and 5181 still pass unchanged (R22.1) [Playwright].
-    - _Requirements: 20.1, 20.2, 20.3, 22.1_
+    - Test: existing harness specs on 5173, 5180 and 5181 pass; a spec may be retargeted to the harness page `/e2e-harness/index.html` when the app now owns `/`, with its assertion unchanged (R22.8) [Playwright].
+    - _Requirements: 20.1, 20.2, 20.3, 22.8_
   - [ ] 1.6 Fidelity spec, QR masks, `data-addition` hiding, DOM-parity normaliser (L, 30)
     - `fidelity.spec.ts` using `toHaveScreenshot` at `maxDiffPixelRatio: 0.01`, `retries: 0`, QR masks (`svg.code`, `.stage__code`, `.fs__code`, `.vf__code`, `.vf video`, `.vf canvas`), `data-addition` hidden through the screenshot `style` option; `normalize-dom.ts`, `dom-parity.spec.ts`, `parity-allowlist.ts` (each entry justified); `pnpm test:fidelity` script. Targets without a converted component yet are skipped with a named reason that each conversion task removes.
     - Test: the comparison passes baseline against itself and fails when a 2% pixel region changes (R20.4, R20.5) [Playwright].
@@ -115,7 +115,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Report the full list of template constructs used, inline-style conversions and additions (R19.4, R19.6).
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 7.2, 7.3, 7.4, 7.5, 7.10, 7.11, 7.12, 7.13, 7.14, 7.15, 19.1, 19.4, 19.6, 20.1_
   - [ ] 1.14 Checkpoint: Group 1 stop-and-report
-    - Run lint, typecheck, test, build, `build:gallery`, `test:e2e`, `test:fidelity`; report outputs, credits used against 251 (cap 301), deviations, additions, and the template-construct list. Stop.
+    - Run lint, typecheck, test, build, `build:gallery`, `test:e2e`, `test:fidelity`; report outputs, credits used against 251 (cap 301), deviations, additions, and the template-construct list. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 20.6, 22.1_
 
 - [ ] 2. Group 2: paper send pipeline and receive from images (estimate 153, CAP 184)
@@ -167,7 +167,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for each tested file all N sheets as images rebuild a byte-identical file with the same name and MIME; withholding the last sheet still completes (P47, R21.1, R21.2) [property].
     - _Requirements: 10.8, 10.9, 10.10, 10.11, 21.1, 21.2_
   - [ ] 2.8 Checkpoint: Group 2 stop-and-report
-    - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 153 (cap 184), cumulative 404. Stop.
+    - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 153 (cap 184), cumulative 404. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.1_
 
 - [ ] 3. Group 3: live camera receiver and screen stream sender (estimate 138, CAP 166)
@@ -200,7 +200,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: scenarios reach `dup`, `failed`, `denied`, the `camera` panel, `nocam` (photos still complete a file), `stall`, `nothing`, counters at 0 after restart, `repeat` (P49, R21.4 to R21.9, R21.11) [Playwright].
     - _Requirements: 21.3, 21.4, 21.5, 21.6, 21.7, 21.8, 21.9, 21.10, 21.12_
   - [ ] 3.6 Checkpoint: Group 3 stop-and-report
-    - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 138 (cap 166), cumulative 542. Stop.
+    - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 138 (cap 166), cumulative 542. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.3_
 
 - [ ] 4. Group 4: PWA, delivery headers, privacy, bundle gate, README (estimate 101, CAP 121)
@@ -227,13 +227,14 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - `THIRD_PARTY_NOTICES` adds React, react-dom and IBM Plex (OFL); `scripts/bundle-report.mjs` writes `apps/strip/bundle-report.json` (gitignored; raw, gzip, brotli per asset, totals, first-load set) and fails over budget.
     - Test: first-load gzip set at most 400 KB, `.wasm` at most 1,000,000 bytes, report JSON exists with raw, gzip and brotli (P50, R18.1 to R18.3) [unit].
     - Test: notices include React, react-dom and IBM Plex with the OFL text (R19.10, R22.5) [unit].
+    - Test: the Home board's notices link (`href="/THIRD_PARTY_NOTICES"`) is present, reachable and serves the notices file, in the app e2e suite against the production build (R15.5, R19.10) [Playwright].
     - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.6, 19.10, 22.5_
   - [ ] 4.6 README (S, 8)
     - Root `README.md`: what Strip is, run and test commands, the two paths, the limits, the privacy statement, the device-test pointer, third-party notices.
     - Test: README names every pnpm script it cites and each exists in a `package.json` (R22.7) [unit].
     - _Requirements: 22.7_
   - [ ] 4.7 Checkpoint: Group 4 stop-and-report
-    - Run the CI order (lint, typecheck, test, build, `build:gallery`, test again, `test:e2e`, `test:fidelity`); report outputs, bundle numbers and credits used against 101 (cap 121), cumulative 643. Stop.
+    - Run the CI order (lint, typecheck, test, build, `build:gallery`, test again, `test:e2e`, `test:fidelity`); report outputs, bundle numbers and credits used against 101 (cap 121), cumulative 643. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 18.1_
 
 ## CUT LINE
@@ -266,7 +267,7 @@ Everything below this line is dropped first if the budget runs short.
     - Test: a human runs the document on a phone and records the results (R21.12) [manual].
     - _Requirements: 21.12_
   - [ ] 5.5 Checkpoint: Group 5 stop-and-report
-    - Run the full CI order; report outputs and credits used against 86 (cap 103), cumulative 729. Stop.
+    - Run the full CI order; report outputs and credits used against 86 (cap 103), cumulative 729. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 17.1_
 
 ## Notes
