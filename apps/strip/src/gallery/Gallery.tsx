@@ -8,7 +8,30 @@ import { wasmSource } from "../symbols-wasm.js";
 import { SendView } from "../views/SendView.js";
 import { toSendVM } from "../views/send-vm.js";
 import { BAD_FACTS, FILE_FACTS, isSendStage } from "../views/send-fixtures.js";
+import { FullScreenView } from "../views/FullScreenView.js";
+import { StreamView } from "../views/StreamView.js";
+import { isStreamMode, streamInput } from "../views/stream-fixtures.js";
+import { toFullScreenVM, toStreamVM } from "../views/stream-vm.js";
+import { sampleSymbols } from "../services/sample-file.js";
+import type { SymbolMatrix } from "@strip/symbols";
 import { specimens, type Specimen } from "./fixtures.js";
+
+/** One real symbol for the boards that show a single code. */
+function useMatrix(): SymbolMatrix | null {
+  const [m, setM] = useState<SymbolMatrix | null>(null);
+  useEffect(() => {
+    void sampleSymbols(1).then((s) => setM(s[0]?.matrix ?? null));
+  }, []);
+  return m;
+}
+function Stream({ p, full }: { p: URLSearchParams; full: boolean }): ReactNode {
+  const matrix = useMatrix();
+  const mode = p.get("mode");
+  const m = isStreamMode(mode) ? mode : "play";
+  if (matrix === null) return null;
+  if (full) return <FullScreenView vm={toFullScreenVM(streamInput("play", matrix, mobileClass(p, "fs--m")))} />;
+  return <StreamView vm={toStreamVM(streamInput(m, matrix, mobileClass(p, "page--m")))} />;
+}
 export const GALLERY_SENTINEL = "STRIP_GALLERY_SENTINEL_7f3a";
 /** The board's mobile root class when the gallery URL carries mobile=1 (never present in the production bundle). */
 export const mobileClass = (params: URLSearchParams, cls: "page--m" | "fs--m"): string => (params.get("mobile") === "1" ? cls : "");
@@ -56,6 +79,8 @@ function SymbolSpecimens(): ReactNode {
 /** One entry per gallery route; each conversion task adds its own. */
 export const GALLERY_ROUTES: Readonly<Record<string, GalleryRoute>> = {
   "symbol-specimens": () => <SymbolSpecimens />,
+  stream: (p) => <Stream p={p} full={false} />,
+  "stream-full": (p) => <Stream p={p} full />,
   send: (p) => {
     const stage = p.get("stage");
     const st = isSendStage(stage) ? stage : "chosen";

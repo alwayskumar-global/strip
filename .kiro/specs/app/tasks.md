@@ -92,7 +92,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: VM-to-markup equals the board copy for each stage (R2.1 to R2.17) [unit].
     - Test: fidelity and DOM parity pass for the 8 Send targets (R20.1) [Playwright].
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.13, 19.1, 19.3, 19.4_
-  - [ ] 1.10 Convert SendScreen: play, paused, step and full screen (M, 15)
+  - [x] 1.10 Convert SendScreen: play, paused, step and full screen (M, 15)
     - `StreamView` (`mode`: `play`, `paused`, `step`), `FullScreenView`, `toStreamVM`, `toFullScreenVM`; the Photosensitivity_Notice verbatim; fidelity and parity targets: SendScreen, Paused, Step, Full, desktop and mobile (8).
     - Test: `toStreamVM` gives the board's tag, class, label and note per mode, `Previous` and `Next` disabled exactly in `play`, range disabled exactly in `step` (P15, R3.2, R3.3) [unit].
     - Test: fidelity and DOM parity pass for the 8 stream targets (R20.1) [Playwright].
