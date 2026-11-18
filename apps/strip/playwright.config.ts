@@ -18,7 +18,8 @@ export default defineConfig({
     { command: "pnpm build && pnpm build:gallery && node e2e-harness/app-server.mjs", timeout: 300_000, url: "http://127.0.0.1:5184/Home.dc.html", reuseExistingServer: true },
   ],
   projects: [
-    { name: "harness", testDir: "e2e", testIgnore: "**/gallery-*.spec.ts", use: { baseURL: "http://127.0.0.1:5173" } },
+    { name: "harness", testDir: "e2e", testIgnore: ["**/gallery-*.spec.ts", "**/app-*.spec.ts"], use: { baseURL: "http://127.0.0.1:5173" } },
+    { name: "app", testDir: "e2e", testMatch: "**/app-*.spec.ts", use: { baseURL: "http://127.0.0.1:5182" } },
     { name: "gallery", testDir: "e2e", testMatch: "**/gallery-*.spec.ts", use: { baseURL: "http://127.0.0.1:5183" } },
     { name: "fidelity-baseline", testDir: "e2e-fidelity", testMatch: "baseline.setup.ts", fullyParallel: true },
     {

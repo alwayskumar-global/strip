@@ -161,7 +161,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for any error value (any code, any message) the rendered text has no code string and no stack trace (P28, R13.2, R13.8) [unit].
     - Test: for any name that breaks the codec name rules the panel is `internal` and the name is never altered (P4, R9.7, R13.10) [unit].
     - _Requirements: 7.6, 7.7, 7.8, 9.7, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10, 13.11_
-  - [ ] 2.7 Paper-path end-to-end: print layout to page images to receiver (L, 30)
+  - [x] 2.7 Paper-path end-to-end: print layout to page images to receiver (L, 30)
     - Project `app` (production build on 5182), `deviceScaleFactor: 3`, files at several sizes, A4 and Letter. Render each sheet in print media, add the images through Image_Intake, download, compare bytes.
     - Test: `page.pdf()` in print media has exactly N pages of 210 x 297 mm or 215.9 x 279.4 mm, header "Page {p} of {N}", no tile clipped (P46, R10.8, R10.9) [Playwright].
     - Test: for each tested file all N sheets as images rebuild a byte-identical file with the same name and MIME; withholding the last sheet still completes (P47, R21.1, R21.2) [property].

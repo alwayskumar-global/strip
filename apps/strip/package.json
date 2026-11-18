@@ -10,7 +10,7 @@
     "build:gallery": "vite build --mode gallery",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test --project=harness --project=gallery",
+    "test:e2e": "playwright test --project=harness --project=gallery --project=app",
     "test:fidelity": "playwright test --project=fidelity-baseline --project=fidelity"
   },
   "dependencies": {
