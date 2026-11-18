@@ -126,7 +126,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: size strings parse back within rounding (P5, R2.3, R2.4, R2.11) [unit].
     - Test: hash chip equals the first 6 bytes of the Metadata_Record hash (P6, R2.4, R2.5) [unit].
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.11, 2.12, 2.14, 9.1, 9.4, 9.8_
-  - [ ] 2.2 Paper pipeline: encode, page, repair count, paginate, symbols (L, 30)
+  - [x] 2.2 Paper pipeline: encode, page, repair count, paginate, symbols (L, 30)
     - `paper-pages.ts`: `READ_AND_ENCODE` with the codec Encoder at `MAX_PAYLOAD`, `page()` Packets, `pageRepairCount(K)` for T without encoding, `paginate(T)`, `encodeSymbol(packet, { version: 30, ecc: "L" })`, session id and `Session_Short`, header copy.
     - Test: for any file of 1 to cap bytes with any name and MIME, `page()` Packets pushed to a codec Decoder complete with identical bytes, name and MIME (P1, R10.1, R21.1) [property].
     - Test: for any file and any permutation of the tile Packets, a codec Decoder completes with identical bytes (P9, R10.12) [property].

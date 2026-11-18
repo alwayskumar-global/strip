@@ -1,6 +1,7 @@
 // The Sender_File and the Send step 1 state: memory only, never persisted (R8.6, R16). A store for useSyncExternalStore.
-import { encode, sha256WebCrypto, CodecError } from "@strip/codec";
-import { MAX_PAYLOAD, PER_PAGE } from "../limits.js";
+import { sha256WebCrypto, CodecError } from "@strip/codec";
+import { PER_PAGE } from "../limits.js";
+import { encodeFile } from "./paper-pages.js";
 import { toHex } from "../state/format.js";
 import { initialSendState, reduceSend, type FileMeta, type SendCosts, type SendEffect, type SendEvent, type SendStepState } from "../state/send-step.js";
 export interface SenderFile {
@@ -60,7 +61,7 @@ async function readAndEncode(gen: number, meta: FileMeta): Promise<void> {
     if (file === null) throw new Error("no file");
     const bytes = new Uint8Array(await file.arrayBuffer());
     const hash = await sha256WebCrypto(bytes);
-    const enc = await encode({ bytes, name: meta.name, mime: meta.mime }, { packetSize: 1732, maxPayloadBytes: MAX_PAYLOAD });
+    const enc = await encodeFile(bytes, meta.name, meta.mime);
     const T = enc.page().length;
     const costs: SendCosts = { K: enc.K, T, N: Math.ceil(T / PER_PAGE), hash12: toHex(hash).slice(0, 12), sessionId: enc.sessionId };
     if (gen !== state.gen) return; // a newer pick or a removal won
