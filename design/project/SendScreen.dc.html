@@ -11,7 +11,6 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <div class="strip page {{rootCls}}">
 
@@ -29,12 +28,29 @@
       <a class="btn btn--icon btn--ghost" href="Send.dc.html" aria-label="Back to file and output"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></a>
       <h1 class="t-h2">Show on screen</h1>
       <span class="tag">field-notes-2026.pdf · 184 KB</span>
+      <span class="tag {{modeTagCls}}">{{modeTag}}</span>
+    </div>
+
+    <!-- Photosensitivity notice: always visible above the stage, never over the code. -->
+    <div class="wrap noticebar">
+      <div class="callout callout--warn" role="note">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg>
+        <div class="callout__body">
+          <p class="callout__title">Flashing content</p>
+          <p class="t-small">This view flashes. Use step mode if flashing is a problem for you.</p>
+          <p class="t-small t-muted">Step mode is the default when your system asks for reduced motion.</p>
+          <div class="callout__actions">
+            <sc-if value="{{notStep}}" hint-placeholder-val="{{true}}"><button class="btn" type="button">Switch to step mode</button></sc-if>
+            <sc-if value="{{isStep}}" hint-placeholder-val="{{false}}"><button class="btn" type="button">Back to playback</button></sc-if>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Stage: pure #FFF, pure #000 modules, nothing overlaps the code. -->
-    <section class="stage" aria-label="Animated code, frame 38">
+    <section class="stage" aria-label="Animated code, frame {{n}}">
       <div class="stage__code">
-        <svg class="code" viewBox="0 0 53 53" shape-rendering="crispEdges" role="img" aria-label="Animated data code, packet 38 of 96"><rect class="code__bg" width="53" height="53"/><path class="code__ink" d="{{codeD}}"/></svg>
+        <dc-import name="Symbol" seed="{{seed}}" label="{{codeLabel}}" hint-size="560px,560px"></dc-import>
       </div>
     </section>
 
@@ -42,18 +58,28 @@
       <div class="panel transport">
         <div class="counter" aria-live="off">
           <span class="t-label t-muted">Packet</span>
-          <span class="counter__n">38</span>
-          <span class="t-mono">of 96 + repair</span>
+          <span class="counter__n">{{n}}</span>
+          <span class="t-mono">of 111 + repair</span>
+          <span class="tag">{{lap}}</span>
         </div>
-        <progress class="progress" value="38" max="96" aria-label="Packet progress"></progress>
-        <button class="btn btn--primary btn--lg btn--block" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>Pause <span class="kbd">Space</span></button>
-        <p class="t-small t-muted">After packet 96 the code keeps looping repair packets until you stop. A scanner can start at any point.</p>
+        <progress class="progress" value="{{n}}" max="111" aria-label="Packet progress"></progress>
+        <button class="btn btn--primary btn--lg btn--block" type="button">
+          <sc-if value="{{isPlay}}" hint-placeholder-val="{{true}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></sc-if>
+          <sc-if value="{{notPlay}}" hint-placeholder-val="{{false}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg></sc-if>
+          {{ppLabel}} <span class="kbd">Space</span></button>
+        <div class="stepctl">
+          <button class="btn" type="button" disabled="{{stepOff}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg>Previous</button>
+          <button class="btn" type="button" disabled="{{stepOff}}">Next<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          <a class="btn btn--block" href="SendScreenFull.dc.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Full screen</a>
+        </div>
+        <p class="t-small t-muted">After packet 111 the code keeps looping repair packets until you stop. A scanner can start at any point.</p>
+        <p class="t-label t-muted">{{modeNote}}</p>
       </div>
 
       <div class="panel">
         <div class="field">
           <div class="field__top"><label class="t-label" for="fps">Speed</label><span class="field__val">8 fps</span></div>
-          <input id="fps" class="range" type="range" min="2" max="15" value="8">
+          <input id="fps" class="range" type="range" min="2" max="15" value="8" disabled="{{isStep}}">
           <p class="t-small t-muted">Drop to 4–6 fps if the receiver skips frames.</p>
         </div>
         <fieldset class="seg">
@@ -63,6 +89,7 @@
             <label class="seg__opt"><input class="seg__in" type="radio" name="size" value="m" checked><span class="seg__box">Medium</span></label>
             <label class="seg__opt"><input class="seg__in" type="radio" name="size" value="l"><span class="seg__box">Large</span></label>
           </div>
+          <p class="t-small t-muted">Symbol size. Larger symbols read from farther away.</p>
         </fieldset>
         <div class="callout callout--tip">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
@@ -74,12 +101,25 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1350}}'>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"mode":{"editor":"enum","options":["play","paused","step"],"default":"play"},"$preview":{"width":1280,"height":1550}}'>
 class Component extends DCLogic {
   renderVals() {
+    var m = this.props.mode || 'play';
+    var n = m === 'step' ? 39 : 38;
+    var lap = m === 'paused' ? 2 : 1;
+    var T = {
+      play: { tag: 'Playing', cls: 'tag--cobalt', pp: 'Pause', note: 'Playing at 8 fps. Pause to step by hand.' },
+      paused: { tag: 'Paused', cls: 'tag--signal', pp: 'Play', note: 'Paused. Previous and Next step one packet.' },
+      step: { tag: 'Step mode', cls: 'tag--solid', pp: 'Play', note: 'Step mode: the code changes only when you press Next or Previous.' }
+    };
+    var t = T[m] || T.play;
     return {
       rootCls: this.props.mobile ? 'page--m' : '',
-      codeD: window.StripCode ? window.StripCode.make(45, 38, 4).d : ''
+      n: n, lap: 'Lap ' + lap, seed: n + lap * 1000,
+      codeLabel: 'Animated data code, packet ' + n + ' of 111',
+      isPlay: m === 'play', notPlay: m !== 'play', isStep: m === 'step', notStep: m !== 'step',
+      stepOff: m === 'play',
+      modeTag: t.tag, modeTagCls: t.cls, ppLabel: t.pp, modeNote: t.note
     };
   }
 }

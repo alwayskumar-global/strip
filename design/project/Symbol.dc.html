@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Symbol placeholder</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<!-- Placeholder for a version-30 QR symbol: 145 modules wide including the 4-module quiet zone.
+     The application replaces this whole component with its own renderer. -->
+<svg class="code" viewBox="0 0 145 145" shape-rendering="crispEdges" role="img" aria-label="{{label}}"><rect class="code__bg" width="145" height="145"/><path class="code__ink" d="{{d}}"/></svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"seed":{"editor":"int","default":1},"label":{"editor":null},"$preview":{"width":360,"height":360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var seed = Number(this.props.seed) || 1;
+    return {
+      d: window.StripCode ? window.StripCode.make(137, seed, 4).d : '',
+      label: this.props.label || 'Sample data symbol'
+    };
+  }
+}
+</script>
+</body>
+</html>

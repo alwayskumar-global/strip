@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>All error kinds</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div class="strip page {{rootCls}}">
+
+  <header class="nav">
+    <a class="brand" href="Home.dc.html" aria-label="Strip home"><svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="2" width="22" height="24"/><path d="M8 8h12M8 12h7M8 16h12M8 20h5"/></svg><span>Strip</span></a>
+    <nav class="nav__links" aria-label="Primary">
+      <a class="nav__link" href="Send.dc.html">Send</a>
+      <a class="nav__link" href="Receive.dc.html">Receive</a>
+      <a class="nav__link" href="About.dc.html">About</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="pagehead">
+      <p class="t-label t-muted">Screen 7 · full set</p>
+      <h1 class="t-h1">Every error, one pattern</h1>
+      <p class="t-lead">Fourteen kinds, each with a title, a one-sentence explanation and one clear next action. The first twelve cover the whole flow; the last two are the earlier browser and decode cases.</p>
+    </div>
+    <div class="errgrid">
+      <sc-for list="{{kinds}}" as="k" hint-placeholder-count="14">
+        <dc-import name="ErrorState" kind="{{k.kind}}" hint-size="100%,560px"></dc-import>
+      </sc-for>
+    </div>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":3900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var ks = ['size', 'empty', 'imgread', 'imgbig', 'imgmany', 'nocode', 'denied', 'nocamera', 'nothing', 'otherfile', 'hash', 'internal', 'camera', 'stall'];
+    return { rootCls: this.props.mobile ? 'page--m' : '', kinds: ks.map(function (k) { return { kind: k }; }) };
+  }
+}
+</script>
+</body>
+</html>

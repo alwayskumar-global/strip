@@ -11,7 +11,6 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <div class="strip ds">
 
@@ -59,8 +58,8 @@
       <tr><td class="t-mono t-small">.t-lead</td><td class="t-mono t-small">Sans 400 · 20/29</td><td><p class="t-lead">Nothing leaves this device.</p></td></tr>
       <tr><td class="t-mono t-small">body</td><td class="t-mono t-small">Sans 400 · 16/24</td><td><p>Strip splits the file into packets and adds repair packets.</p></td></tr>
       <tr><td class="t-mono t-small">.t-small</td><td class="t-mono t-small">Sans 400 · 14/20</td><td><p class="t-small">Max 256 KB. Stays on this device.</p></td></tr>
-      <tr><td class="t-mono t-small">.t-label</td><td class="t-mono t-small">Mono 500 · 12/16 · +0.08em · caps</td><td><p class="t-label">Packet 38 of 96 + repair</p></td></tr>
-      <tr><td class="t-mono t-small">.t-num-lg</td><td class="t-mono t-small">Mono 600 · 28/28 · tabular</td><td><p class="t-num-lg">0123456789 · 9f2c 41ab e07d</p></td></tr>
+      <tr><td class="t-mono t-small">.t-label</td><td class="t-mono t-small">Mono 500 · 12/16 · +0.08em · caps</td><td><p class="t-label">Packet 38 of 111 + repair</p></td></tr>
+      <tr><td class="t-mono t-small">.t-num-lg</td><td class="t-mono t-small">Mono 600 · 28/28 · tabular</td><td><p class="t-num-lg">0123456789 · a1b2 c3d4 e5f6</p></td></tr>
     </table>
   </section>
 
@@ -142,7 +141,7 @@
           </div>
         </fieldset>
         <div class="field"><div class="field__top"><label class="t-label" for="ds-speed">Speed</label><span class="field__val">8 fps</span></div><input id="ds-speed" class="range" type="range" min="2" max="15" value="8"></div>
-        <progress class="progress" value="38" max="96" aria-label="Packets"></progress>
+        <progress class="progress" value="38" max="111" aria-label="Packets"></progress>
         <progress class="progress progress--cobalt" value="70" max="100" aria-label="Solved"></progress>
         <progress class="progress progress--signal" value="100" max="100" aria-label="Over limit"></progress>
       </div>
@@ -159,12 +158,12 @@
             <div class="demo"><div class="ring {{r.cls}}" role="img" aria-label="{{r.label}}"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{r.d}}"/></svg><div class="ring__label"><span>{{r.pct}}</span><span class="ring__unit">%</span></div></div><span class="t-small t-muted">{{r.label}}</span></div>
           </sc-for>
         </div>
-        <p class="t-small t-muted">One tick per block (96 ticks). Arc set through the SVG <span class="t-mono">d</span> attribute, a presentation attribute, so no inline style.</p>
+        <p class="t-small t-muted">One tick per source packet (111 ticks). Arc set through the SVG <span class="t-mono">d</span> attribute, a presentation attribute, so no inline style.</p>
       </div>
       <div class="panel">
         <h3 class="t-label">Code surface · .code .reg .br</h3>
         <div class="demo">
-          <div class="rd rd-0 bg-paper-0"><svg class="code" viewBox="0 0 31 31" role="img" aria-label="Sample code"><rect class="code__bg" width="31" height="31"/><path class="code__ink" d="{{sample}}"/></svg></div>
+          <div class="rd rd-0 bg-paper-0"><dc-import name="Symbol" seed="7" label="Sample code" hint-size="96px,96px"></dc-import></div>
         </div>
         <p class="t-small t-muted"><span class="t-mono">--code-ink #000</span> on <span class="t-mono">--code-paper #FFF</span>. Square, 4-module quiet zone, never a gradient, shadow or overlay behind it. Registration marks (<span class="t-mono">.reg</span>) are circle + crosshair, ink on paper, pure #000 in print.</p>
       </div>
@@ -176,13 +175,25 @@
     <div class="ds__grid ds__grid--3">
       <div class="panel"><h3 class="t-label">CSP</h3><p class="t-small">No <span class="t-mono">style=""</span> anywhere. State is a class (<span class="t-mono">.ring--bad</span>, <span class="t-mono">.stage__code--l</span>), a native attribute (<span class="t-mono">value</span>, <span class="t-mono">checked</span>) or an SVG presentation attribute. No inline script handlers.</p></div>
       <div class="panel"><h3 class="t-label">Responsive</h3><p class="t-small">Roots are containers (<span class="t-mono">.page</span>, <span class="t-mono">.rx</span>, <span class="t-mono">.err</span>); layout switches at 760 px container width, not viewport. The same markup renders desktop and mobile.</p></div>
-      <div class="panel"><h3 class="t-label">Print</h3><p class="t-small"><span class="t-mono">.paper</span> is built in container units (cqw) so A4 and Letter scale with no per-size CSS. Print resets every colour to #000 on #FFF; accents never print. Switch <span class="t-mono">@page size</span> for Letter.</p></div>
+      <div class="panel"><h3 class="t-label">Print</h3><p class="t-small"><span class="t-mono">.paper</span> is built in container units (cqw) so A4 and Letter scale with no per-size CSS. Print resets every colour to #000 on #FFF; accents never print. Named pages (<span class="t-mono">@page a4</span>, <span class="t-mono">@page letter</span>) switch the sheet.</p></div>
+    </div>
+  </section>
+
+  <section class="ds__sec" aria-labelledby="n-h">
+    <div class="ds__h"><span class="t-label t-muted">07</span><h2 id="n-h" class="t-h2">Revision 2 additions</h2></div>
+    <div class="ds__grid ds__grid--3">
+      <div class="panel"><h3 class="t-label">Photo input · .picker .capture .photos</h3><p class="t-small">A file input styled as a button, one photo per pick, so pages are added one at a time. Each added photo is a <span class="t-mono">.photo</span> row: thumbnail, “n symbols found”, remove button. The tag in the list header carries the running count.</p></div>
+      <div class="panel"><h3 class="t-label">Step controls · .stepctl .fs</h3><p class="t-small">Previous and Next are enabled when paused or in step mode. Full screen switches to <span class="t-mono">.fs</span>: white field, symbol at maximum size, controls only in the corner and on the bottom edge, never over the symbol.</p></div>
+      <div class="panel"><h3 class="t-label">Photosensitivity notice · .callout--warn</h3><p class="t-small">Always visible above the stage on Send › Screen. Step mode is the default when the system asks for reduced motion (<span class="t-mono">prefers-reduced-motion</span>).</p></div>
+      <div class="panel"><h3 class="t-label">Paper header · .paper__head</h3><p class="t-small">File name, SHA-256 short form, “Page n of N” and a 4-character session id (7F3A) on every page. Registration marks at all four corners.</p></div>
+      <div class="panel"><h3 class="t-label">Symbols · Symbol.dc.html</h3><p class="t-small">Placeholder for a version-30 QR symbol: 137 modules plus a 4-module quiet zone is 145 wide, 9 per page in a 3 × 3 grid. The sample file is 111 source packets, 149 symbols, 17 pages. The app draws the real symbols into the same slot.</p></div>
+      <div class="panel"><h3 class="t-label">Errors · ErrorState.dc.html</h3><p class="t-small">One component, fourteen kinds, chosen by the <span class="t-mono">kind</span> prop: title, one-sentence explanation, one next action.</p></div>
     </div>
   </section>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4300}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4700}}'>
 class Component extends DCLogic {
   arc(p) {
     if (p <= 0) return '';
@@ -195,9 +206,7 @@ class Component extends DCLogic {
   }
   renderVals() {
     var self = this;
-    var g = window.StripCode ? window.StripCode.make(25, 7, 3) : { d: '' };
     return {
-      sample: g.d,
       colorGroups: [
         { name: 'Ink · text, rules, primary action', items: [
           { name: '--ink-900', hex: '#121210', cls: 'bg-ink-900', use: 'Text, rules, primary button' },

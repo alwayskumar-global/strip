@@ -11,14 +11,14 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <section class="strip err" role="alert">
   <div class="err__head">
     <span class="err__icon" aria-hidden="true">
-      <sc-if value="{{isSize}}" hint-placeholder-val="{{true}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5M10 13l4 4M14 13l-4 4"/></svg></sc-if>
-      <sc-if value="{{isCamera}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
-      <sc-if value="{{isStall}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></sc-if>
+      <sc-if value="{{iconFile}}" hint-placeholder-val="{{true}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5M10 13l4 4M14 13l-4 4"/></svg></sc-if>
+      <sc-if value="{{iconCam}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
+      <sc-if value="{{iconClock}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></sc-if>
+      <sc-if value="{{iconAlert}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg></sc-if>
     </span>
     <span class="tag tag--signal">{{tag}}</span>
   </div>
@@ -35,7 +35,7 @@
   <sc-if value="{{isStall}}" hint-placeholder-val="{{false}}">
     <div class="row">
       <div class="ring ring--sm ring--dim" role="img" aria-label="74 percent solved"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{ringD}}"/></svg><div class="ring__label"><span>74</span><span class="ring__unit">%</span></div></div>
-      <p class="t-label t-muted">Frozen at 71 / 96</p>
+      <p class="t-label t-muted">Frozen at 82 / 111</p>
     </div>
   </sc-if>
 
@@ -57,27 +57,65 @@
   </div>
 </section>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["size","camera","stall"],"default":"size"},"$preview":{"width":420,"height":620}}'>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["size","empty","imgread","imgbig","imgmany","nocode","denied","nocamera","nothing","otherfile","hash","internal","camera","stall"],"default":"size"},"$preview":{"width":420,"height":620}}'>
 class Component extends DCLogic {
   renderVals() {
     var k = this.props.kind || 'size';
     var t = 74 / 100 * 2 * Math.PI;
     var ringD = 'M50 6A44 44 0 1 1 ' + (50 + 44 * Math.sin(t)).toFixed(2) + ' ' + (50 - 44 * Math.cos(t)).toFixed(2);
+    var R = 'Receive.dc.html', SND = 'Send.dc.html', H = 'Home.dc.html';
     var M = {
       size: { tag: 'File too large', title: 'This file is too big for Strip', msg: 'big-report.pdf is 1.4 MB. Strip carries files up to 256 KB. Compress it, or split it into smaller files.',
         rows: [{ k: 'File', v: 'big-report.pdf' }, { k: 'Size', v: '1.4 MB' }, { k: 'Limit', v: '256 KB' }],
-        primary: 'Choose another file', ph: 'Send.dc.html', secondary: 'About limits', sh: 'About.dc.html' },
+        primary: 'Choose another file', ph: SND, secondary: 'About limits', sh: 'About.dc.html' },
+      empty: { tag: 'Empty file', title: 'This file has no content', msg: 'empty.txt is 0 bytes, so there is nothing to send.',
+        rows: [{ k: 'File', v: 'empty.txt' }, { k: 'Size', v: '0 bytes' }],
+        primary: 'Choose another file', ph: SND, secondary: 'Back to home', sh: H },
+      imgread: { tag: 'Image unreadable', title: 'We couldn’t read this image', msg: 'The file is not an image this browser can open, or it is damaged.',
+        rows: [{ k: 'File', v: 'IMG_2041.heic' }],
+        primary: 'Choose another photo', ph: R, secondary: 'Use the camera', sh: R },
+      imgbig: { tag: 'Image too large', title: 'This image is too large', msg: 'IMG_2041.jpg is 28 MB, and photos up to 20 MB can be read.',
+        rows: [{ k: 'File', v: 'IMG_2041.jpg' }, { k: 'Size', v: '28 MB' }, { k: 'Limit', v: '20 MB' }],
+        primary: 'Choose a smaller photo', ph: R, secondary: 'Use the camera', sh: R },
+      imgmany: { tag: 'Too many images', title: 'You have added the most photos allowed', msg: 'Remove a photo to add another, or scan the remaining pages with the camera.',
+        rows: [{ k: 'Photos', v: '24 / 24' }, { k: 'Pages needed', v: '17' }],
+        primary: 'Review added photos', ph: R, secondary: 'Use the camera', sh: R },
+      nocode: { tag: 'No code found', title: 'No code found in this image', msg: 'Retake the photo flat, in good light, with the whole page in frame.',
+        rows: [{ k: 'File', v: 'IMG_2043.jpg' }, { k: 'Symbols found', v: '0' }],
+        primary: 'Try another photo', ph: R, secondary: 'Use the camera', sh: R },
+      denied: { tag: 'Camera blocked', title: 'Camera access was denied', msg: 'Allow the camera for this site in your browser settings, then try again.',
+        rows: [],
+        primary: 'Try again', ph: R, secondary: 'Add photo of a page', sh: R },
+      nocamera: { tag: 'No camera found', title: 'No camera on this device', msg: 'You can still receive by adding photos or scans of the printed pages.',
+        rows: [],
+        primary: 'Add photo of a page', ph: R, secondary: 'Back to home', sh: H },
+      nothing: { tag: 'Camera stalled', title: 'Nothing readable for a while', msg: 'No symbol has been read for 30 seconds, so steady the phone, add light, or move closer.',
+        rows: [{ k: 'Last symbol', v: '32 s ago' }, { k: 'Distance', v: 'Aim for 30–50 cm' }],
+        primary: 'Keep scanning', ph: R, secondary: 'Add photo of a page', sh: R },
+      otherfile: { tag: 'Different file', title: 'These pages belong to a different file', msg: 'Pages from two sessions can’t be combined, so keep one set and start over with the other.',
+        rows: [{ k: 'Current session', v: '7F3A' }, { k: 'Other session', v: '4C21' }],
+        primary: 'Start over', ph: R, secondary: 'Keep current file', sh: R },
+      hash: { tag: 'Verification failed', title: 'The file did not verify', msg: 'The rebuilt file doesn’t match the sender’s hash, so nothing was saved.',
+        rows: [{ k: 'Expected', v: 'a1b2c3d4e5f6' }, { k: 'Got', v: '9f8e7d6c5b4a' }],
+        primary: 'Scan again', ph: R, secondary: 'Discard', sh: H },
+      internal: { tag: 'Something went wrong', title: 'Something went wrong inside Strip', msg: 'The app hit an unexpected error and stopped, so reload the page and try again.',
+        rows: [],
+        primary: 'Reload', ph: H, secondary: 'Back to home', sh: H },
       camera: { tag: 'Camera unavailable', title: 'This browser can’t use the camera', msg: 'Receive needs the camera API, which is missing here. Open Strip in a current browser over HTTPS, ideally on a phone. Sending still works from this device.',
         rows: [{ k: 'Camera API', v: 'Missing' }, { k: 'Secure context', v: 'Yes (HTTPS)' }, { k: 'Send', v: 'Available' }],
-        primary: 'Open Send', ph: 'Send.dc.html', secondary: 'Copy page link', sh: '#' },
-      stall: { tag: 'Decode stalled', title: 'No progress for 20 seconds', msg: '71 of 96 blocks are solved. The remaining blocks need packets the camera has not read cleanly yet.',
-        rows: [{ k: 'Blocks solved', v: '71 / 96' }, { k: 'Packets seen', v: '143' }, { k: 'Last new block', v: '21 s ago' }],
+        primary: 'Open Send', ph: SND, secondary: 'Copy page link', sh: '#' },
+      stall: { tag: 'Decode stalled', title: 'No progress for 20 seconds', msg: '82 of 111 blocks are solved. The remaining blocks need packets the camera has not read cleanly yet.',
+        rows: [{ k: 'Blocks solved', v: '82 / 111' }, { k: 'Packets seen', v: '143' }, { k: 'Last new block', v: '21 s ago' }],
         tips: [{ t: 'Move to 30–50 cm from the screen.' }, { t: 'Raise the sender’s brightness.' }, { t: 'Ask the sender to drop to 4–6 fps.' }],
-        primary: 'Keep scanning', ph: 'Receive.dc.html', secondary: 'Start over', sh: 'Receive.dc.html' }
+        primary: 'Keep scanning', ph: R, secondary: 'Start over', sh: R }
     };
     var m = M[k] || M.size;
+    var cam = k === 'camera' || k === 'denied' || k === 'nocamera';
+    var clock = k === 'stall' || k === 'nothing';
     return {
-      isSize: k === 'size', isCamera: k === 'camera', isStall: k === 'stall',
+      iconFile: k === 'size' || k === 'empty' || k === 'imgread' || k === 'imgbig', iconCam: cam, iconClock: clock,
+      iconAlert: !(k === 'size' || k === 'empty' || k === 'imgread' || k === 'imgbig' || cam || clock),
+      isSize: k === 'size', isStall: k === 'stall',
       tag: m.tag, title: m.title, msg: m.msg, rows: m.rows, tips: m.tips || [], ringD: ringD,
       primary: m.primary, primaryHref: m.ph, secondary: m.secondary, secondaryHref: m.sh
     };

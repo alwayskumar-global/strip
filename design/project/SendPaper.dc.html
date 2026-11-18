@@ -11,7 +11,6 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <div class="strip page {{rootCls}}">
 
@@ -36,22 +35,24 @@
         <fieldset class="seg">
           <legend class="t-label">Paper</legend>
           <div class="seg__row">
-            <label class="seg__opt"><input class="seg__in" type="radio" name="paper" value="a4" checked><span class="seg__box">A4</span></label>
-            <label class="seg__opt"><input class="seg__in" type="radio" name="paper" value="letter"><span class="seg__box">Letter</span></label>
+            <label class="seg__opt"><input class="seg__in" id="paper-a4" type="radio" name="paper" value="a4" checked="{{a4On}}"><span class="seg__box">A4</span></label>
+            <label class="seg__opt"><input class="seg__in" id="paper-letter" type="radio" name="paper" value="letter" checked="{{letterOn}}"><span class="seg__box">Letter</span></label>
           </div>
+          <p class="t-small t-muted">A4 is 210 × 297 mm, Letter is 8.5 × 11 in. The preview and the printed pages follow the choice.</p>
         </fieldset>
         <div class="field">
-          <div class="field__top"><span class="t-label">Preview page</span><span class="field__val">1 / 3</span></div>
+          <div class="field__top"><span class="t-label">Preview page</span><span class="field__val">1 / 17</span></div>
           <div class="row">
             <button class="btn" type="button" disabled aria-label="Previous page"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></button>
             <button class="btn" type="button" aria-label="Next page"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
           </div>
         </div>
         <dl class="kv">
-          <div class="kv__row"><dt class="t-label">Codes</dt><dd class="t-mono">27 · 9 per page · includes repair</dd></div>
-          <div class="kv__row"><dt class="t-label">SHA-256</dt><dd><span class="hash"><span>9f2c</span><span>41ab</span><span>e07d</span><span>…</span></span></dd></div>
+          <div class="kv__row"><dt class="t-label">Codes</dt><dd class="t-mono">149 · 9 per page · includes repair</dd></div>
+          <div class="kv__row"><dt class="t-label">Session</dt><dd class="t-mono">7F3A</dd></div>
+          <div class="kv__row"><dt class="t-label">SHA-256</dt><dd><span class="hash"><span>a1b2</span><span>c3d4</span><span>e5f6</span><span>…</span></span></dd></div>
         </dl>
-        <button class="btn btn--primary btn--lg btn--block" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>Print 3 pages</button>
+        <button class="btn btn--primary btn--lg btn--block" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>Print 17 pages</button>
         <div class="callout callout--tip">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
           <div class="callout__body"><p class="callout__title">Print at 100%</p><p class="t-small">Pure black on white. Turn off “fit to page” and colour. The ruler on each page must measure 10 cm.</p></div>
@@ -59,20 +60,23 @@
       </aside>
 
       <div class="paper-wrap">
-        <article class="paper" aria-label="Page 1 of 3 preview">
+        <article class="paper {{paperCls}}" aria-label="Page 1 of 17 preview">
           <span class="reg reg--tl" aria-hidden="true"></span><span class="reg reg--tr" aria-hidden="true"></span><span class="reg reg--bl" aria-hidden="true"></span><span class="reg reg--br" aria-hidden="true"></span>
           <div class="paper__inner">
             <header class="paper__head">
               <div>
                 <p class="paper__name">field-notes-2026.pdf</p>
-                <p class="paper__meta">184 KB · SHA-256 9f2c41abe07d… · 27 codes</p>
+                <p class="paper__meta">184 KB · SHA-256 a1b2c3d4e5f6… · 149 symbols</p>
               </div>
-              <p class="paper__page">PAGE 1 / 3</p>
+              <div class="paper__id">
+                <p class="paper__page">Page 1 of 17</p>
+                <p class="paper__meta">Session 7F3A</p>
+              </div>
             </header>
             <div class="paper__grid">
               <sc-for list="{{tiles}}" as="t" hint-placeholder-count="9">
                 <figure class="tile">
-                  <svg class="code" viewBox="0 0 39 39" shape-rendering="crispEdges" role="img" aria-label="{{t.label}}"><rect class="code__bg" width="39" height="39"/><path class="code__ink" d="{{t.d}}"/></svg>
+                  <dc-import name="Symbol" seed="{{t.seed}}" label="{{t.label}}" hint-size="100%,160px"></dc-import>
                   <figcaption class="tile__cap"><span>{{t.label}}</span><span>{{t.of}}</span></figcaption>
                 </figure>
               </sc-for>
@@ -89,18 +93,19 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1400}}'>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"size":{"editor":"enum","options":["a4","letter"],"default":"a4"},"$preview":{"width":1280,"height":1500}}'>
 class Component extends DCLogic {
   renderVals() {
+    var letter = this.props.size === 'letter';
     var tiles = [];
     for (var i = 1; i <= 9; i++) {
-      tiles.push({
-        d: window.StripCode ? window.StripCode.make(33, 100 + i, 3).d : '',
-        label: 'P1·' + (i < 10 ? '0' + i : i),
-        of: i + '/27'
-      });
+      tiles.push({ seed: 100 + i, label: 'P1·' + (i < 10 ? '0' + i : i), of: i + '/149' });
     }
-    return { rootCls: this.props.mobile ? 'page--m' : '', tiles: tiles };
+    return {
+      rootCls: this.props.mobile ? 'page--m' : '',
+      a4On: !letter, letterOn: letter, paperCls: letter ? 'paper--letter' : '',
+      tiles: tiles
+    };
   }
 }
 </script>

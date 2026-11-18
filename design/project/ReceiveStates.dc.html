@@ -11,12 +11,11 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <div class="strip gallery">
   <header>
     <p class="t-label t-muted">Screen 5 · mobile first</p>
-    <h1 class="t-h1">Receive: seven states</h1>
+    <h1 class="t-h1">Receive: ten states</h1>
     <p class="t-lead">One-handed by design. The viewfinder sits on top; counters and the primary action sit in the bottom dock, inside thumb reach, 56 px tall, full width.</p>
   </header>
   <div class="gallery__grid">
@@ -40,9 +39,12 @@ class Component extends DCLogic {
         { n: '02', name: 'Permission denied', phase: 'denied' },
         { n: '03', name: 'Scanning', phase: 'scan' },
         { n: '04', name: 'Duplicate / other session', phase: 'dup' },
-        { n: '05', name: 'Verifying hash', phase: 'verify' },
+        { n: '05', name: 'Verifying hash (only if slow)', phase: 'verify' },
         { n: '06', name: 'Complete', phase: 'done' },
-        { n: '07', name: 'Verification failed', phase: 'failed' }
+        { n: '07', name: 'Verification failed', phase: 'failed' },
+        { n: '08', name: 'Empty (nothing started)', phase: 'empty' },
+        { n: '09', name: 'No camera on this device', phase: 'nocam' },
+        { n: '10', name: 'Duplicate frame', phase: 'repeat' }
       ]
     };
   }

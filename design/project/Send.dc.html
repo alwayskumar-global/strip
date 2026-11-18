@@ -11,7 +11,6 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <div class="strip page {{rootCls}}">
 
@@ -34,7 +33,7 @@
     </div>
 
     <div class="two">
-      <section class="drop" aria-labelledby="drop-h">
+      <section class="drop {{dropCls}}" aria-labelledby="drop-h">
         <svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V6M6 12l6-6 6 6M4 3h16"/></svg>
         <h2 id="drop-h" class="t-h3">Drop a file here</h2>
         <p class="t-small t-muted">or pick one from this device</p>
@@ -43,31 +42,64 @@
         <p class="t-label t-muted">Max 256 KB · one file</p>
       </section>
 
-      <section class="filecard" aria-labelledby="fc-h">
-        <div class="filecard__head">
-          <span class="filecard__icon" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/></svg></span>
-          <div class="filecard__title"><h2 id="fc-h" class="filecard__name">field-notes-2026.pdf</h2><p class="t-small t-muted">application/pdf</p></div>
-          <button class="btn btn--ghost btn--icon" type="button" aria-label="Remove file"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
-        </div>
-        <dl class="kv">
-          <div class="kv__row"><dt class="t-label">Size</dt><dd class="t-mono">184 KB <span class="t-muted">188,416 bytes</span></dd></div>
-          <div class="kv__row"><dt class="t-label">SHA-256</dt><dd><span class="hash"><span>9f2c</span><span>41ab</span><span>e07d</span><span>…</span></span></dd></div>
-          <div class="kv__row"><dt class="t-label">Within limit</dt><dd class="t-mono">184 of 256 KB</dd></div>
-        </dl>
-        <progress class="progress" value="184" max="256" aria-label="Share of the 256 KB limit used"></progress>
-      </section>
+      <sc-if value="{{isChosen}}" hint-placeholder-val="{{true}}">
+        <section class="filecard" aria-labelledby="fc-h">
+          <div class="filecard__head">
+            <span class="filecard__icon" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/></svg></span>
+            <div class="filecard__title"><h2 id="fc-h" class="filecard__name">field-notes-2026.pdf</h2><p class="t-small t-muted">application/pdf</p></div>
+            <button class="btn btn--ghost btn--icon" type="button" aria-label="Remove file"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+          </div>
+          <dl class="kv">
+            <div class="kv__row"><dt class="t-label">Size</dt><dd class="t-mono">184 KB <span class="t-muted">188,416 bytes</span></dd></div>
+            <div class="kv__row"><dt class="t-label">SHA-256</dt><dd><span class="hash"><span>a1b2</span><span>c3d4</span><span>e5f6</span><span>…</span></span></dd></div>
+            <div class="kv__row"><dt class="t-label">Encoded</dt><dd class="t-mono">111 packets · 149 symbols</dd></div>
+            <div class="kv__row"><dt class="t-label">Within limit</dt><dd class="t-mono">184 of 256 KB</dd></div>
+          </dl>
+          <progress class="progress" value="184" max="256" aria-label="Share of the 256 KB limit used"></progress>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isNone}}" hint-placeholder-val="{{false}}">
+        <section class="filecard filecard--empty" aria-labelledby="fe-h">
+          <h2 id="fe-h" class="t-h3">No file chosen</h2>
+          <p class="t-small t-muted">Name, size and SHA-256 appear here once you pick a file.</p>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isBad}}" hint-placeholder-val="{{false}}">
+        <section class="filecard filecard--bad" aria-labelledby="fb-h">
+          <div class="filecard__head">
+            <span class="filecard__icon" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/></svg></span>
+            <div class="filecard__title"><h2 id="fb-h" class="filecard__name">{{badName}}</h2><p class="t-small t-muted">{{badType}}</p></div>
+            <button class="btn btn--ghost btn--icon" type="button" aria-label="Remove file"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+          </div>
+          <dl class="kv">
+            <div class="kv__row"><dt class="t-label">Size</dt><dd class="t-mono">{{badSize}}</dd></div>
+            <div class="kv__row"><dt class="t-label">SHA-256</dt><dd class="t-mono t-muted">Not computed</dd></div>
+            <div class="kv__row"><dt class="t-label">Within limit</dt><dd class="t-mono">{{badLimit}}</dd></div>
+          </dl>
+          <progress class="progress progress--signal" value="{{badValue}}" max="{{badMax}}" aria-label="Share of the 256 KB limit used"></progress>
+        </section>
+      </sc-if>
     </div>
 
-    <fieldset class="choices" aria-describedby="out-help">
+    <sc-if value="{{isBad}}" hint-placeholder-val="{{false}}">
+      <div class="callout callout--error" role="alert">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5"/></svg>
+        <div class="callout__body"><p class="callout__title">{{badTitle}}</p><p class="t-small">{{badMsg}}</p></div>
+      </div>
+    </sc-if>
+
+    <fieldset class="choices" disabled="{{choicesOff}}" aria-describedby="out-help">
       <legend class="t-label">Choose output</legend>
       <p id="out-help" class="sr-only">Screen plays an animated code. Paper prints a strip.</p>
       <div class="choices__row">
         <label class="choice">
-          <input class="choice__in" type="radio" name="output" value="screen" checked>
+          <input class="choice__in" type="radio" name="output" value="screen" checked="{{screenOn}}">
           <span class="choice__box">
             <span class="choice__head"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg><span class="t-h3">Screen</span><span class="choice__tick"><svg class="ico ico--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span></span>
             <span class="t-small">Play an animated code on this display. Fastest way to hand over a file in the same room.</span>
-            <span class="t-label t-muted">96 packets + repair · ≈ 15 s loop at 8 fps</span>
+            <span class="t-label t-muted">111 packets + repair · ≈ 14 s loop at 8 fps</span>
           </span>
         </label>
         <label class="choice">
@@ -75,7 +107,7 @@
           <span class="choice__box">
             <span class="choice__head"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span class="t-h3">Paper</span><span class="choice__tick"><svg class="ico ico--sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span></span>
             <span class="t-small">Print a strip of codes on A4 or Letter. Scan it now or years from now.</span>
-            <span class="t-label t-muted">27 codes · 3 pages · black on white</span>
+            <span class="t-label t-muted">149 symbols · 17 pages · black on white</span>
           </span>
         </label>
       </div>
@@ -83,15 +115,39 @@
 
     <div class="actionbar">
       <a class="btn btn--ghost" href="Home.dc.html">Cancel</a>
-      <a class="btn btn--primary btn--lg" href="SendScreen.dc.html">Continue to Screen<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+      <sc-if value="{{isChosen}}" hint-placeholder-val="{{true}}">
+        <a class="btn btn--primary btn--lg" href="SendScreen.dc.html">Continue to Screen<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+      </sc-if>
+      <sc-if value="{{choicesOff}}" hint-placeholder-val="{{false}}">
+        <button class="btn btn--primary btn--lg" type="button" disabled>Continue to Screen<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+      </sc-if>
     </div>
   </main>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":1250}}'>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"stage":{"editor":"enum","options":["chosen","empty","toolarge","emptyfile"],"default":"chosen"},"$preview":{"width":1280,"height":1300}}'>
 class Component extends DCLogic {
-  renderVals() { return { rootCls: this.props.mobile ? 'page--m' : '' }; }
+  renderVals() {
+    var s = this.props.stage || 'chosen';
+    var big = s === 'toolarge';
+    var zero = s === 'emptyfile';
+    return {
+      rootCls: this.props.mobile ? 'page--m' : '',
+      isChosen: s === 'chosen', isNone: s === 'empty', isBad: big || zero,
+      choicesOff: s !== 'chosen', screenOn: s === 'chosen',
+      dropCls: big || zero ? 'drop--error' : '',
+      badName: big ? 'big-report.pdf' : 'empty.txt',
+      badType: big ? 'application/pdf' : 'text/plain',
+      badSize: big ? '1.4 MB (1,468,006 bytes)' : '0 bytes',
+      badLimit: big ? 'No, over by 1.2 MB' : 'n/a',
+      badValue: big ? 100 : 0, badMax: big ? 100 : 256,
+      badTitle: big ? 'File too large' : 'File is empty',
+      badMsg: big
+        ? 'big-report.pdf is 1.4 MB. Strip carries files up to 256 KB, so compress it or split it into smaller files.'
+        : 'empty.txt has no content, so there is nothing to send. Choose a file with data in it.'
+    };
+  }
 }
 </script>
 </body>

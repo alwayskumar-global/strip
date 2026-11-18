@@ -11,7 +11,6 @@
 <x-dc>
 <helmet>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>body{margin:0}</style>
 </helmet>
 <section class="strip rx" aria-label="Receive">
 
@@ -25,13 +24,13 @@
     <div class="rx__view">
       <div class="vf on-dark {{vfCls}}">
         <sc-if value="{{showCode}}" hint-placeholder-val="{{true}}">
-          <div class="vf__code tilt"><svg class="code" viewBox="0 0 39 39" shape-rendering="crispEdges" role="img" aria-label="Code seen by the camera"><rect class="code__bg" width="39" height="39"/><path class="code__ink" d="{{codeD}}"/></svg></div>
+          <div class="vf__code tilt"><dc-import name="Symbol" seed="52" label="Code seen by the camera" hint-size="200px,200px"></dc-import></div>
           <div class="vf__scan" aria-hidden="true"></div>
         </sc-if>
         <sc-if value="{{showMsg}}" hint-placeholder-val="{{false}}">
           <div class="vf__msg">
-            <sc-if value="{{isAsk}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></sc-if>
-            <sc-if value="{{isDenied}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
+            <sc-if value="{{camOn}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></sc-if>
+            <sc-if value="{{camOff}}" hint-placeholder-val="{{false}}"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 3l18 18"/></svg></sc-if>
             <p class="t-label">{{vfNote}}</p>
           </div>
         </sc-if>
@@ -40,13 +39,36 @@
             <span class="vf__check"><svg class="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></span>
             <h2 class="t-h3 filecard__name">field-notes-2026.pdf</h2>
             <p class="t-mono">184 KB</p>
-            <span class="tag tag--cobalt">SHA-256 match · 9f2c 41ab e07d…</span>
+            <span class="tag tag--cobalt">SHA-256 match · a1b2 c3d4 e5f6…</span>
           </div>
         </sc-if>
         <span class="br br--tl" aria-hidden="true"></span><span class="br br--tr" aria-hidden="true"></span><span class="br br--bl" aria-hidden="true"></span><span class="br br--brr" aria-hidden="true"></span>
         <sc-if value="{{showHud}}" hint-placeholder-val="{{true}}">
           <div class="vf__hud"><span class="tag">{{hud}}</span></div>
         </sc-if>
+      </div>
+
+      <!-- Beside the camera: add a photo or scan of a printed page. One per pick, as many pages as needed. -->
+      <div class="capture">
+        <span class="tag capture__cam">{{camState}}</span>
+        <label class="btn picker"><input class="sr-only" type="file" accept="image/*"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add photo of a page</label>
+        <p class="t-small t-muted capture__help">One photo at a time. Add as many pages as you have.</p>
+      </div>
+
+      <div class="photos">
+        <div class="photos__head"><h3 class="t-label">Added photos</h3><span class="tag">{{photoCount}}</span></div>
+        <sc-if value="{{hasPhotos}}" hint-placeholder-val="{{false}}">
+          <ul class="photos__list">
+            <sc-for list="{{photos}}" as="p" hint-placeholder-count="2">
+              <li class="photo">
+                <span class="thumb" aria-hidden="true"><svg class="thumb__svg" viewBox="0 0 24 30"><path d="M3 4h5v5H3zM9.5 4h5v5h-5zM16 4h5v5h-5zM3 12.5h5v5H3zM9.5 12.5h5v5h-5zM16 12.5h5v5h-5zM3 21h5v5H3zM9.5 21h5v5h-5zM16 21h5v5h-5z"/></svg></span>
+                <div><p class="photo__name">{{p.name}}</p><p class="t-small t-muted">{{p.found}} symbols found</p></div>
+                <button class="btn btn--ghost btn--icon" type="button" aria-label="Remove {{p.name}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+              </li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{noPhotos}}" hint-placeholder-val="{{false}}"><p class="t-small t-muted">{{photoHint}}</p></sc-if>
       </div>
     </div>
 
@@ -65,6 +87,12 @@
             <div class="callout__body"><p class="callout__title">{{bannerTitle}}</p><p class="t-small">{{bannerMsg}}</p></div>
           </div>
         </sc-if>
+        <sc-if value="{{showBar}}" hint-placeholder-val="{{false}}">
+          <div class="meter">
+            <progress class="progress progress--cobalt" value="{{distinct}}" max="111" aria-label="Distinct packets seen"></progress>
+            <div class="meter__ends t-label"><span>Distinct packets</span><span>{{distinct}} of 111</span></div>
+          </div>
+        </sc-if>
         <sc-if value="{{isVerify}}" hint-placeholder-val="{{false}}">
           <progress class="progress progress--indet" aria-label="Verifying hash"></progress>
         </sc-if>
@@ -76,11 +104,16 @@
           <div class="ring {{ringCls}}" role="img" aria-label="Progress {{pct}} percent"><svg class="ring__svg" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring__track" cx="50" cy="50" r="44"/><path class="ring__bar" d="{{ringD}}"/></svg><div class="ring__label"><span>{{pct}}</span><span class="ring__unit">%</span></div></div>
           <div class="stats" aria-live="polite">
             <div class="stat"><span class="t-label t-muted">Packets seen</span><span class="stat__v">{{seen}}</span></div>
-            <div class="stat"><span class="t-label t-muted">Blocks solved</span><span class="stat__v">{{solved}}<span class="stat__of"> / 96</span></span></div>
+            <div class="stat"><span class="t-label t-muted">Blocks solved</span><span class="stat__v">{{solved}}<span class="stat__of"> / 111</span></span></div>
           </div>
         </div>
         <div class="dock__actions">
-          <button class="{{primaryCls}}" type="button" disabled="{{primaryOff}}"><sc-if value="{{isDone}}" hint-placeholder-val="{{false}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg></sc-if>{{primary}}</button>
+          <sc-if value="{{isNocam}}" hint-placeholder-val="{{false}}">
+            <label class="btn btn--primary btn--lg btn--block picker"><input class="sr-only" type="file" accept="image/*"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add photo of a page</label>
+          </sc-if>
+          <sc-if value="{{hasPrimaryBtn}}" hint-placeholder-val="{{true}}">
+            <button class="{{primaryCls}}" type="button" disabled="{{primaryOff}}"><sc-if value="{{isDone}}" hint-placeholder-val="{{false}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg></sc-if>{{primary}}</button>
+          </sc-if>
           <div class="dock__row">
             <button class="btn" type="button">{{secondary}}</button>
             <sc-if value="{{showTorch}}" hint-placeholder-val="{{false}}"><button class="btn btn--icon" type="button" aria-label="Torch"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L5 14h6l-1 8 8-12h-6z"/></svg></button></sc-if>
@@ -92,7 +125,7 @@
 
 </section>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"phase":{"editor":"enum","options":["ask","denied","scan","dup","verify","done","failed"],"default":"scan"},"$preview":{"width":390,"height":860}}'>
+<script type="text/x-dc" data-dc-script data-props='{"phase":{"editor":"enum","options":["empty","ask","denied","nocam","scan","repeat","dup","verify","done","failed"],"default":"scan"},"$preview":{"width":390,"height":1400}}'>
 class Component extends DCLogic {
   arc(p) {
     if (p <= 0) return '';
@@ -104,25 +137,33 @@ class Component extends DCLogic {
     var k = this.props.phase || 'scan';
     var P = 'btn btn--primary btn--lg btn--block';
     var S = {
-      ask: { tag: 'Waiting for permission', tagCls: 'tag', head: 'Allow camera access', msg: 'Strip reads codes with your camera. Video is processed on this device and never recorded or sent.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Allow camera', pcls: P, sec: 'Not now', vf: 'vf--idle', note: 'Camera permission needed' },
-      denied: { tag: 'Camera blocked', tagCls: 'tag tag--signal', head: 'Camera access denied', msg: 'Your browser blocked the camera for this site. Allow it, then try again.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Try again', pcls: P, sec: 'Back', vf: 'vf--idle vf--warn', note: 'Camera blocked' },
-      scan: { tag: 'Scanning', tagCls: 'tag tag--cobalt', head: 'Keep the code in frame', msg: 'Hold steady. Blocks solve as packets arrive; order does not matter.', pct: 37, ring: '', seen: '52', solved: '36', primary: 'Stop scanning', pcls: 'btn btn--lg btn--block', sec: 'Start over', vf: '', hud: 'Looking for packets' },
-      dup: { tag: 'Other session', tagCls: 'tag tag--signal', head: 'A different transfer is in view', msg: 'Still solving the first file. 14 packets from another session were skipped.', pct: 37, ring: '', seen: '66', solved: '36', primary: 'Keep current file', pcls: P, sec: 'Switch to new', vf: 'vf--warn', hud: 'Session 7F3A ≠ 4C21', banner: 'callout--warn', bt: 'Wrong or repeated code', bm: 'Packets from session 7F3A do not belong to this file. Point the camera back at the original code, or switch.' },
-      verify: { tag: 'Verifying', tagCls: 'tag tag--cobalt', head: 'Checking SHA-256', msg: 'All 96 blocks solved. Comparing the file hash with the sender’s.', pct: 100, ring: '', seen: '118', solved: '96', primary: 'Verifying…', pcls: P, off: true, sec: 'Cancel', vf: 'vf--idle', hud: 'Camera paused' },
-      done: { tag: 'Complete', tagCls: 'tag tag--solid', head: 'File received', msg: 'Hash verified. The file is ready to save to this device.', pct: 100, ring: '', seen: '118', solved: '96', primary: 'Save file', pcls: 'btn btn--cobalt btn--lg btn--block', sec: 'Receive another', vf: 'vf--done' },
-      failed: { tag: 'Verification failed', tagCls: 'tag tag--signal', head: 'File does not match', msg: 'The file may be incomplete or a block was misread. Nothing was saved. Scan again from the start.', pct: 100, ring: 'ring--bad', seen: '131', solved: '96', primary: 'Scan again', pcls: 'btn btn--signal btn--lg btn--block', sec: 'Discard', vf: 'vf--idle', hud: 'Camera paused', banner: 'callout--error', bt: 'Hash mismatch', bm: 'Expected 9f2c 41ab e07d…, got 31d8 aa02 5c19…' }
+      empty: { tag: 'Ready', tagCls: 'tag', head: 'Scan a strip or a screen', msg: 'Start the camera, or add a photo of a printed page.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Start camera', pcls: P, sec: 'Back', vf: 'vf--idle', note: 'Camera is off', cam: 'Camera: off', icon: 'on', hint: 'No photos added yet. Add one page at a time.' },
+      ask: { tag: 'Waiting for permission', tagCls: 'tag', head: 'Allow camera access', msg: 'Strip reads codes with your camera. Video is processed on this device and never recorded or sent.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Allow camera', pcls: P, sec: 'Not now', vf: 'vf--idle', note: 'Camera permission needed', cam: 'Camera: asking', icon: 'on', hint: 'No photos added yet. You can add a photo instead of using the camera.' },
+      denied: { tag: 'Camera blocked', tagCls: 'tag tag--signal', head: 'Camera access denied', msg: 'Your browser blocked the camera for this site. Allow it, then try again.', pct: 0, ring: 'ring--dim', seen: '0', solved: '0', primary: 'Try again', pcls: P, sec: 'Back', vf: 'vf--idle vf--warn', note: 'Camera blocked', cam: 'Camera: blocked', icon: 'off', hint: 'No photos added yet. Photos of the printed pages work without the camera.' },
+      nocam: { tag: 'No camera', tagCls: 'tag tag--signal', head: 'No camera on this device', msg: 'Receive works without one. Add a photo or scan of each printed page instead.', pct: 16, ring: '', seen: '18', solved: '18', primary: 'Add photo of a page', pcls: P, sec: 'Back', vf: 'vf--idle', note: 'No camera found', cam: 'Camera: none', icon: 'off', photos: true, bar: true, distinct: 18 },
+      scan: { tag: 'Scanning', tagCls: 'tag tag--cobalt', head: 'Keep the code in frame', msg: 'Hold steady. Blocks solve as packets arrive; order does not matter.', pct: 37, ring: '', seen: '52', solved: '41', primary: 'Stop scanning', pcls: 'btn btn--lg btn--block', sec: 'Start over', vf: '', hud: 'Looking for packets', cam: 'Camera: on', photos: true, bar: true, distinct: 41 },
+      repeat: { tag: 'Duplicate frame', tagCls: 'tag', head: 'Same frame again', msg: 'Waiting for a new packet.', pct: 37, ring: '', seen: '58', solved: '41', primary: 'Stop scanning', pcls: 'btn btn--lg btn--block', sec: 'Start over', vf: 'vf--idle', hud: 'Packet 41 already seen', cam: 'Camera: on', photos: true, bar: true, distinct: 41, banner: 'callout--tip', bt: 'Duplicate frame ignored', bm: 'This frame was already counted. Let the sender’s screen advance, or move to the next printed code.' },
+      dup: { tag: 'Other session', tagCls: 'tag tag--signal', head: 'A different transfer is in view', msg: 'Still solving the first file. 14 packets from another session were skipped.', pct: 37, ring: '', seen: '66', solved: '41', primary: 'Keep current file', pcls: P, sec: 'Switch to new', vf: 'vf--warn', hud: 'Session 7F3A ≠ 4C21', cam: 'Camera: on', photos: true, bar: true, distinct: 41, banner: 'callout--warn', bt: 'Wrong or repeated code', bm: 'Packets from session 7F3A do not belong to this file. Point the camera back at the original code, or switch.' },
+      verify: { tag: 'Verifying', tagCls: 'tag tag--cobalt', head: 'Checking SHA-256', msg: 'All 111 packets are in. Comparing the file hash with the sender’s.', pct: 100, ring: '', seen: '126', solved: '111', primary: 'Verifying…', pcls: P, off: true, sec: 'Cancel', vf: 'vf--idle', hud: 'Camera paused', cam: 'Camera: paused', photos: true },
+      done: { tag: 'Complete', tagCls: 'tag tag--solid', head: 'File received', msg: 'Hash verified. The file is ready to download.', pct: 100, ring: '', seen: '126', solved: '111', primary: 'Download', pcls: 'btn btn--cobalt btn--lg btn--block', sec: 'Receive another', vf: 'vf--done', cam: 'Camera: paused', photos: true },
+      failed: { tag: 'Verification failed', tagCls: 'tag tag--signal', head: 'File does not match', msg: 'The file may be incomplete or a block was misread. Nothing was saved. Scan again from the start.', pct: 100, ring: 'ring--bad', seen: '141', solved: '111', primary: 'Scan again', pcls: 'btn btn--signal btn--lg btn--block', sec: 'Discard', vf: 'vf--idle', hud: 'Camera paused', cam: 'Camera: paused', photos: true, banner: 'callout--error', bt: 'Hash mismatch', bm: 'Expected a1b2c3d4e5f6, got 9f8e7d6c5b4a' }
     };
     var s = S[k] || S.scan;
-    var G = window.StripCode ? window.StripCode.make(33, 52, 3) : { d: '' };
+    var photos = s.photos ? [{ name: 'IMG_2041.jpg', found: 9 }, { name: 'scan-0007.png', found: 9 }] : [];
     return {
       tag: s.tag, tagCls: s.tagCls, head: s.head, msg: s.msg, pct: s.pct, ringCls: s.ring, ringD: this.arc(s.pct),
       seen: s.seen, solved: s.solved, primary: s.primary, primaryCls: s.pcls, primaryOff: !!s.off, secondary: s.sec,
-      vfCls: s.vf, vfNote: s.note || '', hud: s.hud || '', codeD: G.d,
-      isAsk: k === 'ask', isDenied: k === 'denied', isVerify: k === 'verify', isDone: k === 'done',
-      showCode: k === 'scan' || k === 'dup' || k === 'verify' || k === 'failed',
-      showMsg: k === 'ask' || k === 'denied', showDone: k === 'done',
-      showHud: !!s.hud, showTorch: k === 'scan' || k === 'dup',
+      vfCls: s.vf, vfNote: s.note || '', hud: s.hud || '', camState: s.cam,
+      isDenied: k === 'denied', isVerify: k === 'verify', isDone: k === 'done', isNocam: k === 'nocam', hasPrimaryBtn: k !== 'nocam',
+      showCode: k === 'scan' || k === 'repeat' || k === 'dup' || k === 'verify' || k === 'failed',
+      showMsg: k === 'empty' || k === 'ask' || k === 'denied' || k === 'nocam', showDone: k === 'done',
+      camOn: s.icon === 'on', camOff: s.icon === 'off',
+      showHud: !!s.hud, showTorch: k === 'scan' || k === 'repeat' || k === 'dup',
       hasBanner: !!s.banner, bannerCls: s.banner || '', bannerTitle: s.bt || '', bannerMsg: s.bm || '',
+      showBar: !!s.bar, distinct: s.distinct || 0,
+      photos: photos, hasPhotos: photos.length > 0, noPhotos: photos.length === 0,
+      photoCount: photos.length ? photos.length + ' photos · ' + photos.length * 9 + ' symbols' : 'None',
+      photoHint: s.hint || '',
       howto: [{ t: 'Open the site settings from the address bar.' }, { t: 'Set Camera to Allow.' }, { t: 'Return here and tap Try again.' }]
     };
   }

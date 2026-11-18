@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send on screen full screen</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="strip.css">
+<script src="codegen.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<!-- Full-screen playback: white field, symbol as large as the screen allows. Controls sit in the corners and edge, never over the symbol. -->
+<div class="strip fs {{rootCls}}">
+  <a class="btn fs__exit" href="SendScreen.dc.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>Exit full screen</a>
+  <div class="fs__code">
+    <dc-import name="Symbol" seed="38" label="Animated data code, packet 38 of 111" hint-size="720px,720px"></dc-import>
+  </div>
+  <p class="fs__meta t-label">Packet 38 of 111 + repair · Lap 1 · 8 fps</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mobile":{"editor":null},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return { rootCls: this.props.mobile ? 'fs--m' : '' }; }
+}
+</script>
+</body>
+</html>
