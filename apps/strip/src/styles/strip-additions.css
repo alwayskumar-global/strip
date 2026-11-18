@@ -1,0 +1,20 @@
+/* Additions to strip.css (requirement 19.8). Only these three rules. */
+@media screen {
+  .paper--off {
+    display: none;
+  }
+}
+.vf video,
+.vf canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#diag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  padding: 8px 16px;
+}

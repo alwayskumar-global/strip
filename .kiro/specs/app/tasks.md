@@ -57,7 +57,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: per route exactly one nav link (none on `/`) has `aria-current="page"` (P19, R8.4, R1.1) [unit].
     - Test: every board `href` maps to a route, hash or external URL; no built file contains `.dc.html` (P20, R8.5, R19.7) [unit].
     - _Requirements: 1.1, 8.2, 8.3, 8.4, 8.5, 8.7, 8.8, 19.7_
-  - [ ] 1.4 Self-hosted fonts, byte-identical `strip.css`, template-syntax scan (M, 15)
+  - [x] 1.4 Self-hosted fonts, byte-identical `strip.css`, template-syntax scan (M, 15)
     - Six IBM Plex woff2 (Sans and Mono, 400, 500, 600, Latin plus `≈ ≠ × · … ’ – → ←`) and the OFL licence file in `apps/strip/public/fonts`; `src/styles/fonts.css` with the six `@font-face` rules (`font-display: swap`); `src/styles/strip.css` copied byte for byte from `design/project/strip.css`; `strip-additions.css` limited to the rules R19.8 lists, each reported as an addition.
     - Test: shipped `strip.css` hash equals the pinned SHA-256 and equals `design/project/strip.css` byte for byte; `fonts.css` and `strip-additions.css` contain only allowed rules (P37, R19.2, R19.8) [unit].
     - Test: `src` contains none of `{{`, `sc-for`, `sc-if`, `dc-import`, `x-dc`, `<helmet`, `data-dc-script`, `hint-`, `fonts.googleapis.com`, `codegen`, `support.js`, `.dc.html` (P38, R19.1, R19.5) [unit].
