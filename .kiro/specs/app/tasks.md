@@ -205,7 +205,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - _Requirements: 21.3_
 
 - [ ] 4. Group 4: PWA, delivery headers, privacy, bundle gate, README (estimate 101, CAP 121)
-  - [ ] 4.1 Manifest and icons (M, 15)
+  - [x] 4.1 Manifest and icons (M, 15)
     - `manifest.webmanifest`, `scripts/make-icons.mjs` (bundled Chromium, no new dependency), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, the 180 px `apple-touch-icon`, `theme-color` `#F7F5EF` equal in `index.html` and the manifest.
     - Test: manifest fields, icon sizes read from PNG IHDR, equal `theme-color` (P57, R14.1, R14.2) [unit].
     - _Requirements: 14.1, 14.2, 14.3_
