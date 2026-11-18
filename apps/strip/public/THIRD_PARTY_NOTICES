@@ -17,9 +17,12 @@ this file.
      reader .wasm)                       Apache-2.0     (text: section C)
   5. IBM Plex Sans (@ibm/plex-sans 1.1.0)  SIL OFL 1.1   (text: section D)
      Three weights (400, 500, 600), subset to Basic Latin, Latin-1 and a few
-     punctuation and math glyphs, served as woff2 files from the same origin.
+     punctuation and math glyphs, served as woff2 files from the same origin. Modified
+     Version under the OFL: subset, and the font's internal family, full and PostScript
+     names are rewritten to "Strip Sans" so the Reserved Font Name "Plex" is not used.
   6. IBM Plex Mono (@ibm/plex-mono 2.5.0)  SIL OFL 1.1   (text: section D)
-     Three weights (400, 500, 600), subset as above, served from the same origin.
+     Three weights (400, 500, 600), subset and renamed as above ("Strip Mono"), served
+     from the same origin.
 
 NOTICE file check (requirement 15.3)
 ------------------------------------

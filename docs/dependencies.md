@@ -35,14 +35,34 @@ Source: IBM/plex GitHub repository, tags `@ibm/plex-sans@1.1.0` and `@ibm/plex-m
 
 Tool, used once and not part of the repo: fonttools 4.60.2 and brotli 1.2.1 in a throwaway virtualenv (`/tmp/fonts-venv`). No Python file or requirements file is committed.
 
-Command, run for each of the six source files:
+Command, run for each of the six source files (`<Fam>` is `Sans` or `Mono`):
 
 ```
 pyftsubset <source>.woff2 \
   --unicodes="U+0020-007E,U+00A0-00FF,U+2013,U+2014,U+2018,U+2019,U+201C,U+201D,U+2022,U+2026,U+2039,U+203A,U+2190,U+2192,U+2212,U+2248,U+2260,U+00D7" \
   --layout-features="kern,liga,calt,ccmp,locl,mark,mkmk,tnum,pnum,zero,case,lnum" \
-  --flavor=woff2 --no-hinting --desubroutinize --output-file=<out>.woff2
+  --flavor=woff2 --no-hinting --desubroutinize \
+  --name-IDs='*' --name-languages='*' --name-legacy --output-file=<tmp>.woff2
+python rename.py <tmp>.woff2 <out>.woff2 <Fam>
 ```
+
+`rename.py` (kept outside the repo, reproduced here in full) rewrites the name table so the Reserved Font Name does not appear in the font's own names:
+
+```python
+import sys
+from fontTools.ttLib import TTFont
+src, dst, fam = sys.argv[1], sys.argv[2], sys.argv[3]   # fam: Sans | Mono
+f = TTFont(src)
+for r in f['name'].names:
+    if r.nameID in (1, 3, 4, 6, 16, 17, 21, 22, 25):     # family, unique id, full, PostScript, typographic and WWS names
+        s = r.toUnicode()
+        s = s.replace(f"IBM Plex {fam}", f"Strip {fam}").replace(f"IBMPlex{fam}", f"Strip{fam}").replace("Plex", "Strip")
+        r.string = s
+f.flavor = "woff2"
+f.save(dst)
+```
+
+The shipped fonts are therefore named "Strip Sans" and "Strip Mono" internally (family, full, PostScript and unique-ID names). The copyright (ID 0), trademark (ID 7), designer (ID 9), designer URL (ID 12), licence text (ID 13) and licence URL (ID 14) records are kept as in the source. The CSS family labels in `fonts.css` stay "IBM Plex Sans" and "IBM Plex Mono" because `strip.css` uses them; they are labels used by the page's own stylesheet, not font names inside the files. The file names `IBMPlex*.woff2` are kept.
 
 Unicode set: Basic Latin, Latin-1 Supplement, en and em dash, curly quotes, bullet, ellipsis, single guillemets, left and right arrows, minus, approximately equal, not equal, multiplication sign. (The middle dot U+00B7 and U+00D7 are inside Latin-1.) The boards use `· × – — ’ “ ” … › ≈ ≠`.
 
@@ -57,13 +77,13 @@ Unicode set: Basic Latin, Latin-1 Supplement, en and em dash, curly quotes, bull
 
 | Shipped file | Bytes | SHA-256 |
 |---|---|---|
-| IBMPlexSans-Regular.woff2 | 10956 | 9ebf27622e07441a4c6ecd8a171dfa166bcb98c651edeb8f25f42c8b796af024 |
-| IBMPlexSans-Medium.woff2 | 11484 | 8a2957c73a562b5cccc0bd096dd21524ccd174b2b6d87e1c03a483f57917f3b3 |
-| IBMPlexSans-SemiBold.woff2 | 11660 | 7ef3cb2ed69b4c9b2a8a4304741dfb296373d143e75596ad5130988ce36fba71 |
-| IBMPlexMono-Regular.woff2 | 7824 | dbad6d39b79518bd724eb71a4d66325ebac179aeb1d925cb0b06007a5143264a |
-| IBMPlexMono-Medium.woff2 | 7820 | 01d9ee48c5eac8220f10b29b85354e2a2c974f9fe747b218122b06dd4f780f29 |
-| IBMPlexMono-SemiBold.woff2 | 7824 | 19b11a5c89cf9063b3e7f37e4c45071f64af55f12b4fe231e0a0e6c88ca15aaf |
+| IBMPlexSans-Regular.woff2 | 11536 | 30a1a2c166c3b4d84227a4f4ed318f0618826a5e502c8a31e747c6a0e2ccdcc8 |
+| IBMPlexSans-Medium.woff2 | 12116 | 3858589ca68e277f78feff59b9b0a7448d96ba21f9b4bbe1d03cd0b487a1d71e |
+| IBMPlexSans-SemiBold.woff2 | 12236 | d9efdf6fcfd7c07cc7b1ef41028385c2d6bef40ae3f0b9d8e5dd23e314c26060 |
+| IBMPlexMono-Regular.woff2 | 8444 | ea384a6d67ffab740ee13925eaa909f8d8bc17d4669425267fb3028ea5b859ef |
+| IBMPlexMono-Medium.woff2 | 8448 | 7a574aa6c3638c1f5753b9fef7920414bca500ed3a3954ebd222d615f9f9128f |
+| IBMPlexMono-SemiBold.woff2 | 8484 | 86d10d8687ade66867ee82a6f13f972c40c2f22e40b5a7d4ae731614a0326b17 |
 
-Total shipped: 57,568 bytes.
+Total shipped: 61,264 bytes.
 
-Licence caveat: the OFL notice names "Plex" as a Reserved Font Name, and a subset is a Modified Version under the OFL FAQ, so strictly the subset files should not carry the name. The CSS must keep the family names "IBM Plex Sans" and "IBM Plex Mono" because `strip.css` uses them. Recorded for the user's decision.
+Licence note: the OFL notice names "Plex" as a Reserved Font Name, and a subset is a Modified Version under the OFL FAQ. The shipped files therefore carry the internal names "Strip Sans" and "Strip Mono" (see above) and the OFL text and copyright are kept. The user chose this over leaving the names unchanged. Residual: the trademark record (ID 7) and the `IBMPlex*.woff2` file names still say "Plex", and the page's CSS labels the faces "IBM Plex Sans" and "IBM Plex Mono".

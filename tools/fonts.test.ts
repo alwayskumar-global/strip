@@ -84,6 +84,21 @@ function gsubFeatureTags(gsub: Buffer): Set<string> {
   for (let i = 0; i < count; i++) tags.add(gsub.subarray(fl + 2 + i * 6, fl + 6 + i * 6).toString("latin1"));
   return tags;
 }
+function nameRecords(name: Buffer): Array<{ id: number; text: string }> {
+  const count = name.readUInt16BE(2);
+  const strings = name.readUInt16BE(4);
+  const out: Array<{ id: number; text: string }> = [];
+  for (let i = 0; i < count; i++) {
+    const o = 6 + i * 12;
+    const platform = name.readUInt16BE(o);
+    const id = name.readUInt16BE(o + 6);
+    const len = name.readUInt16BE(o + 8);
+    const off = strings + name.readUInt16BE(o + 10);
+    const raw = name.subarray(off, off + len);
+    out.push({ id, text: platform === 3 || platform === 0 ? Buffer.from(raw).swap16().toString("utf16le") : raw.toString("latin1") });
+  }
+  return out;
+}
 const fonts = new Map(FONT_FILES.map((f) => [f, woff2Tables(bytes(`apps/strip/public/fonts/${f}`))]));
 
 function files(dir: string, pred: (f: string) => boolean): string[] {
@@ -184,6 +199,21 @@ describe("self-hosted fonts (R19.9, steering: design-handoff)", () => {
   });
   it("each font keeps the slashed-zero ('zero') feature the boards use", () => {
     for (const [f, t] of fonts) expect(gsubFeatureTags(t.get("GSUB") as Buffer).has("zero"), f).toBe(true);
+  });
+  it("OFL Reserved Font Name: the family, full and PostScript names do not contain Plex; copyright, designer and licence records are kept", () => {
+    for (const [f, t] of fonts) {
+      const recs = nameRecords(t.get("name") as Buffer);
+      for (const r of recs.filter((x) => [1, 3, 4, 6, 16, 17, 21, 22, 25].includes(x.id))) expect(r.text, `${f} name ${r.id}`).not.toContain("Plex");
+      const family = recs.find((r) => r.id === 1)?.text;
+      expect(family, f).toMatch(f.includes("Sans") ? /^Strip Sans/ : /^Strip Mono/);
+      for (const id of [0, 9, 13, 14]) expect(recs.some((r) => r.id === id && r.text.length > 0), `${f} name ${id}`).toBe(true);
+      expect(recs.find((r) => r.id === 13)?.text, f).toContain("SIL Open Font License");
+    }
+  });
+  it("THIRD_PARTY_NOTICES and docs/dependencies.md record the name rewrite", () => {
+    expect(text("apps/strip/public/THIRD_PARTY_NOTICES")).toContain("Reserved Font Name");
+    expect(text("apps/strip/public/THIRD_PARTY_NOTICES")).toContain("\"Strip Sans\"");
+    expect(text("docs/dependencies.md")).toContain("rename.py");
   });
   it("glyph coverage: Basic Latin, Latin-1 and the listed characters are in all six fonts", () => {
     const need = new Set<number>();
