@@ -9,6 +9,7 @@ export interface ReceiveHandlers {
   secondary?: () => void;
   addPhoto?: (files: FileList | null) => void;
   removePhoto?: (id: number) => void;
+  torch?: () => void;
 }
 export function ReceiveView({ vm, viewfinder, on }: { vm: ReceiveVM; viewfinder?: ReactNode; on?: ReceiveHandlers | undefined }): ReactNode {
   return (
@@ -166,7 +167,7 @@ export function ReceiveView({ vm, viewfinder, on }: { vm: ReceiveVM; viewfinder?
               <div className="dock__row">
                 <button className="btn" type="button" onClick={() => on?.secondary?.()}>{vm.secondary}</button>
                 {vm.showTorch && (<>
-                  <button className="btn btn--icon" type="button" aria-label="Torch">
+                  <button className="btn btn--icon" type="button" aria-label="Torch" onClick={() => on?.torch?.()}>
                     <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M13 2L5 14h6l-1 8 8-12h-6z" />
                     </svg>

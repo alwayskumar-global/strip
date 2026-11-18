@@ -1,5 +1,5 @@
 // Container for /receive: the Receive store drives the Receive board and the Error panel (R5, R12, R13).
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import { receiveStore } from "../services/receive-store.js";
 import { receiveInputOf } from "../state/receive-facts.js";
@@ -27,9 +27,11 @@ export function handlersFor(s: ReceiveState, dispatch: (e: ReceiveEvent, f?: Fil
 }
 export function ReceiveScreen(): ReactNode {
   const s = useSyncExternalStore(receiveStore.subscribe, receiveStore.getState);
+  useEffect(() => () => receiveStore.leave(), []);
   const on = handlersFor(s, (e, f) => receiveStore.dispatch(e, f));
+  on.torch = () => void receiveStore.torch();
   if (s.panel) {
-    const panel: { primary: () => void; secondary: () => void } = { primary: () => receiveStore.dispatch({ t: "PANEL", action: "primary" }), secondary: () => receiveStore.dispatch({ t: "PANEL", action: "secondary" }) };
+    const panel: { primary: () => void; secondary: () => void } = { primary: () => receiveStore.dispatch({ t: "PANEL", action: "primary", at: receiveStore.now() }), secondary: () => receiveStore.dispatch({ t: "PANEL", action: "secondary", at: receiveStore.now() }) };
     return (
       <div className="strip page">
         <Nav current="receive" />
@@ -39,5 +41,5 @@ export function ReceiveScreen(): ReactNode {
       </div>
     );
   }
-  return <ReceivePage vm={toReceiveVM(receiveInputOf(s))} viewfinder={<></>} on={on} />;
+  return <ReceivePage vm={toReceiveVM(receiveInputOf(s))} viewfinder={s.cameraOn ? <video ref={receiveStore.attachVideo} autoPlay playsInline muted /> : <></>} on={on} />;
 }

@@ -176,7 +176,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: with a mocked `getUserMedia`, denied, no-camera and generic failures map to `denied`, `nocam`, `camera` (R12.16, R12.17) [unit].
     - Test: tracks are stopped on route change, restart and completion (R12.18) [unit].
     - _Requirements: 5.7, 5.8, 12.9, 12.16, 12.17, 12.18_
-  - [ ] 3.2 Receive timers, camera phases, ReceiveScreen camera path (L, 30)
+  - [x] 3.2 Receive timers, camera phases, ReceiveScreen camera path (L, 30)
     - `receive-timers.ts` on the `Clock` interface, `repeat` hold of REPEAT_HOLD_MS, `stall` after 20 s, `nothing` after 30 s, `dup`, `verify`, `failed`, restart resets counters; wire the camera into `ReceiveScreen`.
     - Test: for any outcome sequence on a fake clock, `stall` fires only after a first accepted Packet and 20 s without a new solved block, `nothing` only after 30 s without `found`, `stall` wins when both hold (P22, R12.19, R12.20, R12.21) [unit].
     - Test: restart sets all counters to 0 and releases the camera (R12.22) [unit].

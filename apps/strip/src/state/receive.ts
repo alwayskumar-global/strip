@@ -3,6 +3,7 @@
 import { IMAGE_MAX_BYTES, IMAGE_MAX_PHOTOS } from "../limits.js";
 import type { ErrorContext, ErrorKind } from "../views/error-vm.js";
 import type { ReceivePhase } from "../views/receive-vm.js";
+import { verdict, type Timing } from "./receive-timers.js";
 export type { ReceivePhase } from "../views/receive-vm.js";
 export type PanelKind = ErrorKind;
 export interface Panel {
@@ -46,6 +47,8 @@ export interface ReceiveState {
   resume: ReceivePhase;
   result?: FileResult;
   hashes?: { expected: string; actual: string };
+  /** Camera clocks, in the Clock's time (R12.19 to R12.21). */
+  t: Timing;
   diag: { badCrc: number; badHeader: number };
 }
 export type PushResult =
@@ -65,16 +68,18 @@ export type ReceiveEvent =
   | { t: "SCAN_AGAIN" }
   | { t: "BACK" }
   | { t: "NOT_NOW" }
-  | { t: "PANEL"; action: "primary" | "secondary" }
+  | { t: "PANEL"; action: "primary" | "secondary"; at?: number }
   | { t: "ADD_PHOTO"; name: string; size: number }
   | { t: "PHOTO_DONE"; gen: number; row: PhotoRow | null }
   | { t: "PHOTO_FAILED"; gen: number; panel: PanelKind; ctx?: ErrorContext }
   | { t: "REMOVE_PHOTO"; id: number }
   | { t: "REBUILT"; gen: number; counters: Omit<Counters, "seen" | "skipped">; session?: number }
-  | { t: "CAMERA_OK"; torch: boolean }
+  | { t: "CAMERA_OK"; torch: boolean; at?: number }
   | { t: "CAMERA_FAIL"; name: string }
   | { t: "CAMERA_API_MISSING" }
-  | { t: "PUSHED"; gen: number; source: Source; result: PushResult; sessionOf?: number }
+  | { t: "PUSHED"; gen: number; source: Source; result: PushResult; sessionOf?: number; at?: number }
+  | { t: "FOUND"; at: number }
+  | { t: "TIMER"; at: number }
   | { t: "RESULT"; gen: number; result: FileResult }
   | { t: "PUSH_SLOW"; gen: number }
   | { t: "REPEAT_EXPIRED"; gen: number };
@@ -87,6 +92,7 @@ export type ReceiveEffect =
   | "READ_RESULT"
   | "REBUILD_SESSION"
   | "COPY_LINK"
+  | "ARM_REPEAT_HOLD"
   | "RELOAD"
   | { e: "START_IMAGE"; gen: number; name: string }
   | { e: "REMOVE_PHOTO"; id: number }
@@ -94,7 +100,7 @@ export type ReceiveEffect =
   | { e: "DISCARD_PENDING" }
   | { e: "NAVIGATE"; to: string };
 const ZERO: Counters = { seen: 0, skipped: 0, solved: 0, total: 0, distinct: 0, complete: false };
-export const initialReceive: ReceiveState = { phase: "empty", panel: null, gen: 0, cameraOn: false, cameraPending: false, torchCapable: false, counters: ZERO, photos: [], imageBusy: false, resume: "empty", diag: { badCrc: 0, badHeader: 0 } };
+export const initialReceive: ReceiveState = { phase: "empty", panel: null, gen: 0, cameraOn: false, cameraPending: false, torchCapable: false, counters: ZERO, photos: [], imageBusy: false, resume: "empty", t: {}, diag: { badCrc: 0, badHeader: 0 } };
 type R = { state: ReceiveState; effects: ReceiveEffect[] };
 const same = (s: ReceiveState): R => ({ state: s, effects: [] });
 const TERMINAL: ReadonlySet<ReceivePhase> = new Set(["done", "failed"]);
@@ -105,7 +111,7 @@ function fresh(s: ReceiveState, phase: ReceivePhase): ReceiveState {
   void _s;
   void _r;
   void _h;
-  return { ...rest, phase, panel: null, gen: s.gen + 1, counters: ZERO, photos: [], imageBusy: false, resume: phase, cameraOn: phase === "scan" ? s.cameraOn : false, cameraPending: false };
+  return { ...rest, phase, panel: null, gen: s.gen + 1, counters: ZERO, t: {}, photos: [], imageBusy: false, resume: phase, cameraOn: phase === "scan" ? s.cameraOn : false, cameraPending: false };
 }
 function withPanel(s: ReceiveState, kind: PanelKind, ctx: ErrorContext = {}): ReceiveState {
   return { ...s, panel: { kind, ctx }, resume: s.panel ? s.resume : s.phase };
@@ -122,7 +128,7 @@ export function reduceReceive(s: ReceiveState, ev: ReceiveEvent): R {
     case "BACK":
       return s.phase === "empty" || s.phase === "denied" || s.phase === "nocam" ? { state: s, effects: [{ e: "NAVIGATE", to: "/" }] } : same(s);
     case "CAMERA_OK":
-      return s.phase === "ask" || s.cameraPending ? { state: { ...s, phase: "scan", cameraOn: true, cameraPending: false, torchCapable: ev.torch, panel: null }, effects: [] } : same(s);
+      return s.phase === "ask" || s.cameraPending ? { state: { ...s, phase: "scan", cameraOn: true, cameraPending: false, torchCapable: ev.torch, panel: null, t: ev.at === undefined ? s.t : { ...s.t, cameraStartedAt: ev.at } }, effects: [] } : same(s);
     case "CAMERA_FAIL": {
       if (!(s.phase === "ask" || s.cameraPending)) return same(s);
       const denied = ev.name === "NotAllowedError" || ev.name === "SecurityError";
@@ -168,6 +174,13 @@ export function reduceReceive(s: ReceiveState, ev: ReceiveEvent): R {
     }
     case "PUSHED":
       return pushed(s, ev);
+    case "FOUND":
+      return { state: { ...s, t: { ...s.t, lastFoundAt: ev.at } }, effects: [] };
+    case "TIMER": {
+      if (s.panel || !(s.phase === "scan" || s.phase === "repeat" || s.phase === "dup")) return same(s);
+      const v = verdict(s.t, ev.at, s.cameraOn);
+      return v === null ? same(s) : { state: withPanel(s, v, v === "stall" ? { solved: s.counters.solved, total: s.counters.total, seen: s.counters.seen } : {}), effects: [] };
+    }
     case "RESULT":
       return { state: { ...s, result: ev.result }, effects: [] };
     case "PUSH_SLOW":
@@ -175,8 +188,13 @@ export function reduceReceive(s: ReceiveState, ev: ReceiveEvent): R {
     case "REPEAT_EXPIRED":
       return s.phase === "repeat" ? { state: { ...s, phase: "scan" }, effects: [] } : same(s);
     case "PANEL":
-      return panelAction(s, ev.action);
+      return panelAction(s, ev.action, ev.at);
   }
+}
+/** "Keep scanning": both clocks restart from now. */
+function restartClocks(t: ReceiveState["t"], at: number | undefined): ReceiveState["t"] {
+  if (at === undefined) return t;
+  return { cameraStartedAt: at, lastFoundAt: at, ...(t.firstAcceptedAt === undefined ? {} : { firstAcceptedAt: at, lastSolvedAt: at }) };
 }
 function pushed(s: ReceiveState, ev: Extract<ReceiveEvent, { t: "PUSHED" }>): R {
   const cam = ev.source === "camera";
@@ -185,14 +203,16 @@ function pushed(s: ReceiveState, ev: Extract<ReceiveEvent, { t: "PUSHED" }>): R 
   if (r.k === "accepted") {
     const counters: Counters = { ...r.counters, seen: s.counters.seen + 1, skipped: s.counters.skipped };
     const session = s.session ?? ev.sessionOf;
-    const base: ReceiveState = { ...s, counters, ...(session === undefined ? {} : { session }) };
+    const grew = r.counters.solved > s.counters.solved;
+    const t: Timing = ev.at === undefined || !cam ? s.t : { ...s.t, firstAcceptedAt: s.t.firstAcceptedAt ?? ev.at, lastSolvedAt: grew || s.t.lastSolvedAt === undefined ? ev.at : s.t.lastSolvedAt };
+    const base: ReceiveState = { ...s, counters, t, ...(session === undefined ? {} : { session }) };
     if (r.counters.complete) return { state: { ...base, phase: "done", cameraOn: false, cameraPending: false, panel: null }, effects: ["STOP_CAMERA", "READ_RESULT"] };
     return { state: s.phase === "repeat" && cam ? { ...base, phase: "scan" } : base, effects: [] };
   }
   if (r.k === "ignored") {
     const seen = s.counters.seen + 1;
     const c = { ...s.counters, seen };
-    if (r.reason === "DUPLICATE_PACKET" && cam && (s.phase === "scan" || s.phase === "repeat")) return { state: { ...s, counters: c, phase: "repeat" }, effects: [] };
+    if (r.reason === "DUPLICATE_PACKET" && cam && (s.phase === "scan" || s.phase === "repeat")) return { state: { ...s, counters: c, phase: "repeat" }, effects: ["ARM_REPEAT_HOLD"] };
     if (r.reason === "SESSION_MISMATCH" && cam && (s.phase === "scan" || s.phase === "repeat" || s.phase === "dup")) {
       const counters = { ...c, skipped: s.counters.skipped + 1 };
       if (s.phase === "dup" || s.foreign?.dismissed) return { state: { ...s, counters }, effects: [] };
@@ -213,7 +233,7 @@ function pushed(s: ReceiveState, ev: Extract<ReceiveEvent, { t: "PUSHED" }>): R 
   return { state: withPanel({ ...s, cameraOn: false }, "internal"), effects: ["STOP_CAMERA"] };
 }
 const hex = (n: number | undefined): string | undefined => (n === undefined ? undefined : ((n >>> 16) & 0xffff).toString(16).toUpperCase().padStart(4, "0"));
-function panelAction(s: ReceiveState, action: "primary" | "secondary"): R {
+function panelAction(s: ReceiveState, action: "primary" | "secondary", at?: number): R {
   const p = s.panel;
   if (!p) return same(s);
   const clear: ReceiveState = { ...s, panel: null, phase: s.resume === "done" ? "done" : s.phase };
@@ -221,9 +241,9 @@ function panelAction(s: ReceiveState, action: "primary" | "secondary"): R {
     case "otherfile":
       return action === "primary" ? { state: { ...fresh(s, s.cameraOn ? "scan" : "empty"), panel: null }, effects: ["NEW_SESSION", { e: "ADOPT_PENDING" }] } : { state: clear, effects: [{ e: "DISCARD_PENDING" }] };
     case "stall":
-      return action === "primary" ? { state: clear, effects: [] } : { state: { ...fresh(s, s.cameraOn ? "scan" : "empty") }, effects: ["NEW_SESSION"] };
+      return action === "primary" ? { state: { ...clear, t: restartClocks(s.t, at) }, effects: [] } : { state: { ...fresh(s, s.cameraOn ? "scan" : "empty") }, effects: ["NEW_SESSION"] };
     case "nothing":
-      return action === "primary" ? { state: clear, effects: [] } : { state: clear, effects: ["OPEN_PICKER"] };
+      return action === "primary" ? { state: { ...clear, t: restartClocks(s.t, at) }, effects: [] } : { state: clear, effects: ["OPEN_PICKER"] };
     case "hash":
       return action === "primary" ? { state: fresh(s, "empty"), effects: ["NEW_SESSION"] } : { state: fresh(s, "empty"), effects: ["NEW_SESSION", { e: "NAVIGATE", to: "/" }] };
     case "internal":
