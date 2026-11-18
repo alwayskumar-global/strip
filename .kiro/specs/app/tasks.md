@@ -135,7 +135,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `encodeSymbol` at packetSize 1732 has size 137 and drawn viewBox 145 (P10, R10.2, R10.3) [unit].
     - Test: Session_Short is 4 uppercase hex digits, or 8 for both when the two 4-digit forms in view are equal (P25, R4.8) [unit].
     - _Requirements: 4.8, 9.6, 10.1, 10.2, 10.3, 10.4, 10.5, 10.12, 2.7_
-  - [ ] 2.3 PaperScreen: sheets, print CSS, `window.print` (M, 15)
+  - [x] 2.3 PaperScreen: sheets, print CSS, `window.print` (M, 15)
     - `PaperScreen` container renders 9 tiles per sheet, A4 and Letter, print CSS, the "Page {p} of {N}" header, the print button calling `window.print`, the paper size warning above PAPER_WARN_BYTES, the route guard to `/send` without a file.
     - Test: sheet count and header text for T from 1 to 200 (R10.5, R10.6) [unit].
     - Test: paper warning shows above 65,536 bytes and not at it (R9.8) [unit].

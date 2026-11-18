@@ -3,7 +3,12 @@ import { Fragment, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import { Symbol } from "../components/Symbol.js";
 import type { PaperVM } from "./paper-vm.js";
-export function PaperView({ vm }: { vm: PaperVM }): ReactNode {
+export interface PaperHandlers {
+  prev?: () => void;
+  next?: () => void;
+  print?: () => void;
+}
+export function PaperView({ vm, on }: { vm: PaperVM; on?: PaperHandlers }): ReactNode {
   return (
     <div className={`strip page ${vm.rootCls}`}>
       <Nav current={"send"} noPrint />
@@ -17,6 +22,17 @@ export function PaperView({ vm }: { vm: PaperVM }): ReactNode {
           <h1 className="t-h2">Print a strip</h1>
           <span className="tag">{vm.fileTag}</span>
         </div>
+        {vm.warn && (
+          <div className="callout callout--warn no-print" role="note" data-addition="">
+            <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5" />
+            </svg>
+            <div className="callout__body">
+              <p className="callout__title">{vm.warn.title}</p>
+              <p className="t-small">{vm.warn.text}</p>
+            </div>
+          </div>
+        )}
         <div className="two two--side">
           <aside className="panel no-print" aria-label="Print setup">
             <fieldset className="seg">
@@ -39,12 +55,12 @@ export function PaperView({ vm }: { vm: PaperVM }): ReactNode {
                 <span className="field__val">{vm.preview}</span>
               </div>
               <div className="row">
-                <button className="btn" type="button" disabled={vm.prevOff} aria-label="Previous page">
+                <button className="btn" type="button" disabled={vm.prevOff} aria-label="Previous page" onClick={() => on?.prev?.()}>
                   <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M20 12H5M11 6l-6 6 6 6" />
                   </svg>
                 </button>
-                <button className="btn" type="button" disabled={vm.nextOff} aria-label="Next page">
+                <button className="btn" type="button" disabled={vm.nextOff} aria-label="Next page" onClick={() => on?.next?.()}>
                   <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 12h15M13 6l6 6-6 6" />
                   </svg>
@@ -72,7 +88,7 @@ export function PaperView({ vm }: { vm: PaperVM }): ReactNode {
                 </dd>
               </div>
             </dl>
-            <button className="btn btn--primary btn--lg btn--block" type="button"><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z" /></svg>{vm.printLabel}</button>
+            <button className="btn btn--primary btn--lg btn--block" type="button" onClick={() => on?.print?.()}><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7z" /></svg>{vm.printLabel}</button>
             <div className="callout callout--tip">
               <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="9" />

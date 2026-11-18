@@ -38,13 +38,15 @@ export const paperWarning = (T: number, N: number): { title: string; text: strin
   title: "Many pages",
   text: `This file needs ${N} printed pages (${T} codes). A smaller file needs fewer pages. You can also show it on screen instead.`,
 });
+/** The "Many pages" warning, only above PAPER_WARN_BYTES (R9.8, R9.11). */
+export const paperWarnIf = (size: number, T: number, N: number): { title: string; text: string } | null => (size > PAPER_WARN_BYTES ? paperWarning(T, N) : null);
 export function sendInputOf(s: SendStepState): SendInput {
   const m = s.meta;
   const input: SendInput = { stage: s.stage, output: s.output };
   if (!m) return input;
   if (s.stage === "chosen" && s.costs) {
     input.file = fileFacts(m.name, m.mime, m.size, s.costs);
-    if (m.size > PAPER_WARN_BYTES) input.paperWarn = paperWarning(s.costs.T, s.costs.N);
+    input.paperWarn = paperWarnIf(m.size, s.costs.T, s.costs.N);
   } else if (s.stage === "toolarge" || s.stage === "emptyfile") input.bad = badFacts(m.name, m.mime, m.size);
   return input;
 }

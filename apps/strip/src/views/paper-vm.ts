@@ -31,6 +31,8 @@ export interface PaperInput {
   hash: [string, string, string];
   /** The pages to render; the container passes all N, the gallery fixture only the first. */
   pages: ReadonlyArray<Omit<PaperPageVM, "cls">>;
+  /** The "Many pages" warning (an addition, data-addition) above the preview, when the file is large. */
+  warn?: { title: string; text: string } | null;
   /** Total page count N (the board shows 17 although the board has one article). */
   total: number;
   rootCls?: string;
@@ -47,6 +49,7 @@ export interface PaperVM {
   session: string;
   hash: [string, string, string];
   printLabel: string;
+  warn: { title: string; text: string } | null;
   pages: PaperPageVM[];
 }
 export function toPaperVM(i: PaperInput): PaperVM {
@@ -61,6 +64,7 @@ export function toPaperVM(i: PaperInput): PaperVM {
     codesLine: i.codesLine,
     session: i.session,
     hash: i.hash,
+    warn: i.warn ?? null,
     printLabel: i.total === 1 ? "Print 1 page" : `Print ${i.total} pages`,
     pages: i.pages.map((p, k) => ({ ...p, cls: k === i.previewIndex ? "" : "paper--off" })),
   };

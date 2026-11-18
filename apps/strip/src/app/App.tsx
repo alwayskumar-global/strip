@@ -3,6 +3,7 @@ import { Component, lazy, Suspense, useEffect, useLayoutEffect, type ReactNode }
 import { Nav } from "../components/Chrome.js";
 import { AboutScreen } from "../screens/AboutScreen.js";
 import { HomeScreen } from "../screens/HomeScreen.js";
+import { PaperScreen } from "../screens/PaperScreen.js";
 import { SendScreen } from "../screens/SendScreen.js";
 import { sendStore } from "../services/send-session.js";
 import { installLinkInterception } from "./interception.js";
@@ -36,6 +37,7 @@ function Routes(): ReactNode {
   }, [needsFile, hasFile]);
   if (route === "home") return <HomeScreen />;
   if (route === "send") return <SendScreen />;
+  if (route === "paper" && hasFile) return <PaperScreen />;
   if (route === "about") return <AboutScreen />;
   // The other screens are added by the conversion tasks.
   return (
