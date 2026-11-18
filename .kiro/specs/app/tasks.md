@@ -50,7 +50,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `APP_CSP` equals `STRIP_CSP` and includes `worker-src 'self'` (R15.1) [unit].
     - Test: focus lands on the main heading after a route change (R17.4) [unit].
     - _Requirements: 8.1, 8.6, 9.1, 9.2, 9.3, 15.1, 15.2, 15.3, 17.4, 22.2_
-  - [ ] 1.3 Hand-written router, link interception, href map (M, 15)
+  - [x] 1.3 Hand-written router, link interception, href map (M, 15)
     - Pure `router.ts` (`matchRoute`, `titleOf`, `navLinkCurrent`), `router-store.ts` (history), `links.ts` (`shouldIntercept`), `href-map.ts` for every `href` in the 34 boards. Six routes, unknown path replaced by `/`, `/send/screen` and `/send/paper` without a file resolve to `/send`.
     - Test: for any string, `matchRoute` returns one of six ids or null, null becomes `/`, `titleOf` equals the board title (P17, R8.2, R8.7) [property].
     - Test: for any click and anchor description, `shouldIntercept` is true exactly for plain same-origin known-route left-clicks (P18, R8.3) [property].
