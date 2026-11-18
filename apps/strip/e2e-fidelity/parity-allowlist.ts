@@ -11,7 +11,17 @@ export interface AllowEntry {
   to: string;
   reason: string;
 }
-export const ALLOWLIST: AllowEntry[] = [];
+export const ALLOWLIST: AllowEntry[] = [
+  {
+    id: "about-limits",
+    targets: ["error-size", "errors", "errors-mobile", "errors-all", "errors-all-mobile"],
+    match: { tag: "a", text: "About limits" },
+    attr: "href",
+    from: "/about",
+    to: "/about#limits",
+    reason: "R7.3: the size panel's secondary action opens the Limits section of About; the board links to the page only.",
+  },
+];
 const textOf = (n: NormNode): string => n.children.map((c) => (typeof c === "string" ? c : textOf(c))).join(" ");
 /** Applies the entries for `target` to a baseline tree in place; returns the ids that matched at least once. */
 export function applyAllowlist(tree: NormNode, target: string, entries: AllowEntry[] = ALLOWLIST): { used: Set<string> } {

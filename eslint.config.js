@@ -81,7 +81,7 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.es2023 } },
   },
   {
-    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts", "apps/strip/e2e-harness/*.mjs"],
+    files: [".kiro/hooks/scripts/*.mjs", "*.config.{js,ts}", "apps/strip/*.config.ts", "apps/strip/e2e-harness/*.mjs", "apps/strip/e2e-fidelity/*.mjs"],
     languageOptions: { globals: { ...globals.node } },
   },
   {

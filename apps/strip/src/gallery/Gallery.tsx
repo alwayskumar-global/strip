@@ -16,6 +16,12 @@ import { ReceivePage } from "../views/ReceivePage.js";
 import { ReceiveView } from "../views/ReceiveView.js";
 import { isReceivePhase, receiveInput } from "../views/receive-fixtures.js";
 import { toReceiveVM } from "../views/receive-vm.js";
+import { AboutView } from "../views/AboutView.js";
+import { toAboutVM } from "../views/about-vm.js";
+import { ErrorPanel } from "../views/ErrorPanel.js";
+import { ErrorsAllView } from "../views/ErrorsAllView.js";
+import { ErrorsView } from "../views/ErrorsView.js";
+import { ERROR_KINDS, toErrorVM, toErrorsVM, type ErrorKind } from "../views/error-vm.js";
 import { sampleSymbols } from "../services/sample-file.js";
 import { PaperView } from "../views/PaperView.js";
 import { isPaperSize, paperInput } from "../views/paper-fixtures.js";
@@ -102,6 +108,13 @@ function SymbolSpecimens(): ReactNode {
 /** One entry per gallery route; each conversion task adds its own. */
 export const GALLERY_ROUTES: Readonly<Record<string, GalleryRoute>> = {
   "symbol-specimens": () => <SymbolSpecimens />,
+  errors: (p) => <ErrorsView vm={toErrorsVM(["size", "camera", "stall"], mobileClass(p, "page--m"))} />,
+  "errors-all": (p) => <ErrorsAllView vm={toErrorsVM(ERROR_KINDS, mobileClass(p, "page--m"))} />,
+  error: (p) => {
+    const k = p.get("kind");
+    return <ErrorPanel vm={toErrorVM((ERROR_KINDS as readonly string[]).includes(k ?? "") ? (k as ErrorKind) : "size")} />;
+  },
+  about: (p) => <AboutView vm={toAboutVM(mobileClass(p, "page--m"))} />,
   receive: (p) => <Receive p={p} page />,
   "receive-phase": (p) => <Receive p={p} page={false} />,
   paper: (p) => <Paper p={p} />,

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { mapBaselineHrefs, readTree, render } from "./compare.js";
 import { skipReason } from "./converted.js";
@@ -23,5 +23,8 @@ for (const t of TARGETS) {
     const app = await readTree(page);
     expect(app, ".strip present").not.toBeNull();
     expect(render(app as NormNode)).toBe(render(base));
+    const out = fileURLToPath(new URL("../.fidelity/results/", import.meta.url));
+    mkdirSync(out, { recursive: true });
+    writeFileSync(`${out}${t.id}.parity.json`, JSON.stringify({ id: t.id, parity: "pass" }));
   });
 }

@@ -1,6 +1,7 @@
 // App shell: route switch inside the error boundary. Screens are added by the conversion tasks.
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
+import { AboutScreen } from "../screens/AboutScreen.js";
 import { HomeScreen } from "../screens/HomeScreen.js";
 import { useRoute } from "./router-store.js";
 
@@ -19,6 +20,7 @@ const Gallery = __STRIP_GALLERY__ ? lazy(() => import("../gallery/Gallery.js")) 
 function Routes(): ReactNode {
   const route = useRoute();
   if (route === "home") return <HomeScreen />;
+  if (route === "about") return <AboutScreen />;
   // The other screens are added by the conversion tasks.
   return (
     <div className="strip page">

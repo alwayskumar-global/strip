@@ -108,7 +108,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for any percent 0 to 100, `arc(p)` is empty at 0 and the full circle at 100; `tick(k)` times K equals the circumference (P24, R5.9) [unit].
     - Test: fidelity and DOM parity pass for the 11 Receive targets (R20.1) [Playwright].
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.9, 5.10, 5.11, 5.12, 5.13, 5.14, 5.15, 19.1, 19.3, 19.4_
-  - [ ] 1.13 Convert About and the Error panel with 14 kinds (M, 15)
+  - [x] 1.13 Convert About and the Error panel with 14 kinds (M, 15)
     - `AboutView`, `toAboutVM()`, `ErrorPanel` (`kind`: `size`, `empty`, `imgread`, `imgbig`, `imgmany`, `nocode`, `denied`, `nocamera`, `nothing`, `otherfile`, `hash`, `internal`, `camera`, `stall`), `toErrorVM`; Errors and ErrorsAll boards; fidelity and parity targets: About (2), Errors and ErrorsAll desktop and mobile (4), 14 kinds (14); this completes all 53 targets with no skip.
     - Test: for each of the 14 kinds and any context, `toErrorVM` equals the Appendix F copy, rows, icon and hrefs (P33, R7.2 to R7.5, R7.10 to R7.15) [unit].
     - Test: fidelity and DOM parity pass for the 20 targets of this task and for all 53 in one run (R20.1) [Playwright].

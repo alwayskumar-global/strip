@@ -17,10 +17,10 @@ export function dash(k: number): string {
   const t = tick(Math.max(1, k));
   return `${(t * 0.723).toFixed(4)} ${(t * 0.277).toFixed(4)}`;
 }
-export function Ring({ pct, cls, total }: { pct: number; cls: string; total: number }): ReactNode {
+export function Ring({ pct, cls, total, label }: { pct: number; cls: string; total: number; label?: string }): ReactNode {
   const style: CSSProperties = { strokeDasharray: dash(total) };
   return (
-    <div className={`ring ${cls}`} role="img" aria-label={`Progress ${pct} percent`}>
+    <div className={`ring ${cls}`} role="img" aria-label={label ?? `Progress ${pct} percent`}>
       <svg className="ring__svg" viewBox="0 0 100 100" aria-hidden="true">
         <circle className="ring__track" cx="50" cy="50" r="44" style={style} />
         <path className="ring__bar" d={arc(pct)} style={style} />
