@@ -17,3 +17,7 @@ This table lists direct dependencies (runtime and dev) declared in any `package.
 | typescript-eslint | 8.72.2 | MIT | TypeScript parser and rules for ESLint (dev). |
 | vite | 8.3.8 | MIT | Dev server and bundler for the PWA (dev). |
 | vitest | 5.1.0 | MIT | Unit and property test runner (dev). |
+| react | 19.3.1 | MIT | UI library for the Strip PWA (the design boards are converted to React components). Runtime. |
+| react-dom | 19.3.1 | MIT | React DOM renderer for the Strip PWA. Runtime. |
+| @types/react | 19.3.0 | MIT | TypeScript types for react (dev). |
+| @types/react-dom | 19.3.0 | MIT | TypeScript types for react-dom (dev). |

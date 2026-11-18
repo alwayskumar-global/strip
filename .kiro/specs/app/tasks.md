@@ -37,7 +37,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
 ## Tasks
 
 - [ ] 1. Group 1: shell, router, fonts, stylesheet, fidelity harness, all board conversions (estimate 251, CAP 301)
-  - [ ] 1.1 React 19 dependencies and JSX toolchain (S, 8)
+  - [x] 1.1 React 19 dependencies and JSX toolchain (S, 8)
     - First check Vite 8's Oxc JSX transform (`oxc.jsx`, automatic runtime) with a throwaway component; report the finding. If it needs a plugin, stop and ask.
     - Add latest 19.x exact-pinned `react`, `react-dom`, `@types/react`, `@types/react-dom` to `apps/strip/package.json`, each with a `docs/dependencies.md` row in the same commit. `tsconfig.json` gets `"jsx": "react-jsx"`; ESLint and Vitest globs move from `*.ts` to `*.{ts,tsx}`; `vitest.config.ts` stays node environment.
     - Test: `tools/deps.test.ts` passes with the four new rows and no `^` or `~` (R22.4) [unit].

@@ -69,7 +69,7 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
   },
   {
-    files: ["packages/*/src/**/*.ts", "apps/strip/src/**/*.ts"],
+    files: ["packages/*/src/**/*.ts", "apps/strip/src/**/*.{ts,tsx}"],
     rules: { "no-restricted-properties": ["error", ...banned] },
   },
   {
@@ -98,7 +98,7 @@ export default tseslint.config(
     }),
   },
   {
-    files: ["apps/strip/src/**/*.ts"],
+    files: ["apps/strip/src/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -113,7 +113,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["apps/strip/src/clock/**/*.ts"],
+    files: ["apps/strip/src/clock/**/*.{ts,tsx}"],
     rules: { "no-restricted-properties": "off" },
   },
 );

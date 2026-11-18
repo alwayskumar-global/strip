@@ -13,6 +13,12 @@
   },
   "dependencies": {
     "@strip/codec": "workspace:*",
-    "@strip/symbols": "workspace:*"
+    "@strip/symbols": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
   }
 }
