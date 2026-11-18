@@ -3,7 +3,14 @@ import { Fragment, type ReactNode } from "react";
 import { Ring } from "../components/Ring.js";
 import { Symbol } from "../components/Symbol.js";
 import type { ReceiveVM } from "./receive-vm.js";
-export function ReceiveView({ vm, viewfinder }: { vm: ReceiveVM; viewfinder?: ReactNode }): ReactNode {
+/** Optional event handlers: the gallery and the unit tests render the view without them. */
+export interface ReceiveHandlers {
+  primary?: () => void;
+  secondary?: () => void;
+  addPhoto?: (files: FileList | null) => void;
+  removePhoto?: (id: number) => void;
+}
+export function ReceiveView({ vm, viewfinder, on }: { vm: ReceiveVM; viewfinder?: ReactNode; on?: ReceiveHandlers | undefined }): ReactNode {
   return (
     <section className="strip rx" aria-label="Receive">
       <header className="rx__top">
@@ -21,7 +28,7 @@ export function ReceiveView({ vm, viewfinder }: { vm: ReceiveVM; viewfinder?: Re
             {vm.showCode && (<>
               {viewfinder ?? (
                 <div className="vf__code tilt">
-                  <Symbol matrix={vm.codeMatrix} label="Code seen by the camera" />
+                  {vm.codeMatrix && <Symbol matrix={vm.codeMatrix} label="Code seen by the camera" />}
                 </div>
               )}
               <div className="vf__scan" aria-hidden="true"></div>
@@ -65,7 +72,7 @@ export function ReceiveView({ vm, viewfinder }: { vm: ReceiveVM; viewfinder?: Re
           </div>
           <div className="capture">
             <span className="tag capture__cam">{vm.camState}</span>
-            <label className="btn picker"><input className="sr-only" type="file" accept="image/*" /><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Add photo of a page</label>
+            <label className="btn picker"><input className="sr-only" type="file" accept="image/*" onChange={(e) => { on?.addPhoto?.(e.currentTarget.files); e.currentTarget.value = ""; }} /><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Add photo of a page</label>
             <p className="t-small t-muted capture__help">One photo at a time. Add as many pages as you have.</p>
           </div>
           <div className="photos">
@@ -84,9 +91,9 @@ export function ReceiveView({ vm, viewfinder }: { vm: ReceiveVM; viewfinder?: Re
                     </span>
                     <div>
                       <p className="photo__name">{p.name}</p>
-                      <p className="t-small t-muted">{p.found} symbols found</p>
+                      <p className="t-small t-muted">{p.found} {p.found === 1 ? "symbol" : "symbols"} found</p>
                     </div>
-                    <button className="btn btn--ghost btn--icon" type="button" aria-label={`Remove ${p.name}`}>
+                    <button className="btn btn--ghost btn--icon" type="button" aria-label={`Remove ${p.name}`} onClick={() => on?.removePhoto?.(p.id ?? -1)}>
                       <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M5 5l14 14M19 5L5 19" />
                       </svg>
@@ -151,13 +158,13 @@ export function ReceiveView({ vm, viewfinder }: { vm: ReceiveVM; viewfinder?: Re
             </div>
             <div className="dock__actions">
               {vm.isNocam && (<>
-                <label className="btn btn--primary btn--lg btn--block picker"><input className="sr-only" type="file" accept="image/*" /><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Add photo of a page</label>
+                <label className="btn btn--primary btn--lg btn--block picker"><input className="sr-only" type="file" accept="image/*" onChange={(e) => { on?.addPhoto?.(e.currentTarget.files); e.currentTarget.value = ""; }} /><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Add photo of a page</label>
               </>)}
               {vm.hasPrimaryBtn && (<>
-                <button className={vm.primaryCls} type="button" disabled={vm.primaryOff}>{vm.isDone && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14" /></svg></>)}{vm.primary}</button>
+                <button className={vm.primaryCls} type="button" disabled={vm.primaryOff} onClick={() => on?.primary?.()}>{vm.isDone && (<><svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 11l6 6 6-6M5 20h14" /></svg></>)}{vm.primary}</button>
               </>)}
               <div className="dock__row">
-                <button className="btn" type="button">{vm.secondary}</button>
+                <button className="btn" type="button" onClick={() => on?.secondary?.()}>{vm.secondary}</button>
                 {vm.showTorch && (<>
                   <button className="btn btn--icon" type="button" aria-label="Torch">
                     <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">

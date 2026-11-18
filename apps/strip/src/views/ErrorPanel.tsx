@@ -2,7 +2,12 @@
 import { Fragment, type ReactNode } from "react";
 import { Ring } from "../components/Ring.js";
 import type { ErrorVM } from "./error-vm.js";
-export function ErrorPanel({ vm }: { vm: ErrorVM }): ReactNode {
+/** Optional action handlers: when given, the two actions are handled in the app instead of followed as links. */
+export interface ErrorHandlers {
+  primary?: () => void;
+  secondary?: () => void;
+}
+export function ErrorPanel({ vm, on }: { vm: ErrorVM; on?: ErrorHandlers }): ReactNode {
   return (
     <section className="strip err" role="alert">
       <div className="err__head">
@@ -64,8 +69,8 @@ export function ErrorPanel({ vm }: { vm: ErrorVM }): ReactNode {
         </ul>
       </>)}
       <div className="err__actions">
-        <a className="btn btn--primary btn--lg btn--block" href={vm.primaryHref}>{vm.primary}</a>
-        <a className="btn btn--block" href={vm.secondaryHref}>{vm.secondary}</a>
+        <a className="btn btn--primary btn--lg btn--block" href={vm.primaryHref} onClick={(e) => { if (on?.primary) { e.preventDefault(); on.primary(); } }}>{vm.primary}</a>
+        <a className="btn btn--block" href={vm.secondaryHref} onClick={(e) => { if (on?.secondary) { e.preventDefault(); on.secondary(); } }}>{vm.secondary}</a>
       </div>
     </section>
   );

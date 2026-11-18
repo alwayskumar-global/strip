@@ -3,6 +3,7 @@ import type { SymbolMatrix } from "@strip/symbols";
 export const RECEIVE_PHASES = ["empty", "ask", "denied", "nocam", "scan", "repeat", "dup", "verify", "done", "failed"] as const;
 export type ReceivePhase = (typeof RECEIVE_PHASES)[number];
 export interface PhotoRow {
+  id?: number;
   name: string;
   found: number;
 }
@@ -32,7 +33,7 @@ export interface ReceiveInput {
   expected?: string;
   got?: string;
   /** The mock code of the viewfinder (the camera is the container's own element, passed as a slot). */
-  codeMatrix: SymbolMatrix;
+  codeMatrix?: SymbolMatrix;
 }
 export interface ReceiveVM {
   tag: string;
@@ -79,7 +80,7 @@ export interface ReceiveVM {
   photoHint: string;
   howto: Array<{ t: string }>;
   done: { name: string; size: string; match: string };
-  codeMatrix: SymbolMatrix;
+  codeMatrix: SymbolMatrix | undefined;
 }
 const P = "btn btn--primary btn--lg btn--block";
 const PLAIN = "btn btn--lg btn--block";

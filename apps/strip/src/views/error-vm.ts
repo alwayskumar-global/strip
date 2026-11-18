@@ -4,25 +4,25 @@ export const ERROR_KINDS = ["size", "empty", "imgread", "imgbig", "imgmany", "no
 export type ErrorKind = (typeof ERROR_KINDS)[number];
 /** The facts the copy mentions. Every field has the board's instance value as its default. */
 export interface ErrorContext {
-  fileName?: string;
+  fileName?: string | undefined;
   /** "1.4 MB" */
-  size?: string;
+  size?: string | undefined;
   /** File cap in KB. */
-  capKb?: number;
-  imageName?: string;
-  imageSize?: string;
-  imageLimit?: string;
-  photos?: string;
-  pagesNeeded?: string;
-  lastSymbol?: string;
-  sessionCurrent?: string;
-  sessionOther?: string;
-  expected?: string;
-  got?: string;
-  solved?: number;
-  total?: number;
-  seen?: number;
-  lastBlock?: string;
+  capKb?: number | undefined;
+  imageName?: string | undefined;
+  imageSize?: string | undefined;
+  imageLimit?: string | undefined;
+  photos?: string | undefined;
+  pagesNeeded?: string | undefined;
+  lastSymbol?: string | undefined;
+  sessionCurrent?: string | undefined;
+  sessionOther?: string | undefined;
+  expected?: string | undefined;
+  got?: string | undefined;
+  solved?: number | undefined;
+  total?: number | undefined;
+  seen?: number | undefined;
+  lastBlock?: string | undefined;
 }
 export interface ErrorVM {
   iconFile: boolean;
