@@ -13,6 +13,9 @@ import { StreamView } from "../views/StreamView.js";
 import { isStreamMode, streamInput } from "../views/stream-fixtures.js";
 import { toFullScreenVM, toStreamVM } from "../views/stream-vm.js";
 import { sampleSymbols } from "../services/sample-file.js";
+import { PaperView } from "../views/PaperView.js";
+import { isPaperSize, paperInput } from "../views/paper-fixtures.js";
+import { toPaperVM } from "../views/paper-vm.js";
 import type { SymbolMatrix } from "@strip/symbols";
 import { specimens, type Specimen } from "./fixtures.js";
 
@@ -23,6 +26,15 @@ function useMatrix(): SymbolMatrix | null {
     void sampleSymbols(1).then((s) => setM(s[0]?.matrix ?? null));
   }, []);
   return m;
+}
+function Paper({ p }: { p: URLSearchParams }): ReactNode {
+  const [ms, setMs] = useState<SymbolMatrix[]>([]);
+  useEffect(() => {
+    void sampleSymbols(9).then((s) => setMs(s.map((x) => x.matrix)));
+  }, []);
+  const size = p.get("size");
+  if (ms.length === 0) return null;
+  return <PaperView vm={toPaperVM(paperInput(isPaperSize(size) ? size : "a4", ms, mobileClass(p, "page--m")))} />;
 }
 function Stream({ p, full }: { p: URLSearchParams; full: boolean }): ReactNode {
   const matrix = useMatrix();
@@ -79,6 +91,7 @@ function SymbolSpecimens(): ReactNode {
 /** One entry per gallery route; each conversion task adds its own. */
 export const GALLERY_ROUTES: Readonly<Record<string, GalleryRoute>> = {
   "symbol-specimens": () => <SymbolSpecimens />,
+  paper: (p) => <Paper p={p} />,
   stream: (p) => <Stream p={p} full={false} />,
   "stream-full": (p) => <Stream p={p} full />,
   send: (p) => {

@@ -97,7 +97,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `toStreamVM` gives the board's tag, class, label and note per mode, `Previous` and `Next` disabled exactly in `play`, range disabled exactly in `step` (P15, R3.2, R3.3) [unit].
     - Test: fidelity and DOM parity pass for the 8 stream targets (R20.1) [Playwright].
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 3.13, 3.14, 19.1, 19.3, 19.4_
-  - [ ] 1.11 Convert SendPaper A4 and Letter (M, 15)
+  - [x] 1.11 Convert SendPaper A4 and Letter (M, 15)
     - `PaperView` (size is CSS state through radios and `:has()`), tile grid 3 by 3, print header; fidelity and parity targets: SendPaper, SendPaperLetter, desktop and mobile (4).
     - Test: VM-to-markup equals the board copy and the tile grid has 9 `figure.tile` (R4.1 to R4.14) [unit].
     - Test: fidelity and DOM parity pass for the 4 paper targets (R20.1) [Playwright].

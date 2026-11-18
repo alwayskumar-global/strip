@@ -1,6 +1,5 @@
 // Targets whose React conversion exists. Each conversion task (1.8 to 1.13) deletes its skip reason here.
 const PENDING: Array<[RegExp, string]> = [
-  [/^paper/, "task 1.11: PaperView is not converted yet"],
   [/^receive/, "task 1.12: ReceiveView is not converted yet"],
   [/^(about|errors|error-)/, "task 1.13: About and ErrorPanel are not converted yet"],
 ];
