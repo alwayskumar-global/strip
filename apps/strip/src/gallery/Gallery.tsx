@@ -7,6 +7,8 @@ import { Symbol } from "../components/Symbol.js";
 import { wasmSource } from "../symbols-wasm.js";
 import { specimens, type Specimen } from "./fixtures.js";
 export const GALLERY_SENTINEL = "STRIP_GALLERY_SENTINEL_7f3a";
+/** The board's mobile root class when the gallery URL carries mobile=1 (never present in the production bundle). */
+export const mobileClass = (params: URLSearchParams, cls: "page--m" | "fs--m"): string => (params.get("mobile") === "1" ? cls : "");
 export type GalleryRoute = (params: URLSearchParams) => ReactNode;
 function SymbolSpecimens(): ReactNode {
   const [items, setItems] = useState<Specimen[]>([]);
@@ -37,6 +39,7 @@ function SymbolSpecimens(): ReactNode {
     (window as unknown as { __gallery: typeof api }).__gallery = api;
   }, [items]);
   return (
+    <div className="strip page" data-gallery={GALLERY_SENTINEL}>
     <main className="wrap" data-gallery-ready={items.length === 6 ? "yes" : "no"}>
       {items.map((s, i) => (
         <div key={i} className="stage__code" id={`specimen-${i}`}>
@@ -44,6 +47,7 @@ function SymbolSpecimens(): ReactNode {
         </div>
       ))}
     </main>
+    </div>
   );
 }
 /** One entry per gallery route; each conversion task adds its own. */
@@ -54,10 +58,5 @@ export default function Gallery(): ReactNode {
   const name = location.pathname.replace(/^\/__gallery\//, "").replace(/\/$/, "");
   const params = new URLSearchParams(location.search);
   const route = GALLERY_ROUTES[name];
-  const mobile = params.get("mobile") === "1";
-  return (
-    <div className={mobile ? "strip page page--m" : "strip page"} data-gallery={GALLERY_SENTINEL}>
-      {route ? route(params) : <main className="wrap"><p>Unknown gallery route: {name}</p></main>}
-    </div>
-  );
+  return route ? <>{route(params)}</> : <div className="strip" data-gallery={GALLERY_SENTINEL}><p>Unknown gallery route: {name}</p></div>;
 }

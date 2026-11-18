@@ -24,6 +24,6 @@ for (const t of TARGETS) {
     expect(errors, "console errors").toEqual([]);
     await page.screenshot({ path: `${outDir}${t.id}.png`, fullPage: true, animations: "disabled", caret: "hide", mask: masks(page), style: hideAdditionsCss() });
     writeFileSync(`${outDir}${t.id}.dom.json`, JSON.stringify(await page.evaluate(normalizeDom)));
-    writeFileSync(`${outDir}${t.id}.size.json`, JSON.stringify(await page.evaluate(() => ({ w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight }))));
+    writeFileSync(`${outDir}${t.id}.size.json`, JSON.stringify(await page.evaluate(() => ({ w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight, codes: document.querySelectorAll("svg.code").length }))));
   });
 }

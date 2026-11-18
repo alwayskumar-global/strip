@@ -19,8 +19,8 @@ export function normalizeDom(): NormNode | null {
         const c = n as Element;
         const tag = c.tagName.toLowerCase();
         if (DROP_TAGS.has(tag) || c.hasAttribute("data-addition")) continue;
-        if (tag.includes("-")) {
-          out.push(...walk(c, inCode)); // custom elements are unwrapped
+        if (tag.includes("-") || c.hasAttribute("data-sc-name")) {
+          out.push(...walk(c, inCode)); // custom elements and the design runtime's component hosts (div.sc-host[data-sc-name]) are unwrapped
           continue;
         }
         out.push(node(c, inCode));

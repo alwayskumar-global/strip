@@ -35,3 +35,9 @@ export async function routeBaseline(page: Page): Promise<string[]> {
   });
   return external;
 }
+/** The app draws its codes asynchronously: wait until it shows as many `svg.code` as the baseline board did. */
+export async function settleApp(page: Page, id: string): Promise<void> {
+  await settle(page);
+  const { codes } = JSON.parse(readFileSync(fileURLToPath(new URL(`../.fidelity/baseline/${id}.size.json`, import.meta.url)), "utf8")) as { codes: number };
+  await page.waitForFunction((n) => document.querySelectorAll("svg.code").length === n, codes, { timeout: 30_000 });
+}

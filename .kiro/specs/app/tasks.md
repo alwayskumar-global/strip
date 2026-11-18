@@ -82,7 +82,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for 6 specimen Packets, rasterise at 4 px per module and `decodeFrame` returns a Packet `decodePacket` accepts (P12, R1.4) [Playwright].
     - Test: production build has no gallery chunk, no sentinel, no `page--m`, no `fs--m`; the gallery build has them; no built file contains `.dc.html` (P40, R7.1, R19.11, R20.7) [unit].
     - _Requirements: 1.4, 7.1, 19.11, 19.12, 20.7_
-  - [ ] 1.8 Convert Home and HomeMobile (M, 15)
+  - [x] 1.8 Convert Home and HomeMobile (M, 15)
     - `HomeView`, `toHomeVM(sample)` (specimen tiles seeds 0 to 5), the `THIRD_PARTY_NOTICES` and REPO_URL links; gallery route; fidelity and parity targets: Home desktop, Home mobile (2). Remove the skip for those targets.
     - Test: `renderToStaticMarkup(HomeView)` contains the board copy verbatim (R1.1 to R1.7) [unit].
     - Test: fidelity and DOM parity pass for the 2 Home targets (R20.1) [Playwright].
