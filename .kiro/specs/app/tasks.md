@@ -118,7 +118,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Run lint, typecheck, test, build, `build:gallery`, `test:e2e`, `test:fidelity`; report outputs, credits used against 251 (cap 301), deviations, additions, and the template-construct list. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 20.6, 22.1_
 
-- [ ] 2. Group 2: paper send pipeline and receive from images (estimate 153, CAP 184)
+- [x] 2. Group 2: paper send pipeline and receive from images (estimate 153, CAP 184)
   - [x] 2.1 File intake, formatting, hash chip, send-step reducer (M, 15)
     - `file-intake.ts` (`classify`, 256 KB cap, read only in `chosen`), `mimeOf`, `format.ts` (KB, MB, bytes, `{cap}`), `sha256WebCrypto`, hash chip (first 12 hex in 3 groups of 4), `send-step.ts` reducer, `SendScreen` container wired to `SendView`.
     - Test: for any size, `classify` is `emptyfile` at 0, `chosen` for 1 to cap, `toolarge` above; cap and cap + 1 boundaries; bytes are read only in `chosen` (P2, R2.2, R2.11, R2.12, R9.1) [property].
@@ -166,7 +166,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `page.pdf()` in print media has exactly N pages of 210 x 297 mm or 215.9 x 279.4 mm, header "Page {p} of {N}", no tile clipped (P46, R10.8, R10.9) [Playwright].
     - Test: for each tested file all N sheets as images rebuild a byte-identical file with the same name and MIME; withholding the last sheet still completes (P47, R21.1, R21.2) [property].
     - _Requirements: 10.8, 10.9, 10.10, 10.11, 21.1, 21.2_
-  - [ ] 2.8 Checkpoint: Group 2 stop-and-report
+  - [x] 2.8 Checkpoint: Group 2 stop-and-report
     - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 153 (cap 184), cumulative 404. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.1_
 
