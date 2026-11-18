@@ -69,7 +69,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: `support.js` never requests `cdn.jsdelivr.net` or any other external host except the intercepted fonts CSS (R20.2) [Playwright].
     - Test: each of the 53 baselines renders `.strip` with no `.sc-has-error` and no console error (R20.1) [Playwright].
     - Test: existing harness specs on 5173, 5180 and 5181 still pass unchanged (R22.1) [Playwright].
-    - _Requirements: 20.1, 20.2, 20.3, 22.8_
+    - _Requirements: 20.1, 20.2, 20.3, 22.1_
   - [ ] 1.6 Fidelity spec, QR masks, `data-addition` hiding, DOM-parity normaliser (L, 30)
     - `fidelity.spec.ts` using `toHaveScreenshot` at `maxDiffPixelRatio: 0.01`, `retries: 0`, QR masks (`svg.code`, `.stage__code`, `.fs__code`, `.vf__code`, `.vf video`, `.vf canvas`), `data-addition` hidden through the screenshot `style` option; `normalize-dom.ts`, `dom-parity.spec.ts`, `parity-allowlist.ts` (each entry justified); `pnpm test:fidelity` script. Targets without a converted component yet are skipped with a named reason that each conversion task removes.
     - Test: the comparison passes baseline against itself and fails when a 2% pixel region changes (R20.4, R20.5) [Playwright].
@@ -227,11 +227,11 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - `THIRD_PARTY_NOTICES` adds React, react-dom and IBM Plex (OFL); `scripts/bundle-report.mjs` writes `apps/strip/bundle-report.json` (gitignored; raw, gzip, brotli per asset, totals, first-load set) and fails over budget.
     - Test: first-load gzip set at most 400 KB, `.wasm` at most 1,000,000 bytes, report JSON exists with raw, gzip and brotli (P50, R18.1 to R18.3) [unit].
     - Test: notices include React, react-dom and IBM Plex with the OFL text (R19.10, R22.5) [unit].
-    - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.6, 19.10, 22.9_
+    - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.6, 19.10, 22.5_
   - [ ] 4.6 README (S, 8)
     - Root `README.md`: what Strip is, run and test commands, the two paths, the limits, the privacy statement, the device-test pointer, third-party notices.
     - Test: README names every pnpm script it cites and each exists in a `package.json` (R22.7) [unit].
-    - _Requirements: 22.10_
+    - _Requirements: 22.7_
   - [ ] 4.7 Checkpoint: Group 4 stop-and-report
     - Run the CI order (lint, typecheck, test, build, `build:gallery`, test again, `test:e2e`, `test:fidelity`); report outputs, bundle numbers and credits used against 101 (cap 121), cumulative 643. Stop.
     - _Requirements: 18.1_
@@ -253,7 +253,7 @@ Everything below this line is dropped first if the budget runs short.
     - Extend `tools/lint-rules.test.ts` for the new bans; add a console and `securitypolicyviolation` listener to every e2e flow.
     - Test: ESLint rejects `Math.random`, `Date.now`, `performance.now`, `new Date()` and `timeStamp` outside `src/clock`, deep package imports, `zod`, gallery imports, and `style` JSX except in `Ring` (P56, R22.1, R22.2, R22.6) [unit].
     - Test: every flow runs with zero `securitypolicyviolation` events and zero console errors; the built `index.html` has no inline script, style or `style=""` (P58, R15.8, R15.9) [Playwright].
-    - _Requirements: 15.8, 15.9, 22.1, 22.2, 22.6, 22.11_
+    - _Requirements: 15.8, 15.9, 22.1, 22.2, 22.6, 22.7_
   - [ ] 5.3 Perf and measured reports (L, 30)
     - `pnpm perf` for the stream tick and encode and render time at T = 200; measured print module size; stage captures at DPR 1 and 2 for S, M, L; a long-task observer on the Frame_Loop.
     - Test: no main-thread long task over 50 ms is attributable to decoding while the Frame_Loop runs on the fixture video (P51, R12.4) [Playwright].
