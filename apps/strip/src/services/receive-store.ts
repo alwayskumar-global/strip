@@ -128,7 +128,7 @@ async function readImage(gen: number, name: string): Promise<void> {
     const bmp = await loadBitmap(file);
     decoder ??= decoderFactory();
     await decoder.ready;
-    const symbols = symbolsOf(await decoder.submitBitmap(bmp));
+    const symbols = symbolsOf(await decoder.submitBitmap(bmp, "image"));
     if (gen !== state.gen) return;
     const valid = symbols.filter((b) => {
       try {

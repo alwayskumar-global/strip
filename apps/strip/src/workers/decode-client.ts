@@ -1,14 +1,14 @@
 // Main-thread wrapper around the decode worker. A frame is sent only while the worker is idle; otherwise it is dropped
 // here without a copy and nothing is posted (R7.10, R7.11).
 import type { DecodeMode, DecodeOutcome, SymbolErrorCode } from "@strip/symbols";
-import type { FromWorker, ToWorker } from "./decode-protocol.ts";
+import type { Channel, ChannelConfig, FromWorker, ToWorker } from "./decode-protocol.ts";
 
 export interface WorkerLike {
   postMessage(message: unknown, transfer?: Transferable[]): void;
   onmessage: ((e: { data: unknown }) => void) | null;
   terminate(): void;
 }
-export type DecodeClientInit = { wasmUrl: string; maxWidth: number; maxHeight: number; mode?: DecodeMode; maxSymbols?: number };
+export type DecodeClientInit = { wasmUrl: string; maxWidth: number; maxHeight: number; mode?: DecodeMode; maxSymbols?: number; image?: ChannelConfig };
 export class DecodeClientError extends Error {
   readonly code: SymbolErrorCode;
   constructor(code: SymbolErrorCode, message: string) {
@@ -22,7 +22,9 @@ export interface DecodeClient {
   readonly ready: Promise<void>;
   readonly idle: boolean;
   submitFrame(width: number, height: number, buffer: ArrayBuffer): Promise<DecodeOutcome>;
-  submitBitmap(bitmap: ImageBitmap): Promise<DecodeOutcome>;
+  submitBitmap(bitmap: ImageBitmap, channel?: Channel): Promise<DecodeOutcome>;
+  /** Disposes the lazily created image decoder (its 67 MB staging buffer). */
+  release(channel: "image"): void;
   terminate(): void;
 }
 
@@ -52,7 +54,7 @@ export function createDecodeClient(worker: WorkerLike, init: DecodeClientInit): 
       else p?.reject(new DecodeClientError(m.code, m.message));
     }
   };
-  const initMsg: ToWorker = { type: "init", wasmUrl: init.wasmUrl, maxWidth: init.maxWidth, maxHeight: init.maxHeight, mode: init.mode ?? "video", ...(init.maxSymbols === undefined ? {} : { maxSymbols: init.maxSymbols }) };
+  const initMsg: ToWorker = { type: "init", wasmUrl: init.wasmUrl, maxWidth: init.maxWidth, maxHeight: init.maxHeight, mode: init.mode ?? "video", ...(init.maxSymbols === undefined ? {} : { maxSymbols: init.maxSymbols }), ...(init.image === undefined ? {} : { image: init.image }) };
   worker.postMessage(initMsg);
   const send = (build: (id: number) => ToWorker, transfer: Transferable[]): Promise<DecodeOutcome> => {
     if (!idle) return Promise.resolve({ kind: "dropped" });
@@ -69,10 +71,11 @@ export function createDecodeClient(worker: WorkerLike, init: DecodeClientInit): 
       return idle;
     },
     submitFrame: (width, height, buffer) => send((id) => ({ type: "frame", id, width, height, buffer }), [buffer]),
-    submitBitmap: (bitmap) => {
+    submitBitmap: (bitmap, channel = "camera") => {
       if (!idle) bitmap.close(); // a dropped bitmap is released at once (R12.10)
-      return send((id) => ({ type: "bitmap", id, bitmap }), [bitmap]);
+      return send((id) => ({ type: "bitmap", id, bitmap, channel }), [bitmap]);
     },
+    release: (channel) => worker.postMessage({ type: "release", channel } satisfies ToWorker),
     terminate: () => worker.terminate(),
   };
 }

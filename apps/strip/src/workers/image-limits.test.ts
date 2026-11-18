@@ -46,7 +46,7 @@ describe("decode client (P30, R12.3, R12.10)", () => {
           postMessage(m) {
             const msg = m as ToWorker;
             if (msg.type === "init") queueMicrotask(() => worker.onmessage?.({ data: { type: "ready" } satisfies FromWorker }));
-            else {
+            else if (msg.type !== "release") {
               inFlight++;
               maxInFlight = Math.max(maxInFlight, inFlight);
               lastId = msg.id;

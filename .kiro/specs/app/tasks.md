@@ -171,7 +171,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - _Requirements: 21.1_
 
 - [ ] 3. Group 3: live camera receiver and screen stream sender (estimate 138, CAP 166)
-  - [ ] 3.1 Camera and Frame_Loop (M, 15)
+  - [x] 3.1 Camera and Frame_Loop (M, 15)
     - `camera.ts` (`getUserMedia`, error names to dispositions), `frame-loop.ts` (video frame to bitmap to the worker, drop while busy), release rules (tracks stopped on leave, restart, done, hide).
     - Test: with a mocked `getUserMedia`, denied, no-camera and generic failures map to `denied`, `nocam`, `camera` (R12.16, R12.17) [unit].
     - Test: tracks are stopped on route change, restart and completion (R12.18) [unit].
@@ -198,6 +198,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Project `camera`: Chromium with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-video-capture=<abs>/test-results/fake-camera/cam.y4m`. If the y4m path does not decode, use the design's fallback (feed the stage captures through the decode client) and report it.
     - Test: stepping the stream and feeding the stage captures rebuilds a byte-identical file (P48, R21.3) [property].
     - Test: scenarios reach `dup`, `failed`, `denied`, the `camera` panel, `nocam` (photos still complete a file), `stall`, `nothing`, counters at 0 after restart, `repeat` (P49, R21.4 to R21.9, R21.11) [Playwright].
+    - Test: add 2 photos on Receive, remove one: the progress counters and the thumbnails update to the remaining photo (R12.24, R21.11) [Playwright].
     - _Requirements: 21.3, 21.4, 21.5, 21.6, 21.7, 21.8, 21.9, 21.10, 21.12_
   - [ ] 3.6 Checkpoint: Group 3 stop-and-report
     - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 138 (cap 166), cumulative 542. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
@@ -224,8 +225,8 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: after the flows `localStorage`, `sessionStorage`, cookies and IndexedDB are empty and every Cache API URL is in the precache list (P42, R16.4, R16.7) [Playwright].
     - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8_
   - [ ] 4.5 Notices and bundle report with the 400 KB gzip budget (M, 15)
-    - `THIRD_PARTY_NOTICES` adds React, react-dom and IBM Plex (OFL); `scripts/bundle-report.mjs` writes `apps/strip/bundle-report.json` (gitignored; raw, gzip, brotli per asset, totals, first-load set) and fails over budget.
-    - Test: first-load gzip set at most 400 KB, `.wasm` at most 1,000,000 bytes, report JSON exists with raw, gzip and brotli (P50, R18.1 to R18.3) [unit].
+    - `THIRD_PARTY_NOTICES` adds React, react-dom and IBM Plex (OFL); `scripts/bundle-report.mjs` writes `apps/strip/bundle-report.json` (gitignored; raw, gzip, brotli per asset, totals, first-load set) and fails over budget. The 400 KB gzip budget applies to the first-load main JS + CSS + fonts and EXCLUDES the `.wasm` and the decode worker; the `.wasm` (at most 1,000,000 bytes raw) and the worker sizes are reported separately in the Bundle_Report.
+    - Test: first-load main JS + CSS + fonts gzip total at most 400 KB (excluding the `.wasm` and the decode worker), `.wasm` at most 1,000,000 bytes raw, `.wasm` and worker sizes reported separately in the Bundle_Report, report JSON exists with raw, gzip and brotli (P50, R18.1 to R18.3) [unit].
     - Test: notices include React, react-dom and IBM Plex with the OFL text (R19.10, R22.5) [unit].
     - Test: the Home board's notices link (`href="/THIRD_PARTY_NOTICES"`) is present, reachable and serves the notices file, in the app e2e suite against the production build (R15.5, R19.10) [Playwright].
     - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.6, 19.10, 22.5_

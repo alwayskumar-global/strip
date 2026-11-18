@@ -2,7 +2,7 @@
 import { createFrameDecoder, SymbolError } from "@strip/symbols";
 import type { FrameDecoder, ImageDataLike } from "@strip/symbols";
 import { transferListOf } from "./transfer-list.ts";
-import type { FromWorker, ToWorker } from "./decode-protocol.ts";
+import type { Channel, ChannelConfig, FromWorker, ToWorker } from "./decode-protocol.ts";
 
 type Scope = {
   postMessage(message: unknown, transfer?: Transferable[]): void;
@@ -28,10 +28,27 @@ async function frameFromBitmap(bitmap: ImageBitmap): Promise<ImageDataLike> {
   return { width: d.width, height: d.height, data: d.data };
 }
 
+let imageDecoder: FrameDecoder | undefined;
+let imageConfig: ChannelConfig | undefined;
+let wasmUrl = "";
+async function decoderFor(channel: Channel): Promise<FrameDecoder> {
+  if (channel === "camera") {
+    if (decoder === undefined) throw new SymbolError("INVALID_INPUT", "decoder is not initialised");
+    return decoder;
+  }
+  // The image decoder (4096 x 4096 staging, 67 MB) is created at the first image and disposed on release.
+  if (imageDecoder === undefined) {
+    if (imageConfig === undefined) throw new SymbolError("INVALID_INPUT", "no image channel configured");
+    imageDecoder = await createFrameDecoder({ wasm: { kind: "url", url: wasmUrl }, maxWidth: imageConfig.maxWidth, maxHeight: imageConfig.maxHeight, mode: imageConfig.mode, ...(imageConfig.maxSymbols === undefined ? {} : { maxSymbols: imageConfig.maxSymbols }) });
+  }
+  return imageDecoder;
+}
 scope.onmessage = async (e) => {
   const msg = e.data as ToWorker;
   if (msg.type === "init") {
     try {
+      wasmUrl = msg.wasmUrl;
+      imageConfig = msg.image;
       decoder = await createFrameDecoder({ wasm: { kind: "url", url: msg.wasmUrl }, maxWidth: msg.maxWidth, maxHeight: msg.maxHeight, mode: msg.mode, ...(msg.maxSymbols === undefined ? {} : { maxSymbols: msg.maxSymbols }) });
       post({ type: "ready" });
     } catch (err) {
@@ -39,12 +56,17 @@ scope.onmessage = async (e) => {
     }
     return;
   }
+  if (msg.type === "release") {
+    imageDecoder?.dispose();
+    imageDecoder = undefined;
+    return;
+  }
   const id = msg.id;
   try {
-    if (decoder === undefined) throw new SymbolError("INVALID_INPUT", "decoder is not initialised");
+    const d = await decoderFor(msg.type === "bitmap" ? (msg.channel ?? "camera") : "camera");
     const frame: ImageDataLike =
       msg.type === "frame" ? { width: msg.width, height: msg.height, data: new Uint8ClampedArray(msg.buffer) } : await frameFromBitmap(msg.bitmap);
-    const outcome = await decoder.submit(frame);
+    const outcome = await d.submit(frame);
     post({ type: "outcome", id, outcome }, transferListOf(outcome));
   } catch (err) {
     post({ type: "error", id, code: codeOf(err), message: err instanceof Error ? err.message : String(err) });

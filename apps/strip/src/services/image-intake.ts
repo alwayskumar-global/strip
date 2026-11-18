@@ -29,8 +29,8 @@ export async function loadBitmap(file: Blob): Promise<ImageBitmap> {
     bmp.close();
   }
 }
-/** The worker-backed decoder for photos: photo mode, up to 9 symbols per image, images up to 4096 x 4096. */
+/** The one worker: the camera decoder (1920 x 1080, video mode) now, the image decoder (4096 x 4096, photo mode) lazily. */
 export function createImageDecoder(): DecodeClient {
   const worker = new Worker(new URL("../workers/decode.worker.ts", import.meta.url), { type: "module" });
-  return createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth: IMAGE_LONG_SIDE, maxHeight: IMAGE_LONG_SIDE, mode: "photo", maxSymbols: 9 });
+  return createDecodeClient(worker as unknown as WorkerLike, { wasmUrl: wasmSource.url, maxWidth: 1920, maxHeight: 1080, mode: "video", maxSymbols: 9, image: { maxWidth: IMAGE_LONG_SIDE, maxHeight: IMAGE_LONG_SIDE, mode: "photo", maxSymbols: 9 } });
 }
