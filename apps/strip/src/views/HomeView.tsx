@@ -1,4 +1,4 @@
-// Converted from design/project/Home.dc.html (steering: design-handoff). Presentational: no service calls, no state.
+// Converted from the Home board in design/project (steering: design-handoff). Presentational: no service calls, no state.
 import { Fragment, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import { Symbol } from "../components/Symbol.js";

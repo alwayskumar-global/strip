@@ -158,7 +158,7 @@ describe("template syntax and design runtime never reach src (P38, R19.1, R19.5)
     const hits: string[] = [];
     for (const f of files(src, (n) => /\.(ts|tsx|css|html)$/.test(n))) {
       const rel = f.slice(src.length + 1);
-      if (/\.test\.tsx?$/.test(rel)) continue; // tests may name what they forbid
+      if (/\.test(-support)?\.tsx?$/.test(rel)) continue; // tests may name what they forbid
       const t = readFileSync(f, "utf8");
       for (const b of banned) if (t.includes(b) && !(allowed.get(rel) ?? []).includes(b)) hits.push(`${rel}: ${b}`);
     }

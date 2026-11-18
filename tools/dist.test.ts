@@ -14,6 +14,7 @@ function files(dir: string): string[] {
 const textFiles = (dir: string): Array<{ name: string; text: string }> =>
   files(dir).filter((f) => /\.(js|css|html|json|mjs)$/.test(f)).map((f) => ({ name: f.slice(dir.length + 1), text: readFileSync(f, "utf8") }));
 beforeAll(async () => {
+  process.env["NODE_ENV"] = "production"; // vitest sets "test", which would build React in development mode
   for (const mode of ["production", "gallery"]) await build({ root: app, mode, logLevel: "silent", configFile: join(app, "vite.config.ts") });
 }, 240_000);
 describe("gallery exclusion (P40)", () => {

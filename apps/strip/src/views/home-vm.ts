@@ -1,4 +1,4 @@
-// View-model of the Home board (Home.dc.html renderVals): the root class and the six specimen tiles.
+// View-model of the Home board (the board's renderVals): the root class and the six specimen tiles.
 import type { SymbolMatrix } from "@strip/symbols";
 export interface HomeVM {
   /** "" on desktop; the gallery passes the board's mobile class. */

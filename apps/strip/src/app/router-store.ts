@@ -21,7 +21,7 @@ function update(): void {
 }
 /** Unknown paths are replaced by "/" (R8.2). */
 function normalise(): void {
-  if (matchRoute(window.location.pathname) === null && !window.location.pathname.startsWith("/__gallery/")) {
+  if (matchRoute(window.location.pathname) === null && !(__STRIP_GALLERY__ && window.location.pathname.startsWith("/__gallery/"))) {
     window.history.replaceState(null, "", "/");
   }
 }
