@@ -114,7 +114,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: fidelity and DOM parity pass for the 20 targets of this task and for all 53 in one run (R20.1) [Playwright].
     - Report the full list of template constructs used, inline-style conversions and additions (R19.4, R19.6).
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 7.2, 7.3, 7.4, 7.5, 7.10, 7.11, 7.12, 7.13, 7.14, 7.15, 19.1, 19.4, 19.6, 20.1_
-  - [ ] 1.14 Checkpoint: Group 1 stop-and-report
+  - [x] 1.14 Checkpoint: Group 1 stop-and-report
     - Run lint, typecheck, test, build, `build:gallery`, `test:e2e`, `test:fidelity`; report outputs, credits used against 251 (cap 301), deviations, additions, and the template-construct list. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 20.6, 22.1_
 
