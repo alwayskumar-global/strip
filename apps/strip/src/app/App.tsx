@@ -1,5 +1,5 @@
 // App shell: route switch inside the error boundary. Screens are added by the conversion tasks.
-import { Component, type ReactNode } from "react";
+import { Component, lazy, Suspense, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 
 class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -12,7 +12,18 @@ class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   }
 }
 
+// Harness-only gallery, excluded from the production bundle: the define makes this branch dead code there.
+const Gallery = __STRIP_GALLERY__ ? lazy(() => import("../gallery/Gallery.js")) : null;
 export function App(): ReactNode {
+  if (__STRIP_GALLERY__ && Gallery !== null && location.pathname.startsWith("/__gallery/")) {
+    return (
+      <Boundary>
+        <Suspense fallback={null}>
+          <Gallery />
+        </Suspense>
+      </Boundary>
+    );
+  }
   return (
     <Boundary>
       <div className="strip page">

@@ -26,6 +26,20 @@ const boundary = (allowed, message) => ({
   ],
 });
 
+// apps/strip import rules: public barrels only, plus the one documented subpath of @strip/symbols (R12.3).
+const appImports = (banGallery) => ({
+  "no-restricted-imports": [
+    "error",
+    {
+      patterns: [
+        { ...internals, group: ["@strip/*/**", "!@strip/symbols/wasm-url", "**/packages/**", "**/apps/**"] },
+        { group: ["@strip/*", "!@strip/codec", "!@strip/symbols"], message: "apps/strip may import only @strip/codec and @strip/symbols." },
+        ...(banGallery ? [{ group: ["**/gallery/**", "**/gallery"], message: "The gallery is harness-only: only App.tsx may import it, dynamically." }] : []),
+      ],
+    },
+  ],
+});
+
 // symbolsImports: option overrides replace the default restriction for one file group.
 // A false value lifts that restriction for the group.
 const symbolsImports = (override) => {
@@ -99,18 +113,12 @@ export default tseslint.config(
   },
   {
     files: ["apps/strip/src/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            // The one documented subpath of @strip/symbols is allowed (R12.3).
-            { ...internals, group: ["@strip/*/**", "!@strip/symbols/wasm-url", "**/packages/**", "**/apps/**"] },
-            { group: ["@strip/*", "!@strip/codec", "!@strip/symbols"], message: "apps/strip may import only @strip/codec and @strip/symbols." },
-          ],
-        },
-      ],
-    },
+    rules: appImports(true),
+  },
+  // The gallery is harness-only: nothing imports it except the one dynamic import in App.tsx (design: Gallery exclusion).
+  {
+    files: ["apps/strip/src/gallery/**/*.{ts,tsx}", "apps/strip/src/app/App.tsx"],
+    rules: appImports(false),
   },
   {
     files: ["apps/strip/src/clock/**/*.{ts,tsx}"],

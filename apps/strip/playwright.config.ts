@@ -15,10 +15,11 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 180_000,
     },
-    { command: "node e2e-harness/app-server.mjs", url: "http://127.0.0.1:5184/Home.dc.html", reuseExistingServer: true },
+    { command: "pnpm build && pnpm build:gallery && node e2e-harness/app-server.mjs", timeout: 300_000, url: "http://127.0.0.1:5184/Home.dc.html", reuseExistingServer: true },
   ],
   projects: [
-    { name: "harness", testDir: "e2e", use: { baseURL: "http://127.0.0.1:5173" } },
+    { name: "harness", testDir: "e2e", testIgnore: "**/gallery-*.spec.ts", use: { baseURL: "http://127.0.0.1:5173" } },
+    { name: "gallery", testDir: "e2e", testMatch: "**/gallery-*.spec.ts", use: { baseURL: "http://127.0.0.1:5183" } },
     { name: "fidelity-baseline", testDir: "e2e-fidelity", testMatch: "baseline.setup.ts", fullyParallel: true },
     {
       name: "fidelity",

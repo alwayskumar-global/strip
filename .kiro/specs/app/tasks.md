@@ -76,7 +76,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for each of the 53 targets the screenshot differs by at most 1% of pixels with codes masked and `data-addition` hidden, at the same size (P36, R20.1 to R20.10) [property].
     - Test: for each of the 53 targets the normalised DOM equals the baseline's except allowlisted deviations (P35, R19.1, R20.1) [property].
     - _Requirements: 19.1, 20.1, 20.3, 20.4, 20.5, 20.6, 20.8, 20.9, 20.10_
-  - [ ] 1.7 `Symbol` component, gallery scaffold, gallery exclusion (L, 30)
+  - [x] 1.7 `Symbol` component, gallery scaffold, gallery exclusion (L, 30)
     - `symbolPath(matrix)`, `Symbol` component from `SymbolMatrix` (merged horizontal runs shifted by 4, viewBox `size + 8`), `gallery/` scaffold and fixtures, the single `if (__STRIP_GALLERY__)` dynamic import in `App.tsx`, `build:gallery` script, `dist.test.ts`, ESLint restriction on gallery imports.
     - Test: for any SymbolMatrix, the `d` string equals the dark modules as merged runs, re-expanding gives the matrix, viewBox side is `size + 8` (P11, R19.12) [unit].
     - Test: for 6 specimen Packets, rasterise at 4 px per module and `decodeFrame` returns a Packet `decodePacket` accepts (P12, R1.4) [Playwright].

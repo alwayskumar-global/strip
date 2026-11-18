@@ -7,9 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:gallery": "vite build --mode gallery",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test --project=harness",
+    "test:e2e": "playwright test --project=harness --project=gallery",
     "test:fidelity": "playwright test --project=fidelity-baseline --project=fidelity"
   },
   "dependencies": {
