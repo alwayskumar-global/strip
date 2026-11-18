@@ -187,7 +187,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for any fps 2 to 15 on a fake clock, 10 s of `play` shows 10 x fps Packets within 1; an fps change applies from the next tick; the player reads no global time (P14, R11.3, R11.7) [unit].
     - Test: counter text, lap `floor((n - 1) / T) + 1`, `progress` value `min(n, K)` and aria labels match the formulas (P16, R3.4, R11.17) [unit].
     - _Requirements: 3.4, 11.1, 11.2, 11.3, 11.5, 11.6, 11.7, 11.17_
-  - [ ] 3.4 StreamScreen: speed, size, pause, step, notice, reduced motion, full screen (L, 30)
+  - [x] 3.4 StreamScreen: speed, size, pause, step, notice, reduced motion, full screen (L, 30)
     - `StreamScreen` container wires `StreamView` and `FullScreenView`: Speed range, size selector, pause and resume, Previous and Next in step, the Photosensitivity_Notice button, the reduced-motion default of `step`, full screen enter and exit, route guard without a file.
     - Test: with `prefers-reduced-motion: reduce` the initial mode is `step` and no timer runs (R3.9, R11.8) [unit].
     - Test: the notice button toggles the callout and the mode per the board (R3.13, R3.14) [unit].

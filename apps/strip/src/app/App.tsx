@@ -5,6 +5,7 @@ import { AboutScreen } from "../screens/AboutScreen.js";
 import { ErrorPanel, type ErrorHandlers } from "../views/ErrorPanel.js";
 import { toErrorVM } from "../views/error-vm.js";
 import { HomeScreen } from "../screens/HomeScreen.js";
+import { StreamScreen } from "../screens/StreamScreen.js";
 import { ReceiveScreen } from "../screens/ReceiveScreen.js";
 import { PaperScreen } from "../screens/PaperScreen.js";
 import { SendScreen } from "../screens/SendScreen.js";
@@ -50,6 +51,7 @@ function Routes(): ReactNode {
   }, [needsFile, hasFile]);
   if (route === "home") return <HomeScreen />;
   if (route === "send") return <SendScreen />;
+  if (route === "stream" && hasFile) return <StreamScreen />;
   if (route === "paper" && hasFile) return <PaperScreen />;
   if (route === "receive") return <ReceiveScreen />;
   if (route === "about") return <AboutScreen />;
