@@ -230,7 +230,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: notices include React, react-dom and IBM Plex with the OFL text (R19.10, R22.5) [unit].
     - Test: the Home board's notices link (`href="/THIRD_PARTY_NOTICES"`) is present, reachable and serves the notices file, in the app e2e suite against the production build (R15.5, R19.10) [Playwright].
     - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.6, 19.10, 22.5_
-  - [ ] 4.6 README (S, 8)
+  - [x] 4.6 README (S, 8)
     - Root `README.md`: what Strip is, run and test commands, the two paths, the limits, the privacy statement, the device-test pointer, third-party notices.
     - Test: README names every pnpm script it cites and each exists in a `package.json` (R22.7) [unit].
     - _Requirements: 22.7_

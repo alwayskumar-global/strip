@@ -5,12 +5,18 @@
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test && pnpm test:tools",
     "test:tools": "vitest run --root tools",
+    "dev": "pnpm --filter @strip/app dev",
+    "build": "pnpm --filter @strip/app build",
+    "build:gallery": "pnpm --filter @strip/app build:gallery",
+    "test:fidelity": "pnpm --filter @strip/app test:fidelity",
     "test:e2e": "pnpm --filter @strip/app test:e2e",
     "purity": "node .kiro/hooks/scripts/purity.mjs"
   },
