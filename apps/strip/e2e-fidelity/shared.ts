@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { BASELINE_ORIGIN } from "./targets.js";
 import { fileURLToPath } from "node:url";
 // Shared by the baseline setup and the fidelity specs: the same waits, masks and CSS on both sides.
 export const HIDE_ADDITIONS_CSS = fileURLToPath(new URL("./hide-additions.css", import.meta.url));
@@ -16,4 +17,21 @@ export async function settle(page: Page): Promise<void> {
     await document.fonts.ready;
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
   }, FONT_FACES);
+}
+const FONTS_CSS = fileURLToPath(new URL("../src/styles/fonts.css", import.meta.url));
+const LOCAL = new Set(["127.0.0.1", "localhost"]);
+/** Baseline-side interception: the Google Fonts CSS comes from the app's fonts.css, other external hosts are aborted and recorded. */
+export async function routeBaseline(page: Page): Promise<string[]> {
+  const external: string[] = [];
+  await page.route((url) => !LOCAL.has(url.hostname), async (route) => {
+    const url = new URL(route.request().url());
+    if (url.hostname === "fonts.googleapis.com") {
+      const css = readFileSync(FONTS_CSS, "utf8").replace(/url\("\/fonts\/([^"]+)"\)/g, `url("${BASELINE_ORIGIN}/__fonts/$1")`);
+      await route.fulfill({ status: 200, contentType: "text/css", body: css });
+    } else {
+      if (url.hostname !== "fonts.gstatic.com") external.push(url.href);
+      await route.abort();
+    }
+  });
+  return external;
 }

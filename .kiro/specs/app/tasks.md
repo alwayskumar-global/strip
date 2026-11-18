@@ -70,7 +70,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: each of the 53 baselines renders `.strip` with no `.sc-has-error` and no console error (R20.1) [Playwright].
     - Test: existing harness specs on 5173, 5180 and 5181 pass; a spec may be retargeted to the harness page `/e2e-harness/index.html` when the app now owns `/`, with its assertion unchanged (R22.8) [Playwright].
     - _Requirements: 20.1, 20.2, 20.3, 22.8_
-  - [ ] 1.6 Fidelity spec, QR masks, `data-addition` hiding, DOM-parity normaliser (L, 30)
+  - [x] 1.6 Fidelity spec, QR masks, `data-addition` hiding, DOM-parity normaliser (L, 30)
     - `fidelity.spec.ts` using `toHaveScreenshot` at `maxDiffPixelRatio: 0.01`, `retries: 0`, QR masks (`svg.code`, `.stage__code`, `.fs__code`, `.vf__code`, `.vf video`, `.vf canvas`), `data-addition` hidden through the screenshot `style` option; `normalize-dom.ts`, `dom-parity.spec.ts`, `parity-allowlist.ts` (each entry justified); `pnpm test:fidelity` script. Targets without a converted component yet are skipped with a named reason that each conversion task removes.
     - Test: the comparison passes baseline against itself and fails when a 2% pixel region changes (R20.4, R20.5) [Playwright].
     - Test: for each of the 53 targets the screenshot differs by at most 1% of pixels with codes masked and `data-addition` hidden, at the same size (P36, R20.1 to R20.10) [property].

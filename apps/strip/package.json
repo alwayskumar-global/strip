@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test --project=harness",
-    "test:fidelity": "playwright test --project=fidelity-baseline"
+    "test:fidelity": "playwright test --project=fidelity-baseline --project=fidelity"
   },
   "dependencies": {
     "@strip/codec": "workspace:*",

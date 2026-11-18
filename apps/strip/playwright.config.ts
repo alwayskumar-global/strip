@@ -5,6 +5,8 @@ import { defineConfig } from "@playwright/test";
 // 5182/5183/5184: app-server.mjs (production build, gallery build, baseline boards for the fidelity gate).
 export default defineConfig({
   retries: 0,
+  workers: 4,
+  updateSnapshots: "none",
   webServer: [
     { command: "pnpm exec vite", url: "http://127.0.0.1:5173", reuseExistingServer: true },
     {
@@ -17,6 +19,14 @@ export default defineConfig({
   ],
   projects: [
     { name: "harness", testDir: "e2e", use: { baseURL: "http://127.0.0.1:5173" } },
-    { name: "fidelity-baseline", testDir: "e2e-fidelity", testMatch: "baseline.setup.ts", fullyParallel: true, workers: 4 },
+    { name: "fidelity-baseline", testDir: "e2e-fidelity", testMatch: "baseline.setup.ts", fullyParallel: true },
+    {
+      name: "fidelity",
+      testDir: "e2e-fidelity",
+      testMatch: ["fidelity.spec.ts", "dom-parity.spec.ts", "selftest.spec.ts"],
+      dependencies: ["fidelity-baseline"],
+      fullyParallel: true,
+      snapshotPathTemplate: "{testDir}/../.fidelity/baseline/{arg}{ext}",
+    },
   ],
 });
