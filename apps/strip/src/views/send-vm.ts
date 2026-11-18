@@ -32,8 +32,12 @@ export interface BadFacts {
 }
 export interface SendInput {
   stage: SendStage;
-  file: FileFacts;
-  bad: BadFacts;
+  file?: FileFacts;
+  bad?: BadFacts;
+  /** The selected output; the Screen radio is checked by default in `chosen` only. */
+  output?: "screen" | "paper";
+  /** The "Many pages" warning text (an addition, data-addition), shown with output `paper` above the paper threshold. */
+  paperWarn?: { title: string; text: string } | null;
   /** The board's mobile class; only the gallery sets it. */
   rootCls?: string;
 }
@@ -44,6 +48,10 @@ export interface SendVM {
   isBad: boolean;
   choicesOff: boolean;
   screenOn: boolean;
+  paperOn: boolean;
+  continueLabel: string;
+  continueHref: string;
+  paperWarn: { title: string; text: string } | null;
   dropCls: string;
   file: FileFacts;
   screenNote: string;
@@ -57,21 +65,29 @@ export interface SendVM {
   badTitle: string;
   badMsg: string;
 }
+const BLANK_FILE: FileFacts = { name: "", mime: "", size: "", bytes: "", hash: ["", "", ""], encoded: "", within: "", value: 0, max: 0, screenNote: "", paperNote: "" };
+const BLANK_BAD: BadFacts = { name: "", type: "", size: "", limit: "", value: 0, max: 0, title: "", msg: "" };
 export function toSendVM(input: SendInput): SendVM {
   const s = input.stage;
   const bad = s === "toolarge" || s === "emptyfile";
-  const b = input.bad;
+  const b = input.bad ?? BLANK_BAD;
+  const file = input.file ?? BLANK_FILE;
+  const out = s === "chosen" ? (input.output ?? "screen") : "screen";
   return {
     rootCls: input.rootCls ?? "",
     isChosen: s === "chosen",
     isNone: s === "empty",
     isBad: bad,
     choicesOff: s !== "chosen",
-    screenOn: s === "chosen",
+    screenOn: s === "chosen" && out === "screen",
+    paperOn: s === "chosen" && out === "paper",
+    continueLabel: out === "paper" && s === "chosen" ? "Continue to Paper" : "Continue to Screen",
+    continueHref: out === "paper" ? "/send/paper" : "/send/screen",
+    paperWarn: s === "chosen" && out === "paper" ? (input.paperWarn ?? null) : null,
     dropCls: bad ? "drop--error" : "",
-    file: input.file,
-    screenNote: input.file.screenNote,
-    paperNote: input.file.paperNote,
+    file,
+    screenNote: file.screenNote,
+    paperNote: file.paperNote,
     badName: b.name,
     badType: b.type,
     badSize: b.size,

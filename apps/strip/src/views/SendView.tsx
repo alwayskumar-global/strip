@@ -2,7 +2,13 @@
 import { type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import type { SendVM } from "./send-vm.js";
-export function SendView({ vm }: { vm: SendVM }): ReactNode {
+/** Optional event handlers: the gallery and the unit tests render the view without them. */
+export interface SendHandlers {
+  files?: (files: FileList | null) => void;
+  remove?: () => void;
+  output?: (value: "screen" | "paper") => void;
+}
+export function SendView({ vm, on }: { vm: SendVM; on?: SendHandlers }): ReactNode {
   return (
     <div className={`strip page ${vm.rootCls}`}>
       <Nav current={"send"} />
@@ -16,13 +22,13 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
           <p className="t-lead">Pick a file, then choose how to show it. The file never leaves this device.</p>
         </div>
         <div className="two">
-          <section className={`drop ${vm.dropCls}`} aria-labelledby="drop-h">
+          <section className={`drop ${vm.dropCls}`} aria-labelledby="drop-h" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); on?.files?.(e.dataTransfer.files); }}>
             <svg className="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 20V6M6 12l6-6 6 6M4 3h16" />
             </svg>
             <h2 id="drop-h" className="t-h3">Drop a file here</h2>
             <p className="t-small t-muted">or pick one from this device</p>
-            <input className="picker__in sr-only" id="file" type="file" />
+            <input className="picker__in sr-only" id="file" type="file" onChange={(e) => { on?.files?.(e.currentTarget.files); e.currentTarget.value = ""; }} />
             <label className="btn btn--primary" htmlFor="file">Choose file</label>
             <p className="t-label t-muted">Max 256 KB · one file</p>
           </section>
@@ -38,7 +44,7 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
                   <h2 id="fc-h" className="filecard__name">{vm.file.name}</h2>
                   <p className="t-small t-muted">{vm.file.mime}</p>
                 </div>
-                <button className="btn btn--ghost btn--icon" type="button" aria-label="Remove file">
+                <button className="btn btn--ghost btn--icon" type="button" aria-label="Remove file" onClick={() => on?.remove?.()}>
                   <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 5l14 14M19 5L5 19" />
                   </svg>
@@ -90,7 +96,7 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
                   <h2 id="fb-h" className="filecard__name">{vm.badName}</h2>
                   <p className="t-small t-muted">{vm.badType}</p>
                 </div>
-                <button className="btn btn--ghost btn--icon" type="button" aria-label="Remove file">
+                <button className="btn btn--ghost btn--icon" type="button" aria-label="Remove file" onClick={() => on?.remove?.()}>
                   <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 5l14 14M19 5L5 19" />
                   </svg>
@@ -125,12 +131,23 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
             </div>
           </div>
         </>)}
+        {vm.paperWarn && (
+          <div className="callout callout--warn" role="note" data-addition="">
+            <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3L2 21h20L12 3zM12 10v5M12 18v.5" />
+            </svg>
+            <div className="callout__body">
+              <p className="callout__title">{vm.paperWarn.title}</p>
+              <p className="t-small">{vm.paperWarn.text}</p>
+            </div>
+          </div>
+        )}
         <fieldset className="choices" disabled={vm.choicesOff} aria-describedby="out-help">
           <legend className="t-label">Choose output</legend>
           <p id="out-help" className="sr-only">Screen plays an animated code. Paper prints a strip.</p>
           <div className="choices__row">
             <label className="choice">
-              <input className="choice__in" type="radio" name="output" defaultValue="screen" defaultChecked={vm.screenOn} />
+              <input className="choice__in" type="radio" name="output" value="screen" checked={vm.screenOn} onChange={() => on?.output?.("screen")} />
               <span className="choice__box">
                 <span className="choice__head">
                   <svg className="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true">
@@ -148,7 +165,7 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
               </span>
             </label>
             <label className="choice">
-              <input className="choice__in" type="radio" name="output" defaultValue="paper" />
+              <input className="choice__in" type="radio" name="output" value="paper" checked={vm.paperOn} onChange={() => on?.output?.("paper")} />
               <span className="choice__box">
                 <span className="choice__head">
                   <svg className="ico ico--lg" viewBox="0 0 24 24" aria-hidden="true">
@@ -170,7 +187,7 @@ export function SendView({ vm }: { vm: SendVM }): ReactNode {
         <div className="actionbar">
           <a className="btn btn--ghost" href="/">Cancel</a>
           {vm.isChosen && (<>
-            <a className="btn btn--primary btn--lg" href="/send/screen">Continue to Screen<svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg></a>
+            <a className="btn btn--primary btn--lg" href={vm.continueHref}>{vm.continueLabel}<svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg></a>
           </>)}
           {vm.choicesOff && (<>
             <button className="btn btn--primary btn--lg" type="button" disabled>Continue to Screen<svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg></button>

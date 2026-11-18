@@ -119,7 +119,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - _Requirements: 20.6, 22.1_
 
 - [ ] 2. Group 2: paper send pipeline and receive from images (estimate 153, CAP 184)
-  - [ ] 2.1 File intake, formatting, hash chip, send-step reducer (M, 15)
+  - [x] 2.1 File intake, formatting, hash chip, send-step reducer (M, 15)
     - `file-intake.ts` (`classify`, 256 KB cap, read only in `chosen`), `mimeOf`, `format.ts` (KB, MB, bytes, `{cap}`), `sha256WebCrypto`, hash chip (first 12 hex in 3 groups of 4), `send-step.ts` reducer, `SendScreen` container wired to `SendView`.
     - Test: for any size, `classify` is `emptyfile` at 0, `chosen` for 1 to cap, `toolarge` above; cap and cap + 1 boundaries; bytes are read only in `chosen` (P2, R2.2, R2.11, R2.12, R9.1) [property].
     - Test: for any `File.type`, `mimeOf` returns a valid codec MIME, `application/octet-stream` when empty, over 127 bytes or non-ASCII (P3, R2.14) [unit].
