@@ -204,7 +204,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Run lint, typecheck, test, build, `test:e2e`, `test:fidelity`; report outputs and credits used against 138 (cap 166), cumulative 542. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 21.3_
 
-- [ ] 4. Group 4: PWA, delivery headers, privacy, bundle gate, README (estimate 101, CAP 121)
+- [x] 4. Group 4: PWA, delivery headers, privacy, bundle gate, README (estimate 101, CAP 121)
   - [x] 4.1 Manifest and icons (M, 15)
     - `manifest.webmanifest`, `scripts/make-icons.mjs` (bundled Chromium, no new dependency), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, the 180 px `apple-touch-icon`, `theme-color` `#F7F5EF` equal in `index.html` and the manifest.
     - Test: manifest fields, icon sizes read from PNG IHDR, equal `theme-color` (P57, R14.1, R14.2) [unit].
@@ -234,7 +234,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Root `README.md`: what Strip is, run and test commands, the two paths, the limits, the privacy statement, the device-test pointer, third-party notices.
     - Test: README names every pnpm script it cites and each exists in a `package.json` (R22.7) [unit].
     - _Requirements: 22.7_
-  - [ ] 4.7 Checkpoint: Group 4 stop-and-report
+  - [x] 4.7 Checkpoint: Group 4 stop-and-report
     - Run the CI order (lint, typecheck, test, build, `build:gallery`, test again, `test:e2e`, `test:fidelity`); report outputs, bundle numbers and credits used against 101 (cap 121), cumulative 643. Stop. Rerun the whole e2e suite (all projects), not only the new tests.
     - _Requirements: 18.1_
 

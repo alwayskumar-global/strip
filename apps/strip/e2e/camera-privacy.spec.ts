@@ -6,11 +6,12 @@ test.use({ deviceScaleFactor: 3 });
 test("privacy: the request log, and storage after the flows", async ({ browser }) => {
   test.setTimeout(240_000);
   writeY4M([blankFrame()]);
-  const context = await browser.newContext({ serviceWorkers: "allow", permissions: ["camera"] });
+  // A marker in the User-Agent lets the server log tell this test's requests from those of tests running in parallel.
+  const marker = `StripPrivacyTest-${Date.now()}`;
+  const context = await browser.newContext({ serviceWorkers: "allow", permissions: ["camera"], userAgent: `Mozilla/5.0 (Strip e2e) ${marker}` });
   const log: Array<{ method: string; url: string; sw: boolean; origin: string }> = [];
   context.on("request", (r: Request) => log.push({ method: r.method(), url: r.url(), sw: r.serviceWorker() !== null, origin: new URL(r.url()).origin }));
   const page = await context.newPage();
-  await page.request.get("/__reset"); // the server keeps its own log of what actually reached it
   const bytes = Buffer.from(Uint8Array.from({ length: 6000 }, (_, i) => (i * 131 + 7) & 255));
   // Install the worker and let it precache.
   await page.goto("/");
@@ -53,8 +54,8 @@ test("privacy: the request log, and storage after the flows", async ({ browser }
   expect(log.some((r) => /fonts\.(googleapis|gstatic)\.com/.test(r.url))).toBe(false);
   // R18.4: the .wasm reaches the server once, from the service worker's precache at install; the page and its worker are served from the cache.
   // (Playwright attributes a worker's fetch, answered by the service worker, to the page, so the server log is the evidence.)
-  const served = (await (await page.request.get("/__requests")).json()) as Array<{ server: string; url: string }>;
-  const wasmAtServer = served.filter((r) => r.server === "app" && r.url.endsWith(".wasm"));
+  const served = (await (await page.request.get("/__requests")).json()) as Array<{ server: string; url: string; ua: string }>;
+  const wasmAtServer = served.filter((r) => r.server === "app" && r.ua.includes(marker) && r.url.endsWith(".wasm"));
   console.log(`PRIVACY requests=${log.length} wasmRequestsReachingServer=${wasmAtServer.length}`);
   expect(wasmAtServer).toHaveLength(1);
   // P42: nothing stored; the Cache API holds precache URLs only.

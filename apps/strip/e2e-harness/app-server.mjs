@@ -72,7 +72,7 @@ function serve(port, label, handler, headers) {
       res.end();
       return;
     }
-    log.push({ server: label, method: req.method, url: req.url });
+    log.push({ server: label, method: req.method, url: req.url, ua: req.headers["user-agent"] ?? "" });
     const out = await handler(decodeURIComponent(url.pathname));
     const extra = typeof headers === "function" ? headers(decodeURIComponent(url.pathname)) : headers;
     res.writeHead(out.status, { "Content-Type": out.type ?? "text/plain; charset=utf-8", "Cache-Control": "no-store", ...extra });
