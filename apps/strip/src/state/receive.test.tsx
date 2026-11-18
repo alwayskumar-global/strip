@@ -2,7 +2,7 @@ import fc from "fast-check";
 import { encode } from "@strip/codec";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { createReceiveSession } from "../services/receive-session.js";
+import { createReceiveSession, MAX_LOGGED_PHOTO_PACKETS } from "../services/receive-session.js";
 import { downloadFile } from "../services/download.js";
 import { ReceiveView } from "../views/ReceiveView.js";
 import { RECEIVE_PHASES, toReceiveVM } from "../views/receive-vm.js";
@@ -87,9 +87,7 @@ describe("Receive counters over real Packets (P23, P26)", () => {
     );
   }, 120_000);
   // Feature: unit (P26): the rebuilt session equals a fresh session fed the remaining sources in order
-  // STOPPED, counterexample [[[0],[0]],0]: two photos both carrying Packet 0; removing photo 0 rebuilds an empty session because the
-  // log keeps accepted Packets only (design decision), while a fresh session fed photo 1 has Packet 0. Awaiting the user's decision.
-  it.skip("P26: removing any photo gives the same progress as a fresh session fed the remaining photos in order", async () => {
+  it("P26: removing any photo gives the same progress as a fresh session fed the remaining photos in order", async () => {
     const enc = await encode({ bytes: payload(9000), name: "a.bin", mime: "application/octet-stream" }, { packetSize: 1732 });
     const packets = enc.page();
     await fc.assert(
@@ -105,6 +103,29 @@ describe("Receive counters over real Packets (P23, P26)", () => {
       { numRuns: 25 },
     );
   }, 120_000);
+});
+describe("P26 regression and the log bound (Resolved question 43)", () => {
+  it("regression [[[0],[0]],0]: two photos both carrying Packet 0; removing photo 0 keeps Packet 0 through photo 1", async () => {
+    const enc = await encode({ bytes: payload(9000), name: "a.bin", mime: "application/octet-stream" }, { packetSize: 1732 });
+    const p0 = enc.page()[0] as Uint8Array;
+    const full = createReceiveSession(0);
+    await full.push(p0, { photo: 0 });
+    await full.push(p0, { photo: 1 });
+    const rebuilt = await full.rebuildWithout(0, 1);
+    const fresh = createReceiveSession(1);
+    await fresh.push(p0, { photo: 1 });
+    expect(rebuilt.progress()).toEqual(fresh.progress());
+    expect(rebuilt.progress().distinct).toBe(1);
+  });
+  it("the log never exceeds 24 photos x 9 symbols, whatever is pushed", async () => {
+    const enc = await encode({ bytes: payload(9000), name: "a.bin", mime: "application/octet-stream" }, { packetSize: 1732 });
+    const p0 = enc.page()[0] as Uint8Array;
+    const s = createReceiveSession(0);
+    for (let photo = 0; photo < 30; photo++) for (let k = 0; k < 9; k++) await s.push(p0, { photo });
+    expect(MAX_LOGGED_PHOTO_PACKETS).toBe(216);
+    expect(s.photoLogSize()).toBeLessThanOrEqual(MAX_LOGGED_PHOTO_PACKETS);
+    expect(s.photoLogSize() * 1732).toBeLessThanOrEqual(24 * 9 * 1732);
+  });
 });
 describe("Photo list text and download (P34, R5.16, R12.14, R12.15)", () => {
   const matrixless = (photos: Array<{ id: number; name: string; found: number }>): string => renderToStaticMarkup(<ReceiveView vm={toReceiveVM({ phase: "empty", seen: 0, solved: 0, distinct: 0, total: 0, photos })} />);

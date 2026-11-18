@@ -1,9 +1,11 @@
 // The codec Decoder behind Receive: one object per session generation, an ordered log of the Packets it accepted
 // (so a removed photo can be rebuilt away), and the mapping from codec results to the reducer's PushResult (R9.3, R12.24).
 import { createDecoder, decodePacket, type Decoder } from "@strip/codec";
-import { MAX_PAYLOAD } from "../limits.js";
+import { IMAGE_MAX_PHOTOS, MAX_PAYLOAD } from "../limits.js";
 import { toHex } from "../state/format.js";
 import type { FileResult, PushResult, Source } from "../state/receive.js";
+/** Photo Packets kept in the log: at most 9 symbols per photo and IMAGE_MAX_PHOTOS photos, each at most 1,732 bytes. */
+export const MAX_LOGGED_PHOTO_PACKETS = IMAGE_MAX_PHOTOS * 9;
 export interface Pushed {
   result: PushResult;
   /** Session_Id of the Packet, when it parses. */
@@ -18,6 +20,8 @@ export interface ReceiveSession {
   rebuildWithout(photo: number, gen: number): Promise<ReceiveSession>;
   /** Packets of the photos, by id, accepted so far (used to detect which source a Packet came from). */
   sources(): Source[];
+  /** Number of logged Packets of photos (for the bound test). */
+  photoLogSize(): number;
 }
 const same = (a: Source, b: Source): boolean => (a === "camera" ? b === "camera" : b !== "camera" && a.photo === b.photo);
 const sessionIdOf = (bytes: Uint8Array): number | undefined => {
@@ -29,6 +33,7 @@ const sessionIdOf = (bytes: Uint8Array): number | undefined => {
 };
 export function createReceiveSession(gen: number): ReceiveSession {
   const decoder: Decoder = createDecoder({ maxPayloadBytes: MAX_PAYLOAD });
+  let photoEntries = 0;
   const log: Array<{ bytes: Uint8Array; source: Source }> = [];
   const self: ReceiveSession = {
     gen,
@@ -38,8 +43,17 @@ export function createReceiveSession(gen: number): ReceiveSession {
       const out = (result: PushResult): Pushed => (sessionOf === undefined ? { result } : { result, sessionOf });
       if (st.kind === "accepted") {
         log.push({ bytes: bytes.slice(), source });
+        if (source !== "camera") photoEntries++;
         const p = st.progress;
         return out({ k: "accepted", counters: { solved: p.solvedBlocks, total: p.totalBlocks, distinct: p.distinctPackets, complete: p.complete } });
+      }
+      if (st.kind === "ignored") {
+        // Ignored Packets of a photo stay in the log, tagged with their photo, so that removing another photo rebuilds exactly
+        // (Resolved question 43). Foreign-session Packets are never logged; camera duplicates are not kept (the log is bounded).
+        if (source !== "camera" && st.reason !== "SESSION_MISMATCH" && photoEntries < MAX_LOGGED_PHOTO_PACKETS) {
+          log.push({ bytes: bytes.slice(), source });
+          photoEntries++;
+        }
       }
       if (st.kind === "ignored") return out({ k: "ignored", reason: st.reason as "DUPLICATE_PACKET" | "SESSION_MISMATCH" | "ALREADY_COMPLETE" | "DENSE_STORE_FULL", ...(sessionOf === undefined ? {} : { foreign: sessionOf }) });
       let totalLength: number | undefined;
@@ -65,6 +79,7 @@ export function createReceiveSession(gen: number): ReceiveSession {
       return next;
     },
     sources: () => log.map((e) => e.source),
+    photoLogSize: () => photoEntries,
   };
   return self;
 }

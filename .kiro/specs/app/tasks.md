@@ -147,7 +147,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: for any interleaving of camera and image submits at most one decode is in flight, every busy submit resolves `dropped` with no post, and a dropped bitmap is closed (P30, R12.3, R12.10) [property].
     - Test: the transfer list holds each Packet buffer exactly once (P31, R12.5) [unit].
     - _Requirements: 12.3, 12.5, 12.10, 12.11, 12.12, 12.13_
-  - [ ] 2.5 Receive reducer, photo list, rebuild, verification, download (L, 30)
+  - [x] 2.5 Receive reducer, photo list, rebuild, verification, download (L, 30)
     - `receive.ts` reducer, `photos.ts`, `ReceiveScreen` image path: Photo_List add and remove, rebuild of the Scan_Session from the remaining sources in order, SHA-256 verification, download with the original name and MIME, progress meter and counters.
     - Test: for any event sequence (Packets of sessions A and B, duplicates, corrupt Packets, user actions, stale generations) the phase is one of 10, `done` only when the codec is complete, terminal states have no outgoing transitions except restart (P21, R12.1, R12.2, R12.6) [property].
     - Test: for any Packet sequence, Packets seen, distinct, solved and percent never decrease within a session; percent is 100 only when complete (P23, R12.7, R12.8) [property].
