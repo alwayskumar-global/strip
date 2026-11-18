@@ -96,7 +96,7 @@ describe("send step reducer (R2, R9)", () => {
   });
   it("a failed read maps to the empty stage with the failure panel", () => {
     const a = pick(initialSendState, 10);
-    const r = reduceSend(a.state, { t: "READ_FAILED", gen: a.state.gen, panel: "size" });
+    const r = reduceSend(a.state, { t: "READ_FAILED", gen: a.state.gen, meta: { name: "f.txt", mime: "text/plain", size: 10 }, panel: "size" });
     expect([r.state.stage, r.state.failure]).toEqual(["empty", "size"]);
   });
 });

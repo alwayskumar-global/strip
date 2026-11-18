@@ -68,6 +68,6 @@ async function readAndEncode(gen: number, meta: FileMeta): Promise<void> {
     sender = { bytes, name: meta.name, mime: meta.mime, costs };
     sendStore.dispatch({ t: "READ_DONE", gen, meta, costs });
   } catch (e) {
-    if (gen === state.gen) sendStore.dispatch({ t: "READ_FAILED", gen, panel: failurePanel(e) });
+    if (gen === state.gen) sendStore.dispatch({ t: "READ_FAILED", gen, meta, panel: failurePanel(e) });
   }
 }

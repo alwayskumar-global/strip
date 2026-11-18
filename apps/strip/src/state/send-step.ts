@@ -28,7 +28,7 @@ export interface SendStepState {
 export type SendEvent =
   | { t: "PICK"; name: string; type: string; size: number }
   | { t: "READ_DONE"; gen: number; meta: FileMeta; costs: SendCosts }
-  | { t: "READ_FAILED"; gen: number; panel: FailurePanel }
+  | { t: "READ_FAILED"; gen: number; meta: FileMeta; panel: FailurePanel }
   | { t: "REMOVE" }
   | { t: "OUTPUT"; value: SendOutput }
   | { t: "CONTINUE" };
@@ -52,9 +52,13 @@ export function reduceSend(s: SendStepState, ev: SendEvent): { state: SendStepSt
       return { state: { ...s, stage: "chosen", meta: ev.meta, costs: ev.costs, output: "screen", reading: false }, effects: [] };
     case "READ_FAILED":
       if (ev.gen !== s.gen) return { state: s, effects: [] };
-      return { state: { ...withoutCosts(s), stage: "empty", reading: false, failure: ev.panel }, effects: [{ e: "DROP_BYTES" }] };
+      return { state: { ...withoutCosts(s), stage: "empty", meta: ev.meta, reading: false, failure: ev.panel }, effects: [{ e: "DROP_BYTES" }] };
     case "REMOVE":
-      if (s.stage === "empty") return { state: s, effects: [] };
+      if (s.stage === "empty") {
+        const { failure: _f, ...rest } = s; // dismisses a failure panel
+        void _f;
+        return { state: rest, effects: [] };
+      }
       return { state: { ...withoutCosts(s), stage: "empty", gen: s.gen + 1, reading: false }, effects: [{ e: "DROP_BYTES" }] };
     case "OUTPUT":
       return s.stage === "chosen" ? { state: { ...s, output: ev.value }, effects: [] } : { state: s, effects: [] };

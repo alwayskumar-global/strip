@@ -155,7 +155,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: Photo_List count tag and row texts use singular and plural forms and `{m}` equals the sum of found counts (P34, R5.16) [unit].
     - Test: download uses the original name and MIME and bytes equal the sent file (R12.14, R12.15) [unit].
     - _Requirements: 5.16, 12.1, 12.2, 12.6, 12.7, 12.8, 12.14, 12.15, 12.24, 21.11_
-  - [ ] 2.6 Error mapping and Error panel wiring (M, 15)
+  - [x] 2.6 Error mapping and Error panel wiring (M, 15)
     - `disposition.ts`: one disposition per origin for the 10 `ERROR_CODES`, 4 `SYMBOL_ERROR_CODES`, 4 Ignore_Reasons, 5 outcome kinds, image failures and camera names; `ErrorPanel` wired into `SendScreen`, `ReceiveScreen` and the `App` error boundary.
     - Test: every member has exactly one disposition per origin and unreachable ones are marked (P27, R13.1, R13.3 to R13.7) [unit].
     - Test: for any error value (any code, any message) the rendered text has no code string and no stack trace (P28, R13.2, R13.8) [unit].

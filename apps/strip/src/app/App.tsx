@@ -2,6 +2,8 @@
 import { Component, lazy, Suspense, useEffect, useLayoutEffect, type ReactNode } from "react";
 import { Nav } from "../components/Chrome.js";
 import { AboutScreen } from "../screens/AboutScreen.js";
+import { ErrorPanel, type ErrorHandlers } from "../views/ErrorPanel.js";
+import { toErrorVM } from "../views/error-vm.js";
 import { HomeScreen } from "../screens/HomeScreen.js";
 import { ReceiveScreen } from "../screens/ReceiveScreen.js";
 import { PaperScreen } from "../screens/PaperScreen.js";
@@ -11,13 +13,23 @@ import { installLinkInterception } from "./interception.js";
 import { navigate, useRoute } from "./router-store.js";
 import { titleOf } from "./router.js";
 
+const RELOAD: ErrorHandlers = { primary: () => location.reload() };
 class Boundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   override state = { failed: false };
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
   }
   override render(): ReactNode {
-    return this.state.failed ? <main className="wrap"><h1 className="t-h1">Something went wrong inside Strip</h1></main> : this.props.children;
+    if (!this.state.failed) return this.props.children;
+    // The internal Error panel (R13.9): the page nav stays; Reload reloads the page.
+    return (
+      <div className="strip page">
+        <Nav current={null} />
+        <main>
+          <ErrorPanel vm={toErrorVM("internal")} on={RELOAD} />
+        </main>
+      </div>
+    );
   }
 }
 
