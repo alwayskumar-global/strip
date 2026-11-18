@@ -224,7 +224,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: over every flow the Request_Log holds only same-origin GET requests to paths in `sw-manifest.json`, none to Google Fonts, and no page-initiated `.wasm` request (P41, R16.1 to R16.3, R16.5) [property].
     - Test: after the flows `localStorage`, `sessionStorage`, cookies and IndexedDB are empty and every Cache API URL is in the precache list (P42, R16.4, R16.7) [Playwright].
     - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8_
-  - [ ] 4.5 Notices and bundle report with the 400 KB gzip budget (M, 15)
+  - [x] 4.5 Notices and bundle report with the 400 KB gzip budget (M, 15)
     - `THIRD_PARTY_NOTICES` adds React, react-dom and IBM Plex (OFL); `scripts/bundle-report.mjs` writes `apps/strip/bundle-report.json` (gitignored; raw, gzip, brotli per asset, totals, first-load set) and fails over budget. The 400 KB gzip budget applies to the first-load main JS + CSS + fonts and EXCLUDES the `.wasm` and the decode worker; the `.wasm` (at most 1,000,000 bytes raw) and the worker sizes are reported separately in the Bundle_Report.
     - Test: first-load main JS + CSS + fonts gzip total at most 400 KB (excluding the `.wasm` and the decode worker), `.wasm` at most 1,000,000 bytes raw, `.wasm` and worker sizes reported separately in the Bundle_Report, report JSON exists with raw, gzip and brotli (P50, R18.1 to R18.3) [unit].
     - Test: notices include React, react-dom and IBM Plex with the OFL text (R19.10, R22.5) [unit].

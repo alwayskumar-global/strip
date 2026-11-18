@@ -28,3 +28,16 @@ test("the notices link is left to the browser (a real navigation)", async ({ pag
   const link = page.getByRole("link", { name: "Third-party notices" });
   await expect(link).toHaveAttribute("href", "/THIRD_PARTY_NOTICES");
 });
+test("the Home notices link reaches the notices file as plain text", async ({ page }) => {
+  await page.goto("/");
+  const href = await page.getByRole("link", { name: "Third-party notices" }).getAttribute("href");
+  expect(href).toBe("/THIRD_PARTY_NOTICES");
+  const res = await page.request.get(href as string);
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("text/plain");
+  const body = await res.text();
+  for (const n of ["react 19.3.1", "IBM Plex Sans", "zxing-wasm 3.1.7", "qr 0.7.2"]) expect(body).toContain(n);
+  await page.getByRole("link", { name: "Third-party notices" }).click();
+  await expect(page).toHaveURL(/\/THIRD_PARTY_NOTICES$/);
+  await expect(page.locator("body")).toContainText("THIRD-PARTY NOTICES");
+});

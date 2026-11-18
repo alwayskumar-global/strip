@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/build-sw.mjs",
+    "build": "vite build && node scripts/build-sw.mjs && node scripts/bundle-report.mjs",
     "build:gallery": "vite build --mode gallery",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
