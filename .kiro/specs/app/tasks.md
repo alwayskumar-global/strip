@@ -102,7 +102,7 @@ Sizes: S = 8, M = 15, L = 30, XL = 45 credits. A checkpoint sub-task costs 3 (a 
     - Test: VM-to-markup equals the board copy and the tile grid has 9 `figure.tile` (R4.1 to R4.14) [unit].
     - Test: fidelity and DOM parity pass for the 4 paper targets (R20.1) [Playwright].
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.9, 4.10, 19.1, 19.3, 19.4_
-  - [ ] 1.12 Convert Receive: desktop board and 10 phases (L, 30)
+  - [x] 1.12 Convert Receive: desktop board and 10 phases (L, 30)
     - `ReceiveView` (`phase`: `empty`, `ask`, `denied`, `nocam`, `scan`, `repeat`, `dup`, `verify`, `done`, `failed`; `viewfinder?` slot), `Ring` (the only component allowed a `style` prop, CSSOM custom property), `arc`, `tick`, `toReceiveVM`, Photo_List markup; fidelity and parity targets: Receive desktop plus 10 phases (11).
     - Test: for each of the 10 phases and any counters, `toReceiveVM` equals the Appendix D copy with computed numbers; the meter shows whenever `total` is above 0 (P32, R5.1 to R5.15) [unit].
     - Test: for any percent 0 to 100, `arc(p)` is empty at 0 and the full circle at 100; `tick(k)` times K equals the circumference (P24, R5.9) [unit].

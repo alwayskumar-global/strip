@@ -28,6 +28,8 @@ const boundary = (allowed, message) => ({
 
 // apps/strip import rules: public barrels only, plus the one documented subpath of @strip/symbols (R12.3).
 const appImports = (banGallery) => ({
+  // The style prop is allowed only in components/Ring.tsx (CSSOM stroke-dasharray, R19.13, R15.9).
+  "no-restricted-syntax": ["error", { selector: "JSXAttribute[name.name='style']", message: "No style prop outside components/Ring.tsx (CSP: styling comes from strip.css)." }],
   "no-restricted-imports": [
     "error",
     {
@@ -119,6 +121,10 @@ export default tseslint.config(
   {
     files: ["apps/strip/src/gallery/**/*.{ts,tsx}", "apps/strip/src/app/App.tsx"],
     rules: appImports(false),
+  },
+  {
+    files: ["apps/strip/src/components/Ring.tsx"],
+    rules: { "no-restricted-syntax": "off" },
   },
   {
     files: ["apps/strip/src/clock/**/*.{ts,tsx}"],

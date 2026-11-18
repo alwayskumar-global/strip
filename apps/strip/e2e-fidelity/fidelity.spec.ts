@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { skipReason } from "./converted.js";
 import { APP_ORIGIN, TARGETS } from "./targets.js";
-import { masks, settleApp } from "./shared.js";
+import { hideAdditions, masks, settleApp } from "./shared.js";
 // Pixel gate (P36, R20.1 to R20.10): app screenshot against the baseline rendered by support.js, QR regions masked.
 test.use({ reducedMotion: "reduce", deviceScaleFactor: 1 });
 for (const t of TARGETS) {
@@ -10,6 +10,7 @@ for (const t of TARGETS) {
     await page.setViewportSize({ width: t.width, height: t.height });
     await page.goto(APP_ORIGIN + t.app);
     await settleApp(page, t.id);
+    await hideAdditions(page);
     await expect(page).toHaveScreenshot(`${t.id}.png`, {
       fullPage: true,
       animations: "disabled",

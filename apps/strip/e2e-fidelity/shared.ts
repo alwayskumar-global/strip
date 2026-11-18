@@ -41,3 +41,7 @@ export async function settleApp(page: Page, id: string): Promise<void> {
   const { codes } = JSON.parse(readFileSync(fileURLToPath(new URL(`../.fidelity/baseline/${id}.size.json`, import.meta.url)), "utf8")) as { codes: number };
   await page.waitForFunction((n) => document.querySelectorAll("svg.code").length === n, codes, { timeout: 30_000 });
 }
+/** Hides `[data-addition]` elements through the CSSOM: the app's CSP (style-src 'self') blocks the screenshot `style` injection. */
+export async function hideAdditions(page: Page): Promise<void> {
+  await page.evaluate(() => document.querySelectorAll<HTMLElement>("[data-addition]").forEach((e) => e.style.setProperty("display", "none", "important")));
+}

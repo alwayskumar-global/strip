@@ -12,6 +12,10 @@ import { FullScreenView } from "../views/FullScreenView.js";
 import { StreamView } from "../views/StreamView.js";
 import { isStreamMode, streamInput } from "../views/stream-fixtures.js";
 import { toFullScreenVM, toStreamVM } from "../views/stream-vm.js";
+import { ReceivePage } from "../views/ReceivePage.js";
+import { ReceiveView } from "../views/ReceiveView.js";
+import { isReceivePhase, receiveInput } from "../views/receive-fixtures.js";
+import { toReceiveVM } from "../views/receive-vm.js";
 import { sampleSymbols } from "../services/sample-file.js";
 import { PaperView } from "../views/PaperView.js";
 import { isPaperSize, paperInput } from "../views/paper-fixtures.js";
@@ -26,6 +30,13 @@ function useMatrix(): SymbolMatrix | null {
     void sampleSymbols(1).then((s) => setM(s[0]?.matrix ?? null));
   }, []);
   return m;
+}
+function Receive({ p, page }: { p: URLSearchParams; page: boolean }): ReactNode {
+  const matrix = useMatrix();
+  const phase = p.get("phase");
+  if (matrix === null) return null;
+  const vm = toReceiveVM(receiveInput(page ? "scan" : isReceivePhase(phase) ? phase : "scan", matrix));
+  return page ? <ReceivePage vm={vm} /> : <ReceiveView vm={vm} />;
 }
 function Paper({ p }: { p: URLSearchParams }): ReactNode {
   const [ms, setMs] = useState<SymbolMatrix[]>([]);
@@ -91,6 +102,8 @@ function SymbolSpecimens(): ReactNode {
 /** One entry per gallery route; each conversion task adds its own. */
 export const GALLERY_ROUTES: Readonly<Record<string, GalleryRoute>> = {
   "symbol-specimens": () => <SymbolSpecimens />,
+  receive: (p) => <Receive p={p} page />,
+  "receive-phase": (p) => <Receive p={p} page={false} />,
   paper: (p) => <Paper p={p} />,
   stream: (p) => <Stream p={p} full={false} />,
   "stream-full": (p) => <Stream p={p} full />,
